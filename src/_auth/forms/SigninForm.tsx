@@ -57,7 +57,7 @@ const SigninForm = () => {
       <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
 
 
-        <h2 className="h3-bold md:h2-bold pt-5 sm:pt-12">
+        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">
           Log in to your account
         </h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
@@ -65,7 +65,7 @@ const SigninForm = () => {
         </p>
         <form
           onSubmit={form.handleSubmit(handleSignin)}
-          className="flex flex-col gap-5 w-full mt-4">
+          className="flex flex-col gap-2 w-full mt-4">
           
           <FormField
               control={form.control}
