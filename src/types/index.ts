@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 export type INavLink = {
   imgURL: string;
   route: string;
@@ -94,6 +96,7 @@ export interface User {
 
 export interface Message {
   text: ReactNode;
+  id:string,
   $id: string;
   userId: string;
   username: string;

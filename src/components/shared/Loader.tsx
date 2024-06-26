@@ -1,11 +1,15 @@
+import { TailSpin } from "react-loader-spinner";
 const Loader = () => (
   <div className="flex-center w-full">
-    <img
-      src="/assets/icons/Loader1.svg"
-      alt="loader"
-      width={34}
-      height={34}
-      className="animate-spin"
+    <TailSpin
+      visible={true}
+      height="24"
+      width="24"
+      color="#555"
+      ariaLabel="tail-spin-loading"
+      radius="1"
+      wrapperStyle={{}}
+      wrapperClass=""
     />
   </div>
 );

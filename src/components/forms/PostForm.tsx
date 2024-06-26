@@ -83,87 +83,101 @@ const PostForm = ({ post, action }: PostFormProps) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="flex flex-col gap-9 w-full  max-w-5xl">
-        <FormField
-          control={form.control}
-          name="caption"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="shad-form_label">Caption</FormLabel>
-              <FormControl>
-                <Textarea
-                  className="shad-textarea custom-scrollbar"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="shad-form_message" />
-            </FormItem>
-          )}
-        />
+        className="flex flex-col gap-9 w-full  max-w-5xl"
+      >
+        <div className="flex items-start gap-8 justify-between">
+          <div className="w-[50%]">
+            <FormField
+              control={form.control}
+              name="caption"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-form_label">Caption</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Write Caption Here"
+                      className="shad-textarea custom-scrollbar"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-form_message" />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="file"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="shad-form_label">Add Photos</FormLabel>
-              <FormControl>
-                <FileUploader
-                  fieldChange={field.onChange}
-                  mediaUrl={post?.imageUrl}
-                />
-              </FormControl>
-              <FormMessage className="shad-form_message" />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-form_label">City</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Add City"
+                      type="text"
+                      className="shad-input"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-form_message" />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="location"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="shad-form_label">City</FormLabel>
-              <FormControl>
-                <Input type="text" className="shad-input" {...field} />
-              </FormControl>
-              <FormMessage className="shad-form_message" />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="tags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="shad-form_label">
-                Type of Grow 
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Indoor , Greenhouse, Outdoor "
-                  type="text"
-                  className="shad-input"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage className="shad-form_message" />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-form_label">
+                    Type of Grow
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Indoor , Greenhouse, Outdoor "
+                      type="text"
+                      className="shad-input"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-form_message" />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="w-[50%]">
+            <FormField
+              control={form.control}
+              name="file"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-form_label">Add Photos</FormLabel>
+                  <FormControl>
+                    <FileUploader
+                      fieldChange={field.onChange}
+                      mediaUrl={post?.imageUrl}
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-form_message" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <div className="flex gap-4 items-center justify-end">
           <Button
             type="button"
             className="shad-button_dark_4"
-            onClick={() => navigate(-1)}>
+            onClick={() => navigate(-1)}
+          >
             Cancel
           </Button>
           <Button
             type="submit"
             className="shad-button_primary whitespace-nowrap"
-            disabled={isLoadingCreate || isLoadingUpdate}>
+            disabled={isLoadingCreate || isLoadingUpdate}
+          >
             {(isLoadingCreate || isLoadingUpdate) && <Loader />}
             {action} Post
           </Button>
