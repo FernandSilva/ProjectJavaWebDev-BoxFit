@@ -1,46 +1,46 @@
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
   useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 
-import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import {
-  createUserAccount,
-  signInAccount,
-  getCurrentUser,
-  signOutAccount,
-  getUsers,
-  createPost,
-  getPostById,
-  updatePost,
-  getUserPosts,
-  deletePost,
-  likePost,
-  getUserById,
-  updateUser,
-  getRecentPosts,
-  getInfinitePosts,
-  searchPosts,
-  savePost,
-  deleteSavedPost,followUser, 
-  unfollowUser, 
-  getUserRelationships,
   checkFollowStatus,
-  likeComment, 
-  unlikeComment, 
+  createPost,
+  createUserAccount,
+  deletePost,
+  deleteSavedPost, followUser,
   getAllPosts,
-  getFollowingPosts,
+  getCurrentUser,
   getFollowersPosts,
+  getFollowingPosts,
+  getInfinitePosts,
+  getPostById,
+  getRecentPosts,
+  getUserById,
+  getUserPosts,
+  getUserRelationships,
+  getUsers,
+  likeComment,
+  likePost,
+  savePost,
+  searchPosts,
+  signInAccount,
+  signOutAccount,
+  unfollowUser,
+  unlikeComment,
+  updatePost,
+  updateUser,
 } from "@/lib/appwrite/api";
-import { INewPost, INewUser, IUpdatePost, IUpdateUser, IUpdateFollowers } from "@/types";
+import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
+import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 
 
 import {
-  getCommentsByPostId,
   createComment,
   deleteComment,
+  getCommentsByPostId,
 } from "@/lib/appwrite/api";
 
 
