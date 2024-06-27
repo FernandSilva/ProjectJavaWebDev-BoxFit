@@ -1,24 +1,24 @@
 // src/App.tsx
-import { Routes, Route } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import SigninForm from "@/_auth/forms/SigninForm";
+import SignupForm from "@/_auth/forms/SignupForm";
 import {
-  Chat,
-  Home,
-  Explore,
-  Saved,
-  CreatePost,
-  Profile,
-  EditPost,
-  PostDetails,
-  UpdateProfile,
   AllUsers,
+  Chat,
+  CreatePost,
+  EditPost,
+  Explore,
+  Home,
+  PostDetails,
+  Profile,
+  Saved,
   Settings // Correct import here
+  ,
+  UpdateProfile
 } from "@/_root/pages";
+import { Toaster } from "@/components/ui/toaster";
+import { Route, Routes } from "react-router-dom";
 import AuthLayout from "./_auth/AuthLayout";
 import RootLayout from "./_root/RootLayout";
-import SignupForm from "@/_auth/forms/SignupForm";
-import SigninForm from "@/_auth/forms/SigninForm";
-import { Toaster } from "@/components/ui/toaster";
 
 import "./globals.css";
 
@@ -35,7 +35,7 @@ const App = () => {
         {/* private routes */}
         <Route element={<RootLayout />}>
           <Route index element={<Home />} />
-          <Route path="/explore" element={<Explore />} />
+          <Route path="/explore" element={<Explore userId="" />} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/all-users" element={<AllUsers />} />
           <Route path="/create-post" element={<CreatePost />} />

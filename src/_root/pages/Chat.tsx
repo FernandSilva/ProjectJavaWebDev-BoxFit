@@ -53,7 +53,7 @@ function Chat() {
     if (!newMessage.trim()) return;
 
     // Creating message data
-    const messageData: Message = {
+    const messageData: Message | any = {
       id: ID.unique(),
       content: newMessage,
       userId: user.id,
