@@ -363,7 +363,6 @@ export const useUnfollowUser = () => {
 
 // Combined hook for follow/unfollow functionality
 export const useFollowUnfollowUser = () => {
-  const queryClient = useQueryClient();
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
 
