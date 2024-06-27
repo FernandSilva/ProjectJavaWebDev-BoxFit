@@ -404,7 +404,7 @@ export const useFollowStatus = (userId: string, followsUserId: string) => {
 export const useGetMessages = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_MESSAGES],
-    queryFn: getMessages,  // Assuming getMessages is defined to fetch messages from Appwrite
+    queryFn: api.getMessages,  // Assuming getMessages is defined to fetch messages from Appwrite
     onError: (error) => {
       console.error("Failed to fetch messages:", error);
     }
@@ -416,7 +416,7 @@ export const useGetMessages = () => {
 export const useCreateMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (newMessage) => api.createMessage(newMessage),
+    mutationFn: (newMessage:any) => api.createMessage(newMessage),
     onSuccess: () => {
       queryClient.invalidateQueries([QUERY_KEYS.GET_MESSAGES]);
       // Optionally, show a success notification
