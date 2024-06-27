@@ -1,24 +1,23 @@
-import { Route, Routes, Link, Outlet, useParams, useLocation, Navigate, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui";
 import { LikedPosts } from "@/_root/pages";
 import { GridPostList, Loader } from "@/components/shared";
-import { useUserContext, INITIAL_USER } from "@/context/AuthContext";
-import { useSignOutAccount, useGetUserById, useGetUserRelationships } from "@/lib/react-query/queries"; // Corrected the imports here
-import { useFollowUser, useUnfollowUser } from '@/lib/react-query/queries';
+import { Button } from "@/components/ui";
+import { INITIAL_USER, useUserContext } from "@/context/AuthContext";
+import { useFollowUser, useGetUserById, useGetUserRelationships, useSignOutAccount, useUnfollowUser } from "@/lib/react-query/queries"; // Corrected the imports here
+import { Link, Outlet, Route, Routes, useLocation, useNavigate, useParams } from "react-router-dom";
 // Import the hook at the top of your file
-import { useFollowStatus } from '@/lib/react-query/queries';  // Adjust the path as necessary
+import { useFollowStatus } from '@/lib/react-query/queries'; // Adjust the path as necessary
 
-interface StatBlockProps {
-  value: string | number;
-  label: string;
-}
+// interface StatBlockProps {
+//   value: string | number;
+//   label: string;
+// }
 
-const StatBlock = ({ value, label }: StatBlockProps) => (
-  <div className="flex-center gap-2">
-    <p className="small-semibold lg:body-bold text-green-500">{value}</p>
-    <p className="small-medium lg:base-medium text-light-3">{label}</p>
-  </div>
-);
+// const StatBlock = ({ value, label }: StatBlockProps) => (
+//   <div className="flex-center gap-2">
+//     <p className="small-semibold lg:body-bold text-green-500">{value}</p>
+//     <p className="small-medium lg:base-medium text-light-3">{label}</p>
+//   </div>
+// );
 
 const Profile = () => {
   const navigate = useNavigate();
