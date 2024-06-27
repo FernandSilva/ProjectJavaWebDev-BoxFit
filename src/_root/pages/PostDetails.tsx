@@ -1,21 +1,20 @@
-import React, { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui";
-import { Loader, GridPostList } from "@/components/shared";
-import { FaAngleLeft, FaArrowLeft, FaEdit } from "react-icons/fa";
-import { MdAdd, MdDelete, MdEdit } from "react-icons/md";
+import { GridPostList, Loader } from "@/components/shared";
+import { useUserContext } from "@/context/AuthContext";
 import {
-  useGetPostById,
-  useGetUserPosts,
-  useDeletePost,
-  useGetCommentsByPost,
   useCreateComment,
   useDeleteComment,
+  useDeletePost,
+  useGetCommentsByPost,
+  useGetPostById,
+  useGetUserPosts,
   useLikeComment,
   useUnlikeComment,
 } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
-import { useUserContext } from "@/context/AuthContext";
+import { useState } from "react";
+import { FaArrowLeft } from "react-icons/fa";
+import { MdAdd, MdEdit } from "react-icons/md";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 const PostDetails = () => {
   const navigate = useNavigate();
