@@ -1,10 +1,8 @@
-import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import "@/globals.css"; // Corrected import for CSS
 import { useUserContext } from "@/context/AuthContext";
+import "@/globals.css"; // Corrected import for CSS
+import { Link } from "react-router-dom";
 
 const Topbar = () => {
-  const navigate = useNavigate();
   const { user } = useUserContext();
 
   return (
