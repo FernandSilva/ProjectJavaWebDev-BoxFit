@@ -10,7 +10,8 @@ import {
   createPost,
   createUserAccount,
   deletePost,
-  deleteSavedPost, followUser,
+  deleteSavedPost,
+  followUser,
   getAllPosts,
   getCurrentUser,
   getFollowersPosts,
@@ -36,13 +37,11 @@ import {
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 
-
 import {
   createComment,
   deleteComment,
   getCommentsByPostId,
 } from "@/lib/appwrite/api";
-
 
 import * as api from "@/lib/appwrite/api";
 
@@ -83,13 +82,12 @@ export const useDeleteComment = () => {
   });
 };
 
-
 export const useLikeComment = () => {
   const queryClient = useQueryClient();
   return useMutation(likeComment, {
     onSuccess: () => {
-      queryClient.invalidateQueries("comments");
-    }
+      queryClient.invalidateQueries(["comments"]);
+    },
   });
 };
 
@@ -97,19 +95,10 @@ export const useUnlikeComment = () => {
   const queryClient = useQueryClient();
   return useMutation(unlikeComment, {
     onSuccess: () => {
-      queryClient.invalidateQueries("comments");
-    }
+      queryClient.invalidateQueries(["comments"]);
+    },
   });
 };
-
-
-
-
-
-
-
-
-
 
 // ============================================================
 // AUTH QUERIES
@@ -330,16 +319,21 @@ export const useUpdateUser = () => {
 
 // Hook to get user relationships
 export const useGetUserRelationships = (userId: string) => {
-  return useQuery([QUERY_KEYS.GET_USER_RELATIONSHIPS, userId], () => getUserRelationships(userId), {
-    enabled: !!userId, // Only runs if userId is truthy
-  });
+  return useQuery(
+    [QUERY_KEYS.GET_USER_RELATIONSHIPS, userId],
+    () => getUserRelationships(userId),
+    {
+      enabled: !!userId, // Only runs if userId is truthy
+    }
+  );
 };
 
 // Hook for following a user
 export const useFollowUser = () => {
   const queryClient = useQueryClient();
   return useMutation(
-    ({ userId, followsUserId }: { userId: string; followsUserId: string }) => followUser(userId, followsUserId),
+    ({ userId, followsUserId }: { userId: string; followsUserId: string }) =>
+      followUser(userId, followsUserId),
     {
       onSuccess: () => {
         queryClient.invalidateQueries([QUERY_KEYS.GET_USER_RELATIONSHIPS]);
@@ -351,14 +345,11 @@ export const useFollowUser = () => {
 // Hook for unfollowing a user
 export const useUnfollowUser = () => {
   const queryClient = useQueryClient();
-  return useMutation(
-    (documentId: string) => unfollowUser(documentId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries([QUERY_KEYS.GET_USER_RELATIONSHIPS]);
-      },
-    }
-  );
+  return useMutation((documentId: string) => unfollowUser(documentId), {
+    onSuccess: () => {
+      queryClient.invalidateQueries([QUERY_KEYS.GET_USER_RELATIONSHIPS]);
+    },
+  });
 };
 
 // Combined hook for follow/unfollow functionality
@@ -390,13 +381,14 @@ export const useFollowUnfollowUser = () => {
 
 // Hook to get the current follow status and document ID
 export const useFollowStatus = (userId: string, followsUserId: string) => {
-  return useQuery(['followStatus', userId, followsUserId], () => checkFollowStatus(userId, followsUserId), {
-    enabled: !!userId && !!followsUserId,
-  });
+  return useQuery(
+    ["followStatus", userId, followsUserId],
+    () => checkFollowStatus(userId, followsUserId),
+    {
+      enabled: !!userId && !!followsUserId,
+    }
+  );
 };
-
-
-
 
 // Fetch all messages
 // Fetch all messages
@@ -404,19 +396,18 @@ export const useFollowStatus = (userId: string, followsUserId: string) => {
 export const useGetMessages = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_MESSAGES],
-    queryFn: api.getMessages,  // Assuming getMessages is defined to fetch messages from Appwrite
+    queryFn: api.getMessages, // Assuming getMessages is defined to fetch messages from Appwrite
     onError: (error) => {
       console.error("Failed to fetch messages:", error);
-    }
+    },
   });
 };
-
 
 // Use mutation for creating a message
 export const useCreateMessage = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (newMessage:any) => api.createMessage(newMessage),
+    mutationFn: (newMessage: any) => api.createMessage(newMessage),
     onSuccess: () => {
       queryClient.invalidateQueries([QUERY_KEYS.GET_MESSAGES]);
       // Optionally, show a success notification
@@ -424,10 +415,9 @@ export const useCreateMessage = () => {
     onError: (error) => {
       // Handle errors, possibly show an error notification
       console.error("Error creating message:", error);
-    }
+    },
   });
 };
-
 
 // Use mutation for deleting a message
 export const useDeleteMessage = () => {
@@ -439,11 +429,6 @@ export const useDeleteMessage = () => {
     },
   });
 };
-
-
-
-
-
 
 // NEW POST FILTER QUERIES
 // ============================================================
@@ -482,4 +467,3 @@ export const useGetFollowersPosts = (userId: string) => {
 };
 
 // Other queries and mutations...
-
