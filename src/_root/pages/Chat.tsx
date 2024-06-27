@@ -31,6 +31,7 @@ function Chat() {
           $id: doc.$id,
           userId: doc.userId,
           username: doc.username,
+          id:doc.$id,
           content: doc.content, // Assuming text is stored under 'content'
           text: doc.content,
           createdAt: doc.createdAt,

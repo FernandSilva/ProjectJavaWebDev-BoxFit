@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { databases, appwriteConfig } from "@/lib/appwrite/config";
-import { User } from "@/types"; // Ensure this import points to your User type definition
-import { MdEdit } from "react-icons/md";
-import { FaEdit } from "react-icons/fa";
 import { Input } from "@/components/ui";
+import { appwriteConfig, databases } from "@/lib/appwrite/config";
+import { User } from "@/types"; // Ensure this import points to your User type definition
+import { useEffect, useState } from "react";
 
 function UsersList({
   onSelectUser,
   selectedUser,
 }: {
   onSelectUser: (user: User) => void;
-  selectedUser: User;
+  selectedUser: User | null;
 }) {
   const [users, setUsers] = useState<User[]>([]);
 
@@ -26,6 +24,7 @@ function UsersList({
           name: doc.name,
           username: doc.username,
           email: doc.email,
+          id:doc.$id,
           imageUrl: doc.imageUrl,
           bio: doc.bio,
         }));
@@ -43,7 +42,7 @@ function UsersList({
         <h2 className="font-bold text-2xl">Chats</h2>
         <svg
           aria-label="New message"
-          class="x1lliihq x1n2onr6 x5n08af"
+          className="x1lliihq x1n2onr6 x5n08af"
           fill="currentColor"
           height="24"
           role="img"
