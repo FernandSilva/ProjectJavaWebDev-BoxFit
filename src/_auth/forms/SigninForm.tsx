@@ -3,7 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/shared/Loader";
@@ -29,12 +36,12 @@ const SigninForm = () => {
     },
   });
 
-  const handleSignin = async (user: z.infer<typeof SigninValidation>) => {
+  const handleSignin = async (user: z.infer<typeof SigninValidation> | any) => {
     const session = await signInAccount(user);
 
     if (!session) {
       toast({ title: "Login failed. Please try again." });
-      
+
       return;
     }
 
@@ -45,8 +52,8 @@ const SigninForm = () => {
 
       navigate("/");
     } else {
-      toast({ title: "Login failed. Please try again.", });
-      
+      toast({ title: "Login failed. Please try again." });
+
       return;
     }
   };
@@ -54,64 +61,59 @@ const SigninForm = () => {
   return (
     <Form {...form}>
       <div className="sm:w-4200 flex-center flex-col">
-      <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
+        <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
 
-
-        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">
-          Log in to your account
-        </h2>
+        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Log in to your account</h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
           Welcome back! Please enter your details.
         </p>
         <form
           onSubmit={form.handleSubmit(handleSignin)}
-          className="flex flex-col gap-2 w-full mt-4">
-          
+          className="flex flex-col gap-2 w-full mt-4"
+        >
           <FormField
-              control={form.control}
-              name="email"
-              render={({ field, fieldState: { error } }) => (
-                <FormItem className="form-item">
-                  <FormLabel className="shad-form_label">Email</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      className={`shad-input ${error ? 'error' : ''}`}  // Dynamically add the 'error' class if there's an error
-                      {...field} 
-                    />
-                  </FormControl>
-                  {error && (
-                    <FormMessage className="form-message">
-                      {error.message}  // Display the error message conditionally
-                    </FormMessage>
-                  )}
-                </FormItem>
-              )}
-            />
-
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field, fieldState: { error } }) => (
-                  <FormItem className="form-item">
-                    <FormLabel className="shad-form_label">Password</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        className={`shad-input ${error ? 'error' : ''}`}  // Dynamically add the 'error' class if there's an error
-                        {...field} 
-                      />
-                    </FormControl>
-                    {error && (
-                      <FormMessage className="form-message1">
-                        {error.message}  // Display the error message conditionally
-                      </FormMessage>
-                    )}
-                  </FormItem>
+            control={form.control}
+            name="email"
+            render={({ field, fieldState: { error } }) => (
+              <FormItem className="form-item">
+                <FormLabel className="shad-form_label">Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    className={`shad-input ${error ? "error" : ""}`} // Dynamically add the 'error' class if there's an error
+                    {...field}
+                  />
+                </FormControl>
+                {error && (
+                  <FormMessage className="form-message">
+                    {error.message} // Display the error message conditionally
+                  </FormMessage>
                 )}
-              />
+              </FormItem>
+            )}
+          />
 
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field, fieldState: { error } }) => (
+              <FormItem className="form-item">
+                <FormLabel className="shad-form_label">Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    className={`shad-input ${error ? "error" : ""}`} // Dynamically add the 'error' class if there's an error
+                    {...field}
+                  />
+                </FormControl>
+                {error && (
+                  <FormMessage className="form-message1">
+                    {error.message} // Display the error message conditionally
+                  </FormMessage>
+                )}
+              </FormItem>
+            )}
+          />
 
           <Button type="submit" className="shad-button_primary">
             {isLoading || isUserLoading ? (
@@ -127,7 +129,8 @@ const SigninForm = () => {
             Don&apos;t have an account?
             <Link
               to="/sign-up"
-              className=" text-black hover:text-green-500 text-small-semibold ml-1">
+              className=" text-black hover:text-green-500 text-small-semibold ml-1"
+            >
               Sign up
             </Link>
           </p>
