@@ -14,7 +14,7 @@ import { Models } from "appwrite";
 
 export type SearchResultProps = {
   isSearchFetching: boolean;
-  searchedPosts: Models.Document[];
+  searchedPosts: Models.Document[] | any;
 };
 
 const SearchResults = ({
@@ -45,7 +45,6 @@ const Explore = ({ userId }: { userId: string }) => {
   const debouncedSearch = useDebounce(searchValue, 500);
   const { data: searchedPosts, isFetching: isSearchFetching } =
     useSearchPosts(debouncedSearch);
-
   const [users, setUsers] = useState<Models.Document[]>([]);
   const [isFetchingUsers, setIsFetchingUsers] = useState<boolean>(true);
 
