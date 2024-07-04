@@ -3,6 +3,8 @@ import { useState } from 'react';
 // import { useToast } from "@/components/ui/use-toast";
 import { Chatbot, Loader, PostCard, UserCard } from "@/components/shared";
 import { useGetRecentPosts, useGetUsers } from "@/lib/react-query/queries";
+import { Swiper, SwiperSlide } from "swiper/react";
+
 
 const Home = () => {
   // const { toast } = useToast();

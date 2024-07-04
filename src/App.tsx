@@ -21,6 +21,7 @@ import AuthLayout from "./_auth/AuthLayout";
 import RootLayout from "./_root/RootLayout";
 
 import "./globals.css";
+import 'swiper/css/bundle';
 
 const App = () => {
   return (

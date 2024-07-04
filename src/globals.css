@@ -202,7 +202,7 @@
 
   /* Bottom bar */
   .bottom-bar {
-    @apply z-50 flex-between w-full sticky bottom-0 rounded-t-[20px] bg-white text-black border-t border-gray-400 px-5 py-4 md:hidden;
+    @apply z-50 flex-between w-full sticky bottom-0 bg-white text-black border-t px-5 py-2 md:hidden;
   }
 
   /* File uploader */
@@ -402,12 +402,12 @@ textarea:focus {
 
 .link.active,
 .link:hover {
-  background-color: #60dd64; /* Highlight active or hovered link */
+  color: #60dd64; /* Highlight active or hovered link */
+  font-weight: bold;
 }
 
-.link.create-post {
-  background-color: #60dd64; /* Distinct background for Create Post */
-  color: white;
+.link.create-post { /* Distinct background for Create Post */
+  color: #60dd64;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 3D effect */
   transform: translateY(-2px); /* Lift effect for active state */
 }

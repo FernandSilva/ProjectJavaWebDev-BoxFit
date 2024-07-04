@@ -1,16 +1,27 @@
-import { useEffect, useState } from "react";
-import { useInView } from "react-intersection-observer";
+import { GridPostList, Loader, UserCard } from "@/components/shared";
 import { Input } from "@/components/ui";
 import useDebounce from "@/hooks/useDebounce";
-import { GridPostList, Loader, UserCard } from "@/components/shared";
+import { useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
+import { A11y } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { useWindowSize } from "@uidotdev/usehooks";
+
+import { getAllUsers } from "@/lib/appwrite/api";
 import {
   useGetAllPosts,
-  useGetFollowingPosts,
   useGetFollowersPosts,
+  useGetFollowingPosts,
   useSearchPosts,
 } from "@/lib/react-query/queries";
-import { getAllUsers } from "@/lib/appwrite/api";
 import { Models } from "appwrite";
+import Select from 'react-select'
+
+const options = [
+  { value: 'all', label: 'All' },
+  { value: 'followers', label: 'Followers' },
+  { value: 'following', label: 'Following' }
+]
 
 export type SearchResultProps = {
   isSearchFetching: boolean;
@@ -35,6 +46,7 @@ const SearchResults = ({
 type PostType = Models.Document; // Define your post type accordingly
 
 const Explore = ({ userId }: { userId: string }) => {
+  const size = useWindowSize();
   const { ref, inView } = useInView();
   const [filter, setFilter] = useState("all");
   const { data: allPosts, fetchNextPage, hasNextPage } = useGetAllPosts();
@@ -68,9 +80,7 @@ const Explore = ({ userId }: { userId: string }) => {
     }
   }, [inView, searchValue, fetchNextPage]);
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilter(e.target.value);
-  };
+  
 
   const filteredPosts = (): PostType[] => {
     if (filter === "followers") {
@@ -113,11 +123,31 @@ const Explore = ({ userId }: { userId: string }) => {
           {isFetchingUsers ? (
             <Loader />
           ) : (
-            <div className="user-profiles-slider">
+            <>
+              {/* <div className="user-profiles-slider overflow-x-auto ">
               {users.map((user) => (
                 <UserCard key={user.$id} user={user} />
               ))}
-            </div>
+            </div> */}
+              <div className="overflow-hidden w-[300px] md:w-[900px]">
+                <Swiper
+                  // install Swiper modules
+                  modules={[ A11y]}
+                  spaceBetween={16}
+                  slidesPerView={size.width>640 ? 4:2}
+                  
+                 
+                  onSwiper={(swiper) => console.log(swiper)}
+                  onSlideChange={() => console.log("slide change")}
+                >
+                  {users.map((user) => (
+                    <SwiperSlide>
+                      <UserCard key={user.$id} user={user} />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            </>
           )}
 
           <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
@@ -137,40 +167,22 @@ const Explore = ({ userId }: { userId: string }) => {
         <div className="flex-between w-full mt-16 mb-7">
           <h3 className="body-bold md:h3-bold">Popular Today</h3>
           <div
-            className="flex-center gap-3 rounded-xl cursor-pointer border-gray-300 border"
+            className=" rounded-xl cursor-pointer  w-[170px]"
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: "12px",
-
+                
               color: "black",
               borderRadius: "0.75rem",
               padding: "8px 16px",
               cursor: "pointer",
             }}
           >
-            <select
-              style={{
-                border: "none",
-                backgroundColor: "transparent",
-                color: "black",
-                fontWeight: "medium",
-                fontSize: "1rem",
-              }}
-              onChange={handleFilterChange}
-            >
-              <option value="all">All</option>
-              <option value="followers">Followers</option>
-              <option value="following">Following</option>
-            </select>
-            <img
-              src="/assets/icons/filter.svg"
-              width={20}
-              height={20}
-              alt="filter"
-              style={{ marginLeft: "auto" }}
-            />
+            
+            
+            <Select options={options} className="w-[100%]"/>
           </div>
         </div>
 
