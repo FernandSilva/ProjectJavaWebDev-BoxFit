@@ -134,7 +134,7 @@ const Explore = ({ userId }: { userId: string }) => {
                   // install Swiper modules
                   modules={[ A11y]}
                   spaceBetween={16}
-                  slidesPerView={size.width>640 ? 4:2}
+                  slidesPerView={size.width>640 ? 3:size.width<1200?4:2}
                   
                  
                   onSwiper={(swiper) => console.log(swiper)}

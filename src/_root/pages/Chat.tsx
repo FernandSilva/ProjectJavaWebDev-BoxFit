@@ -5,13 +5,16 @@ import { databases, appwriteConfig } from "@/lib/appwrite/config";
 import { Query, ID, Permission, Role } from "appwrite";
 import UsersList from "./UsersList";
 import { User, Message } from "@/types"; // Ensure these types are correctly defined in your project
+import { useWindowSize } from "@uidotdev/usehooks";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { user } = useUserContext();
+  const [steps, setSteps] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
+  const { width } = useWindowSize();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -31,7 +34,7 @@ function Chat() {
           $id: doc.$id,
           userId: doc.userId,
           username: doc.username,
-          id:doc.$id,
+          id: doc.$id,
           content: doc.content, // Assuming text is stored under 'content'
           text: doc.content,
           createdAt: doc.createdAt,
@@ -83,110 +86,242 @@ function Chat() {
 
   return (
     <div className="chat-container">
-      <div className="chat-layout">
-        <UsersList onSelectUser={setSelectedUser} selectedUser={selectedUser} />
-        <div className="chat-messages-section">
-          <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center ">
-            <div className="flex items-center gap-2">
-              <img
-                src={selectedUser?.imageUrl}
-                className="w-8 h-8 rounded-full"
-                alt=""
+      <div className="chat-layout !h-[84vh] sm:!h-full ">
+        {width < 1024 && (
+          <>
+            {steps === 0 && (
+              <UsersList
+                onSelectUser={setSelectedUser}
+                selectedUser={selectedUser}
+                setSteps={setSteps}
               />
-              <p>{selectedUser?.name}</p>
-            </div>
-            <div>
-              <svg
-                aria-label="Conversation information"
-                className="x1lliihq x1n2onr6 x5n08af"
-                fill="currentColor"
-                height="24"
-                role="img"
-                viewBox="0 0 24 24"
-                width="24"
-              >
-                <title>Conversation information</title>
-                <circle
-                  cx="12.001"
-                  cy="12.005"
-                  fill="none"
-                  r="10.5"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                ></circle>
-                <circle cx="11.819" cy="7.709" r="1.25"></circle>
-                <line
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  x1="10.569"
-                  x2="13.432"
-                  y1="16.777"
-                  y2="16.777"
-                ></line>
-                <polyline
-                  fill="none"
-                  points="10.569 11.05 12 11.05 12 16.777"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                ></polyline>
-              </svg>
-            </div>
-          </div>
-          <div className="chat-messages">
-            {!loading ? (
-              messages.length ? (
-                messages.map((message) => (
-                  <div
-                    key={message.$id}
-                    className={`${message.userId === user.id ? "flex-row-reverse justify-start" : " flex-row"} flex items-center w-full gap-2`}
+            )}
+             {steps === 1 && (
+               <div className="chat-messages-section !w-full lg:!w-[70%] !h-[84vh] lg:!h-[100vh]">
+               <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center ]">
+                 <div className="flex items-center gap-2">
+                   <img
+                     src={selectedUser?.imageUrl}
+                     className="w-8 h-8 rounded-full"
+                     alt=""
+                   />
+                   <p>{selectedUser?.name}</p>
+                 </div>
+                 <div>
+                   <svg
+                     aria-label="Conversation information"
+                     className="x1lliihq x1n2onr6 x5n08af"
+                     fill="currentColor"
+                     height="24"
+                     role="img"
+                     viewBox="0 0 24 24"
+                     width="24"
+                   >
+                     <title>Conversation information</title>
+                     <circle
+                       cx="12.001"
+                       cy="12.005"
+                       fill="none"
+                       r="10.5"
+                       stroke="currentColor"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       stroke-width="2"
+                     ></circle>
+                     <circle cx="11.819" cy="7.709" r="1.25"></circle>
+                     <line
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       stroke-width="2"
+                       x1="10.569"
+                       x2="13.432"
+                       y1="16.777"
+                       y2="16.777"
+                     ></line>
+                     <polyline
+                       fill="none"
+                       points="10.569 11.05 12 11.05 12 16.777"
+                       stroke="currentColor"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       stroke-width="2"
+                     ></polyline>
+                   </svg>
+                 </div>
+               </div>
+               <div className="chat-messages">
+                 {!loading ? (
+                   messages.length ? (
+                     messages.map((message) => (
+                       <div
+                         key={message.$id}
+                         className={`${message.userId === user.id ? "flex-row-reverse justify-start" : " flex-row"} flex items-center w-full gap-2`}
+                       >
+                         {/* <img
+                       src={user?.imageUrl}
+                       className="w-6 h-6 rounded-full"
+                     /> */}
+                         <div className="message">
+                           <span>{message.content}</span>
+                         </div>
+                       </div>
+                     ))
+                   ) : (
+                     <div className="flex flex-col items-center justify-center h-full gap-2">
+                       <img
+                         src={selectedUser?.imageUrl}
+                         className="w-20 h-20 rounded-full"
+                       />
+                       <span className="font-semibold text-lg">
+                         {selectedUser?.name}
+                       </span>
+                       <span className="font-normal text-sm">
+                         Start A new chat
+                       </span>
+                     </div>
+                   )
+                 ) : (
+                   <Loader />
+                 )}
+               </div>
+               <form onSubmit={sendMessage} className="message-form">
+                 <input
+                   type="text"
+                   id="messageInput"
+                   name="message"
+                   placeholder="Type your message..."
+                   value={newMessage}
+                   onChange={(e) => setNewMessage(e.target.value)}
+                   className="message-input"
+                 />
+                 <button
+                   type="submit"
+                   className="send-button hover:bg-green-200"
+                 >
+                   Send
+                 </button>
+               </form>
+             </div>
+            )}
+          </>
+        )}
+        {width > 1024 && (
+          <>
+            <UsersList
+              onSelectUser={setSelectedUser}
+              selectedUser={selectedUser}
+            />
+            <div className="chat-messages-section ">
+              <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center ">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={selectedUser?.imageUrl}
+                    className="w-8 h-8 rounded-full"
+                    alt=""
+                  />
+                  <p>{selectedUser?.name}</p>
+                </div>
+                <div>
+                  <svg
+                    aria-label="Conversation information"
+                    className="x1lliihq x1n2onr6 x5n08af"
+                    fill="currentColor"
+                    height="24"
+                    role="img"
+                    viewBox="0 0 24 24"
+                    width="24"
                   >
-                    {/* <img
+                    <title>Conversation information</title>
+                    <circle
+                      cx="12.001"
+                      cy="12.005"
+                      fill="none"
+                      r="10.5"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    ></circle>
+                    <circle cx="11.819" cy="7.709" r="1.25"></circle>
+                    <line
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      x1="10.569"
+                      x2="13.432"
+                      y1="16.777"
+                      y2="16.777"
+                    ></line>
+                    <polyline
+                      fill="none"
+                      points="10.569 11.05 12 11.05 12 16.777"
+                      stroke="currentColor"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                    ></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div className="chat-messages">
+                {!loading ? (
+                  messages.length ? (
+                    messages.map((message) => (
+                      <div
+                        key={message.$id}
+                        className={`${message.userId === user.id ? "flex-row-reverse justify-start" : " flex-row"} flex items-center w-full gap-2`}
+                      >
+                        {/* <img
                       src={user?.imageUrl}
                       className="w-6 h-6 rounded-full"
                     /> */}
-                    <div className="message">
-                      <span>{message.content}</span>
+                        <div className="message">
+                          <span>{message.content}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full gap-2">
+                      <img
+                        src={selectedUser?.imageUrl}
+                        className="w-20 h-20 rounded-full"
+                      />
+                      <span className="font-semibold text-lg">
+                        {selectedUser?.name}
+                      </span>
+                      <span className="font-normal text-sm">
+                        Start A new chat
+                      </span>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <img
-                    src={selectedUser?.imageUrl}
-                    className="w-20 h-20 rounded-full"
-                  />
-                  <span className="font-semibold text-lg">
-                    {selectedUser?.name}
-                  </span>
-                  <span className="font-normal text-sm">Start A new chat</span>
-                </div>
-              )
-            ) : (
-              <Loader />
-            )}
-          </div>
-          <form onSubmit={sendMessage} className="message-form">
-            <input
-              type="text"
-              id="messageInput"
-              name="message"
-              placeholder="Type your message..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="message-input"
-            />
-            <button type="submit" className="send-button hover:bg-green-200">
-              Send
-            </button>
-          </form>
-        </div>
+                  )
+                ) : (
+                  <Loader />
+                )}
+              </div>
+              <form onSubmit={sendMessage} className="message-form">
+                <input
+                  type="text"
+                  id="messageInput"
+                  name="message"
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="message-input"
+                />
+                <button
+                  type="submit"
+                  className="send-button hover:bg-green-200"
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

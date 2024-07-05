@@ -85,8 +85,8 @@ const PostForm = ({ post, action }: PostFormProps) => {
         onSubmit={form.handleSubmit(handleSubmit)}
         className="flex flex-col gap-4 md:gap-9 w-full  max-w-5xl"
       >
-        <div className="flex flex-col md:flex-row items-start gap-4 md:gap-8 justify-between">
-          <div className="w-[100%] md:w-[50%]">
+        <div className="flex flex-col lg:flex-row items-start gap-4 md:gap-8 justify-between">
+          <div className="w-[100%] lg:w-[50%]">
             <div >
             <FormField
               control={form.control}
@@ -147,7 +147,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
             />
           </div>
           </div>
-          <div className="w-[100%] md:w-[50%]">
+          <div className="w-[100%] lg:w-[50%]">
             <FormField
               control={form.control}
               name="file"

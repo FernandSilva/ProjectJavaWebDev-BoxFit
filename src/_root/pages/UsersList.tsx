@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 function UsersList({
   onSelectUser,
   selectedUser,
+  setSteps
 }: {
   onSelectUser: (user: User) => void;
   selectedUser: User | null;
+  setSteps?: any;
 }) {
   const [users, setUsers] = useState<User[]>([]);
 
@@ -37,7 +39,7 @@ function UsersList({
   }, []);
 
   return (
-    <div className="users-list">
+    <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%] ">
       <div className="flex items-center py-4 border-b  justify-between">
         <h2 className="font-bold text-2xl">Chats</h2>
         <svg
@@ -83,7 +85,10 @@ function UsersList({
       {users.map((user) => (
         <div
           key={user.$id}
-          onClick={() => onSelectUser(user)}
+          onClick={() => {
+            onSelectUser(user)
+            setSteps(1)
+          }}
           className={`user-item ${user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"} flex items-center gap-4`}
         >
           <img src={user.imageUrl} className="w-8 h-8 rounded-full" alt="" />

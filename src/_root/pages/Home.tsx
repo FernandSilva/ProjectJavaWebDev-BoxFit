@@ -55,7 +55,7 @@ const Home = () => {
       </div>
 
             {/* Chatbot trigger icon */}
-            <div className="chatbot-container">
+            <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-3">
         <img src= "/assets/icons/GrowB.jpeg" alt="Open Chatbot" className="chatbot-trigger"
           onClick={() => setShowChatbot(!showChatbot)} />
         {showChatbot && <Chatbot />}

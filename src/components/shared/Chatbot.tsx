@@ -1,9 +1,13 @@
+import { useUserContext } from "@/context/AuthContext";
 import { useState } from "react";
+import { IoIosSend } from "react-icons/io";
+import { IoMdClose } from "react-icons/io";
 // import { openai } from '@/lib/openai';  // Uncomment and adjust according to your actual import
 
 const Chatbot = () => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<any>([]);
+  const { user } = useUserContext();
   const [isOpen, setIsOpen] = useState(false); // State to handle the chatbox visibility
 
   const toggleChat = () => setIsOpen(!isOpen); // Function to toggle chat visibility
@@ -62,30 +66,64 @@ const Chatbot = () => {
         />
       </div>
       <div className="chatbox">
+        <div className="w-[100%] h-[5px] bg-green-400"></div>
+        <div className="flex justify-between  p-[10px] border-b border-solid">
+          <div>
+            <p className="text-[#100f0f] text-[12px] font-semibold">
+              GrowBuddy Assistant
+            </p>
+          </div>
+          <div>
+            <IoMdClose onClick={handleBackClick} />
+          </div>
+        </div>
         <div className="messages">
-          {messages.map((msg: any, index: any) => (
-            <div key={index} className={`message ${msg.role}`}>
-              {msg.content}
+          {messages.map((message: any, index: any) => (
+            // <div key={index} className={`message ${msg.role}`}>
+            //   {msg.content}
+            // </div>
+            <div
+              key={message.$id}
+              className={`${message.userId === user.id ? "flex-row-reverse justify-start" : " flex-row"} flex items-center w-full gap-2`}
+            >
+              {/* <img
+                       src={user?.imageUrl}
+                       className="w-6 h-6 rounded-full"
+                     /> */}
+              <div className="message !py-[5px]">
+                <span className="text-[12px] ">{message.content}</span>
+              </div>
             </div>
           ))}
         </div>
-        <input
-          type="text"
-          value={input}
-          onChange={handleInputChange}
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Ask me anything..."
-        />
-        <div
+        <div className="flex items-center py-[15px] border-t border-solid bg-white gap-2 px-[10px]">
+          <input
+            type="text"
+            value={input}
+            onChange={handleInputChange}
+            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            placeholder="Ask me anything..."
+            className="border border-solid  py-[2px] pl-[10px] rounded-[10px] w-[100%]"
+          />
+          <IoIosSend className="text-[20px]" onClick={sendMessage} />
+        </div>
+        {/* <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            padding: 20,
+            padding: "10px 20px",
           }}
         >
-          <button onClick={sendMessage}>Send</button>
-          <button onClick={handleBackClick}>Back</button>
-        </div>
+          <button className="hover:bg-green-100 border border-solid border-gray-300 pt-[6px] pb-[6px]">
+            Send
+          </button>
+          <button
+            
+            className="hover:bg-green-100 border border-solid border-gray-300 pt-[6px] pb-[6px]"
+          >
+            Back
+          </button>
+        </div> */}
       </div>
     </div>
   );
