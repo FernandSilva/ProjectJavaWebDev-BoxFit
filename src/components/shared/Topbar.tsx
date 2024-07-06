@@ -12,7 +12,7 @@ const Topbar = () => {
           <img
             src="/assets/images/logo5.jpg"
             alt="logo"
-            width={200}
+            width={160}
             height={40}
           />
         </Link>

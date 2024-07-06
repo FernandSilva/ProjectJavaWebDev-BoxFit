@@ -3,11 +3,13 @@ import { useState } from 'react';
 // import { useToast } from "@/components/ui/use-toast";
 import { Chatbot, Loader, PostCard, UserCard } from "@/components/shared";
 import { useGetRecentPosts, useGetUsers } from "@/lib/react-query/queries";
-import { Swiper, SwiperSlide } from "swiper/react";
 
 
 const Home = () => {
   // const { toast } = useToast();
+  const toggleChatbot = () => {
+    setShowChatbot(!showChatbot);
+  };
 
   const [showChatbot, setShowChatbot] = useState(false);
 
@@ -55,9 +57,9 @@ const Home = () => {
       </div>
 
             {/* Chatbot trigger icon */}
-            <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-3">
+            <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-5">
         <img src= "/assets/icons/GrowB.jpeg" alt="Open Chatbot" className="chatbot-trigger"
-          onClick={() => setShowChatbot(!showChatbot)} />
+          onClick={toggleChatbot} />
         {showChatbot && <Chatbot />}
       </div>
 

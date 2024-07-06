@@ -50,7 +50,7 @@ const Chatbot = () => {
   };
 
   return (
-    <div className={`chatbot-container ${isOpen ? "open" : ""}`}>
+    <div className={`chatbot-container ${isOpen ? "open" : ""}`} >
       <div className="chatbot-trigger" onClick={toggleChat}>
         <img
           src="/assets/icons/GrowB.jpeg"

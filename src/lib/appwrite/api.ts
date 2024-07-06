@@ -16,7 +16,6 @@ export async function createUserAccount(user: INewUser) {
       user.name
     );
 
-    if (!newAccount) throw Error;
 
     const avatarUrl = avatars.getInitials(user.name);
 
@@ -30,8 +29,7 @@ export async function createUserAccount(user: INewUser) {
 
     return newUser;
   } catch (error) {
-    console.log(error);
-    return error;
+    throw error;
   }
 }
 
@@ -65,6 +63,7 @@ export async function signInAccount(user: { email: string; password: string }) {
     return session;
   } catch (error) {
     console.log(error);
+    throw error;
   }
 }
 
@@ -552,7 +551,7 @@ export async function followUser(userId: string, followsUserId: string) {
     // Ensure you have a correct setup for ID.unique() or adjust it as necessary
     return await databases.createDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.userRelationshipsCollectionId, 
+      appwriteConfig.userRelationshipsCollectionId,
       ID.unique(),
       { userId, followsUserId }
     );
@@ -590,7 +589,10 @@ export async function getUserRelationships(userId: string) {
       [Query.equal("userId", userId)]
     );
 
-    const [followers, following] = await Promise.all([followersPromise, followingPromise]);
+    const [followers, following] = await Promise.all([
+      followersPromise,
+      followingPromise,
+    ]);
 
     return {
       followers: followers.total,
@@ -608,11 +610,14 @@ export async function checkFollowStatus(userId: string, followsUserId: string) {
     const response = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userRelationshipsCollectionId,
-      [Query.equal('userId', userId), Query.equal('followsUserId', followsUserId)]
+      [
+        Query.equal("userId", userId),
+        Query.equal("followsUserId", followsUserId),
+      ]
     );
     return response.documents.length > 0 ? response.documents[0] : null;
   } catch (error) {
-    console.error('Failed to check follow status:', error);
+    console.error("Failed to check follow status:", error);
     return null;
   }
 }
@@ -636,7 +641,13 @@ export const getCommentsByPostId = async (postId: string) => {
 };
 
 // Create a new comment
-export const createComment = async ({ postId, userId, text, userImageUrl, userName }) => {
+export const createComment = async ({
+  postId,
+  userId,
+  text,
+  userImageUrl,
+  userName,
+}) => {
   try {
     const response = await databases.createDocument(
       appwriteConfig.databaseId,
@@ -646,8 +657,8 @@ export const createComment = async ({ postId, userId, text, userImageUrl, userNa
         postId,
         userId,
         text,
-        userImageUrl,  // Ensure this is correctly passed
-        userName,      // Ensure this is correctly passed
+        userImageUrl, // Ensure this is correctly passed
+        userName, // Ensure this is correctly passed
         createdAt: new Date().toISOString(),
       }
     );
@@ -671,7 +682,7 @@ export const likeComment = async ({ commentId, userId }) => {
     // Increment the likes count and add the userId to the likedBy array
     const updatedComment = {
       likes: comment.likes + 1,
-      likedBy: [...(comment.likedBy || []), userId]
+      likedBy: [...(comment.likedBy || []), userId],
     };
 
     // Update the comment document
@@ -700,7 +711,7 @@ export const unlikeComment = async ({ commentId, userId }) => {
     // Decrement the likes count and remove the userId from the likedBy array
     const updatedComment = {
       likes: comment.likes - 1,
-      likedBy: comment.likedBy.filter(id => id !== userId)
+      likedBy: comment.likedBy.filter((id) => id !== userId),
     };
 
     // Update the comment document
@@ -722,7 +733,7 @@ export const deleteComment = async (commentId: string) => {
     return await databases.deleteDocument(
       appwriteConfig.databaseId,
       appwriteConfig.commentsCollectionId,
-      commentId  // Correct usage of commentId to identify the document
+      commentId // Correct usage of commentId to identify the document
     );
   } catch (error) {
     console.error("Failed to delete comment:", error);
@@ -755,9 +766,9 @@ export async function createMessage({ userId, content, username }) {
     username,
     createdAt: new Date().toISOString(),
     $permissions: {
-        read: ['*'],  // Public read
-        write: ['user:' + userId]  // Only creator can modify
-    }
+      read: ["*"], // Public read
+      write: ["user:" + userId], // Only creator can modify
+    },
   };
 
   try {

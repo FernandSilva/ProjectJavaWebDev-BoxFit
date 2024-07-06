@@ -2,12 +2,21 @@ import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 
 import { Button } from "../ui/button";
+import { useUserContext } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { useFollowStatus } from "@/lib/react-query/queries";
 
 type UserCardProps = {
   user: Models.Document;
 };
 
 const UserCard = ({ user }: UserCardProps) => {
+  const { user: iAm } = useUserContext();
+  const [isFollowing, setIsFollowing] = useState(false);
+  const { data: followStatusData } = useFollowStatus(iAm?.id, user.$id);
+  useEffect(() => {
+    setIsFollowing(!!followStatusData);
+  }, [followStatusData]);
   return (
     <Link to={`/profile/${user.$id}`} className="user-card">
       <div className="flex items-center gap-2">
@@ -26,9 +35,15 @@ const UserCard = ({ user }: UserCardProps) => {
         </p>
       </div>
 
-      <Button type="button" size="sm" className="shad-button_primary px-5">
-        Follow
-      </Button>
+      {user.$id !== iAm.id ? (
+        <Button type="button" size="sm" className="shad-button_primary px-5">
+          {isFollowing ? "UnFollow" : "Follow"}
+        </Button>
+      ) : (
+        <Button type="button" size="sm" className="shad-button_primary px-5">
+          View
+        </Button>
+      )}
     </Link>
   );
 };

@@ -15,7 +15,7 @@ const RootLayout = () => {
       <LeftSidebar />
 
       <section
-        className={`flex flex-1 ${width < 1024 && location.pathname === "/Chat" ? "h-auto" : "h-full"}  text-black`}
+        className={` flex-1 ${width < 640 && location.pathname === "/settings" ? "" : "flex"} ${width < 1024 && location.pathname === "/Chat" ? "h-auto" : "h-full"}  text-black`}
       >
         <Outlet />
       </section>

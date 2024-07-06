@@ -1,8 +1,10 @@
-import * as z from "zod";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
+import * as z from "zod";
 
+import Loader from "@/components/shared/Loader";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,21 +14,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Loader from "@/components/shared/Loader";
-import { useToast } from "@/components/ui/use-toast";
 
-import { SigninValidation } from "@/lib/validation";
-import { useSignInAccount } from "@/lib/react-query/queries";
 import { useUserContext } from "@/context/AuthContext";
+import { useSignInAccount } from "@/lib/react-query/queries";
+import { SigninValidation } from "@/lib/validation";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const SigninForm = () => {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const navigate = useNavigate();
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
   // Query
-  const { mutateAsync: signInAccount, isLoading } = useSignInAccount();
+  const { mutateAsync: signInAccount, isLoading, error } = useSignInAccount();
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
@@ -37,24 +38,25 @@ const SigninForm = () => {
   });
 
   const handleSignin = async (user: z.infer<typeof SigninValidation> | any) => {
-    const session = await signInAccount(user);
+    try {
+      const session = await signInAccount(user);
 
-    if (!session) {
-      toast({ title: "Login failed. Please try again." });
+      if (!session) {
+        throw new Error("Login failed. Please try again.");
+      }
 
-      return;
-    }
+      const isLoggedIn = await checkAuthUser();
 
-    const isLoggedIn = await checkAuthUser();
-
-    if (isLoggedIn) {
-      form.reset();
-
-      navigate("/");
-    } else {
-      toast({ title: "Login failed. Please try again." });
-
-      return;
+      if (isLoggedIn) {
+        form.reset();
+        navigate("/");
+      } else {
+        throw new Error("Login failed. Please try again.");
+      }
+    } catch (error) {
+      toast.error(error.response.message, {
+        position: "bottom-center"
+      });
     }
   };
 
@@ -85,7 +87,7 @@ const SigninForm = () => {
                   />
                 </FormControl>
                 {error && (
-                  <FormMessage className="form-message">
+                  <FormMessage className="text-red text-[12px]">
                     {error.message} // Display the error message conditionally
                   </FormMessage>
                 )}
@@ -107,7 +109,7 @@ const SigninForm = () => {
                   />
                 </FormControl>
                 {error && (
-                  <FormMessage className="form-message1">
+                  <FormMessage className="text-red text-[12px]">
                     {error.message} // Display the error message conditionally
                   </FormMessage>
                 )}
@@ -124,7 +126,7 @@ const SigninForm = () => {
               "Log in"
             )}
           </Button>
-
+          
           <p className="text-small-regular text-light-3 text-center mt-2">
             Don&apos;t have an account?
             <Link
@@ -135,6 +137,7 @@ const SigninForm = () => {
             </Link>
           </p>
         </form>
+        <ToastContainer />
       </div>
     </Form>
   );

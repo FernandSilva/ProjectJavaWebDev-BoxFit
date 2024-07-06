@@ -8,235 +8,277 @@ import NotificationSetting from "@/components/settingpages/NotificationSetting";
 import PrivacySetting from "@/components/settingpages/PrivacySetting";
 import ProfileSetting from "@/components/settingpages/ProfileSetting";
 import SecuritySetting from "@/components/settingpages/SecuritySetting";
-import React, { useState } from "react";
+import { useWindowSize } from "@uidotdev/usehooks";
+import { useState } from "react";
+import { CgProfile } from "react-icons/cg";
+import { FaShieldAlt } from "react-icons/fa";
+import { IoNotificationsOutline } from "react-icons/io5";
+import { MdOutlineSecurity } from "react-icons/md";
+import { FaMobileScreen } from "react-icons/fa6";
+import { BiSupport } from "react-icons/bi";
+import { IoSettingsOutline } from "react-icons/io5";
+import { FaBookOpen } from "react-icons/fa";
+import { MdOutlineWbSunny } from "react-icons/md";
 
 const Settings = () => {
-  const [theme, setTheme] = useState("light");
-  const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
-  const [profileVisibility, setProfileVisibility] = useState("public");
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [smsNotifications, setSmsNotifications] = useState(false);
-  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
-  const [loginAlerts, setLoginAlerts] = useState(true);
-  const [fontSize, setFontSize] = useState("medium");
-  const [language, setLanguage] = useState("en");
-  const [contentPreferences, setContentPreferences] = useState("popular");
-  const [muteWords, setMuteWords] = useState("");
-  const [autoplayVideos, setAutoplayVideos] = useState(true);
+  const { width } = useWindowSize();
   const [Steps, setSteps] = useState<string>("accountsetting");
-
-  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setTheme(e.target.value);
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setPassword(e.target.value);
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setEmail(e.target.value);
-  const handleProfileVisibilityChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => setProfileVisibility(e.target.value);
-  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setFontSize(e.target.value);
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
-    setLanguage(e.target.value);
-  const handleContentPreferencesChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => setContentPreferences(e.target.value);
-  const handleMuteWordsChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setMuteWords(e.target.value);
-
-  const [openSections, setOpenSections] = useState<string[]>([]);
-
-  const toggleSection = (section: string) => {
-    setOpenSections((prevSections) =>
-      prevSections.includes(section)
-        ? prevSections.filter((s) => s !== section)
-        : [...prevSections, section]
-    );
-  };
+  const [MobileSteps, setMobileSteps] = useState<number>(0);
 
   return (
-    <div className="flex w-[100%]">
-      <div className="settings-container border-r border-solid w-[20%]">
-        <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
-          Settings
-        </h2>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => setSteps("accountsetting")}
-          >
-            Account Settings
-          </h3>
-          {openSections.includes("account") && (
-            <div className="settings-content">
-              <div className="settings-item">
-                <label className="settings-label">Change Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className="settings-input"
-                />
-              </div>
-              <div className="settings-item">
-                <label className="settings-label">Update Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  className="settings-input"
-                />
-              </div>
-              <div className="settings-item">
-                <button className="settings-button">Delete Account</button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              setSteps("profilesetting");
-            }}
-          >
-            Profile Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => setSteps("privacysetting")}
-          >
-            Privacy Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              toggleSection("notifications");
-              setSteps("notificationsetting");
-            }}
-          >
-            Notification Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              setSteps("securitysetting");
-            }}
-          >
-            Security Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              toggleSection("appearance");
-              setSteps("appearancesetting");
-            }}
-          >
-            Appearance Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              toggleSection("content");
-              setSteps("contentsetting");
-            }}
-          >
-            Content Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {
-              setSteps("connectionsetting");
-            }}
-          >
-            Connection Settings
-          </h3>
-        </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {toggleSection("general")
-              setSteps("generalsetting")
-            }}
-          >
-            General Settings
-          </h3>
-          {openSections.includes("general") && (
-            <div className="settings-content">
-              <div className="settings-item">
-                <label htmlFor="language-select" className="settings-label">
-                  Language
-                </label>
-                <select
-                  id="language-select"
-                  value={language}
-                  onChange={handleLanguageChange}
-                  className="settings-select"
+    <>
+      {width < 640 && (
+        <div className="">
+          {MobileSteps === 0 && (
+            <div className="settings-container  w-[100%] !py-0">
+              <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
+                Settings
+              </h2>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("accountsetting");
+                    setMobileSteps(1);
+                  }}
                 >
-                  <option value="en">English</option>
-                  <option value="es">German</option>
-                  {/* Add more languages as needed */}
-                </select>
+                  <CgProfile /> Account Settings
+                </h3>
               </div>
-              <div className="settings-item">
-                <label className="settings-label">Time Zone</label>
-                <input type="text" className="settings-input" />
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("profilesetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <IoSettingsOutline /> Profile Settings
+                </h3>
               </div>
-              <div className="settings-item">
-                <label className="settings-label">Date and Time Format</label>
-                <input type="text" className="settings-input" />
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("privacysetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <FaShieldAlt className="text-[18px]" /> Privacy Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("notificationsetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <IoNotificationsOutline /> Notification Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("securitysetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <MdOutlineSecurity /> Security Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("appearancesetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <MdOutlineWbSunny className="text-[22px]" /> Appearance
+                  Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("contentsetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <FaBookOpen /> Content Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("connectionsetting");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <FaMobileScreen /> Connection Settings
+                </h3>
+              </div>
+              <div className="settings-section">
+                <h3
+                  className="flex gap-[6px] items-center settings-subtitle hover:text-green-500"
+                  onClick={() => {
+                    setSteps("helpandsupport");
+                    setMobileSteps(1);
+                  }}
+                >
+                  <BiSupport /> Help & Support
+                </h3>
               </div>
             </div>
           )}
+          {MobileSteps === 1 && (
+            <div className="">
+              {Steps === "accountsetting" && (
+                <AccountSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "profilesetting" && (
+                <ProfileSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "privacysetting" && (
+                <PrivacySetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "notificationsetting" && (
+                <NotificationSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "securitysetting" && (
+                <SecuritySetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "appearancesetting" && (
+                <AppearanceSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "contentsetting" && (
+                <ContentSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "connectionsetting" && (
+                <ConnectionSetting setSteps={setMobileSteps} />
+              )}
+              {Steps === "helpandsupport" && (
+                <HelpAndSupport setSteps={setMobileSteps} />
+              )}
+            </div>
+          )}
         </div>
-
-        <div className="settings-section">
-          <h3
-            className="settings-subtitle hover:text-green-500"
-            onClick={() => {toggleSection("help")
-              setSteps("helpandsupport")
-            }}
-          >
-            Help & Support
-          </h3>
+      )}
+      {width > 640 && (
+        <div className="flex w-[100%]">
+          <div className="mt-[15px] py-4 border-r border-solid w-[30%]">
+            <h2 className="h3-bold px-[20px] md:h2-bold text-left w-full border-b border-gray-300 pb-2">
+              Settings
+            </h2>
+            <div className="settings-section">
+              <div
+                className=" flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => setSteps("accountsetting")}
+              >
+                <CgProfile /> Account Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("profilesetting");
+                }}
+              >
+                <IoSettingsOutline /> Profile Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => setSteps("privacysetting")}
+              >
+                <FaShieldAlt className="text-[18px]" /> Privacy Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("notificationsetting");
+                }}
+              >
+                <IoNotificationsOutline /> Notification Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("securitysetting");
+                }}
+              >
+                <MdOutlineSecurity /> Security Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <h3
+                className="flex items-center gap-2 !pl-[18px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("appearancesetting");
+                }}
+              >
+                <MdOutlineWbSunny className="text-[22px]" /> Appearance Settings
+              </h3>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("contentsetting");
+                }}
+              >
+                <FaBookOpen /> Content Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("connectionsetting");
+                }}
+              >
+                <FaMobileScreen /> Connection Settings
+              </div>
+            </div>
+            <div className="settings-section">
+              <div
+                className="flex items-center gap-2 !pl-[20px] settings-subtitle hover:text-green-500"
+                onClick={() => {
+                  setSteps("helpandsupport");
+                }}
+              >
+                <BiSupport /> Help & Support
+              </div>
+            </div>
+          </div>
+          <div className="w-[70%]">
+            {Steps === "accountsetting" && (
+              <AccountSetting setSteps={setSteps} />
+            )}
+            {Steps === "profilesetting" && <ProfileSetting />}
+            {Steps === "privacysetting" && <PrivacySetting />}
+            {Steps === "notificationsetting" && <NotificationSetting />}
+            {Steps === "securitysetting" && <SecuritySetting />}
+            {Steps === "appearancesetting" && <AppearanceSetting />}
+            {Steps === "contentsetting" && <ContentSetting />}
+            {Steps === "connectionsetting" && <ConnectionSetting />}
+            {Steps === "generalsetting" && <GeneralSetting />}
+            {Steps === "helpandsupport" && <HelpAndSupport />}
+          </div>
         </div>
-      </div>
-      <div className="w-[80%]">
-        {Steps === "accountsetting" && <AccountSetting setSteps={setSteps} />}
-        {Steps === "profilesetting" && <ProfileSetting />}
-        {Steps === "privacysetting" && <PrivacySetting />}
-        {Steps === "notificationsetting" && <NotificationSetting />}
-        {Steps === "securitysetting" && <SecuritySetting />}
-        {Steps === "appearancesetting" && <AppearanceSetting />}
-        {Steps === "contentsetting" && <ContentSetting />}
-        {Steps === "connectionsetting" && <ConnectionSetting />}
-        {Steps==="generalsetting"&&<GeneralSetting />}
-        {Steps==="helpandsupport"&&<HelpAndSupport />}
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
