@@ -1,10 +1,8 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import Loader from "@/components/shared/Loader";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,17 +12,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { Button } from "@/components/ui/button";
+import Loader from "@/components/shared/Loader";
+import { useToast } from "@/components/ui/use-toast";
 
-import { useUserContext } from "@/context/AuthContext";
 import {
   useCreateUserAccount,
   useSignInAccount,
 } from "@/lib/react-query/queries";
 import { SignupValidation } from "@/lib/validation";
+import { useUserContext } from "@/context/AuthContext";
 
 const SignupForm = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
@@ -47,13 +47,16 @@ const SignupForm = () => {
   // Handler
   const handleSignup = async (user: z.infer<typeof SignupValidation | any>) => {
     try {
-
+      const newUser = await createUserAccount(user);
+      console.log(newUser);
       const session = await signInAccount({
         email: user.email,
         password: user.password,
       });
 
       if (!session) {
+        toast({ title: "Something went wrong. Please login your new account" });
+
         navigate("/sign-in");
 
         return;
@@ -67,9 +70,7 @@ const SignupForm = () => {
         navigate("/");
       }
     } catch (error) {
-      toast.error(error.response.message, {
-        position: "bottom-center",
-      });
+      console.log({ error });
     }
   };
 
@@ -188,7 +189,6 @@ const SignupForm = () => {
           </p>
         </form>
       </div>
-      <ToastContainer />
     </Form>
   );
 };
