@@ -16,7 +16,6 @@ export async function createUserAccount(user: INewUser) {
       user.name
     );
 
-
     const avatarUrl = avatars.getInitials(user.name);
 
     const newUser = await saveUserToDB({
@@ -120,11 +119,12 @@ export async function createPost(post: INewPost) {
   try {
     // Upload file to appwrite storage
     const uploadedFile = await uploadFile(post.file[0]);
-
+    console.log({ uploadedFile });
     if (!uploadedFile) throw Error;
 
     // Get file url
     const fileUrl = getFilePreview(uploadedFile.$id);
+    console.log({fileUrl})
     if (!fileUrl) {
       await deleteFile(uploadedFile.$id);
       throw Error;
@@ -177,14 +177,7 @@ export async function uploadFile(file: File) {
 // ============================== GET FILE URL
 export function getFilePreview(fileId: string) {
   try {
-    const fileUrl = storage.getFilePreview(
-      appwriteConfig.storageId,
-      fileId,
-      2000,
-      2000,
-      "top",
-      100
-    );
+    const fileUrl = storage.getFileDownload(appwriteConfig.storageId, fileId);
 
     if (!fileUrl) throw Error;
 
@@ -609,13 +602,11 @@ export async function getUserRelationshipsList(userId: string) {
     const followResponse = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userRelationshipsCollectionId,
-      [
-        Query.equal("userId", userId)
-      ]
+      [Query.equal("userId", userId)]
     );
-
-    const followsUserIds = followResponse.documents.map(doc => doc.followsUserId);
-
+    const followsUserIds = followResponse.documents.map(
+      (doc) => doc.followsUserId
+    );
     // Step 2: Fetch user data for each followsUserId
     const usersData = [];
     for (const followsUserId of followsUserIds) {
@@ -626,11 +617,72 @@ export async function getUserRelationshipsList(userId: string) {
       );
       usersData.push(userResponse);
     }
-
     return usersData;
-
   } catch (error) {
     console.error("Failed to get the list of users I follow:", error);
+    return [];
+  }
+}
+// export async function getFollowers(userId: string) {
+//   try {
+//     // Step 1: Get the list of userIds who follow the given userId
+//     const followResponse = await databases.listDocuments(
+//       appwriteConfig.databaseId,
+//       appwriteConfig.userRelationshipsCollectionId,
+//       [
+//         Query.equal("UserId", userId)
+//       ]
+//     );
+
+//     const followerUserIds = followResponse.documents.map(doc => doc.followsUserId);
+//    console.log(followerUserIds)
+
+//     // Step 2: Fetch user data for each followerUserId
+//     const usersData = [];
+//     for (const followerUserId of followerUserIds) {
+//       const userResponse = await databases.getDocument(
+//         appwriteConfig.databaseId,
+//         appwriteConfig.userCollectionId,
+//         followerUserId
+//       );
+//       usersData.push(userResponse);
+//     }
+
+//     return usersData;
+
+//   } catch (error) {
+//     console.error("Failed to get the list of followers:", error);
+//     return [];
+//   }
+// }
+export async function getFollowers(userId: string) {
+  try {
+    // Step 1: Get the list of userIds who follow the given userId
+    const followResponse = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userRelationshipsCollectionId,
+      [
+        Query.equal("followsUserId", userId), // Ensure this matches the field name in your database
+      ]
+    );
+
+    const followerUserIds = followResponse.documents.map((doc) => doc.userId);
+    console.log("Follower User IDs:", followerUserIds);
+
+    // Step 2: Fetch user data for each followerUserId
+    const usersData = [];
+    for (const followerUserId of followerUserIds) {
+      const userResponse = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId, // Ensure this matches the correct collection ID
+        followerUserId
+      );
+      usersData.push(userResponse);
+    }
+
+    return usersData;
+  } catch (error) {
+    console.error("Failed to get the list of followers:", error);
     return [];
   }
 }

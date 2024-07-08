@@ -336,6 +336,15 @@ export const useGetUserRelationshipsList = (userId: string) => {
     }
   );
 };
+export const useGetUserRelationshipsFollowersList = (userId: string) => {
+  return useQuery(
+    [QUERY_KEYS.GET_USER_RELATIONSHIPS_FOLLOWERSLIST, userId],
+    () => api.getFollowers(userId),
+    {
+      enabled: !!userId, // Only runs if userId is truthy
+    }
+  );
+};
 // Hook for following a user
 export const useFollowUser = () => {
   const queryClient = useQueryClient();

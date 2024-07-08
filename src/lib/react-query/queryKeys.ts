@@ -19,6 +19,7 @@ export enum QUERY_KEYS {
   UNFOLLOW_USER = "unfollowUser",
   GET_USER_RELATIONSHIPS = "getUserRelationships",
   GET_USER_RELATIONSHIPS_LIST = "getUserRelationshipsList",
+  GET_USER_RELATIONSHIPS_FOLLOWERSLIST = "getFollowers",
   // COMMENTS KEYS
   GET_COMMENTS_BY_POST = "getCommentsByPost",
   CREATE_COMMENT = "createComment",

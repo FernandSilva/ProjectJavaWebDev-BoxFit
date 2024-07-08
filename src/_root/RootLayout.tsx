@@ -7,7 +7,6 @@ import { useWindowSize } from "@uidotdev/usehooks";
 
 const RootLayout = () => {
   const location = useLocation();
-  console.log({ location });
   const { width } = useWindowSize();
   return (
     <div className="w-full md:flex">

@@ -22,6 +22,7 @@ import {
   useParams,
 } from "react-router-dom";
 import Following from "./Following";
+import Follower from "./Follower";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -286,12 +287,14 @@ const Profile = () => {
           index
           element={<GridPostList posts={currentUser.posts} showUser={false} />}
         />
-        {currentUser.$id === user.id && (
+        
           <>
             <Route path="/liked-posts" element={<LikedPosts />} />
             <Route path="/following" element={<Following />} />
+            <Route path="/followers" element={<Follower />} />
+
           </>
-        )}
+       
       </Routes>
       <Outlet />
     </div>

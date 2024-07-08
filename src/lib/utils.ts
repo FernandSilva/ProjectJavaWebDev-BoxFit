@@ -5,7 +5,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export const convertFileToUrl = (file: File) => URL.createObjectURL(file);
+export const convertFileToUrl = (file: File) => {
+  const url = URL.createObjectURL(file);
+  return { url, type: file.type };
+};
 
 export function formatDateString(dateString: string) {
   const options: Intl.DateTimeFormatOptions = {

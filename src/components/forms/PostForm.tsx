@@ -49,6 +49,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
   // Handler
   const handleSubmit = async (value: z.infer<typeof PostValidation>) => {
     // ACTION = UPDATE
+    console.log({ value });
     if (post && action === "Update") {
       const updatedPost = await updatePost({
         ...value,
@@ -87,65 +88,65 @@ const PostForm = ({ post, action }: PostFormProps) => {
       >
         <div className="flex flex-col lg:flex-row items-start gap-4 md:gap-8 justify-between">
           <div className="w-[100%] lg:w-[50%]">
-            <div >
-            <FormField
-              control={form.control}
-              name="caption"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="shad-form_label">Caption</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Write Caption Here"
-                      className="shad-textarea custom-scrollbar"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="shad-form_message" />
-                </FormItem>
-              )}
-            />
+            <div>
+              <FormField
+                control={form.control}
+                name="caption"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-form_label">Caption</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Write Caption Here"
+                        className="shad-textarea custom-scrollbar"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-form_message" />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="shad-form_label">City</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Add City"
-                      type="text"
-                      className="shad-input"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="shad-form_message" />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-form_label">City</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Add City"
+                        type="text"
+                        className="shad-input"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-form_message" />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="shad-form_label">
-                    Type of Grow
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Indoor , Greenhouse, Outdoor "
-                      type="text"
-                      className="shad-input"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="shad-form_message" />
-                </FormItem>
-              )}
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="shad-form_label">
+                      Type of Grow
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Indoor , Greenhouse, Outdoor "
+                        type="text"
+                        className="shad-input"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="shad-form_message" />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
           <div className="w-[100%] lg:w-[50%]">
             <FormField
