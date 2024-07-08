@@ -196,12 +196,6 @@ const PostDetails = () => {
                   borderRadius: "50%",
                   transition: "background-color 0.3s",
                 }}
-                // onMouseEnter={(e) =>
-                //   (e.currentTarget.style.backgroundColor = "#D3D3D2")
-                // } // Tailwind green-500
-                // onMouseLeave={(e) =>
-                //   (e.currentTarget.style.backgroundColor = "transparent")
-                // }
               >
                 <MdAdd />
               </div>

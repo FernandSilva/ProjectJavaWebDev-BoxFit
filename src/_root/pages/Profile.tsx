@@ -21,6 +21,7 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import Following from "./Following";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -30,11 +31,12 @@ const Profile = () => {
   const { pathname } = useLocation();
   const { data: currentUser } = useGetUserById(id || "");
   const { data: userRelationships } = useGetUserRelationships(id);
+
   const { mutate: signOut } = useSignOutAccount();
   const isOwnProfile = user?.id === currentUser?.$id;
 
   const { data: followStatusData } = useFollowStatus(user?.id, profileId);
-  console.log({followStatusData})
+
   const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
@@ -91,7 +93,7 @@ const Profile = () => {
     );
 
   return (
-    <div className="profile-container">
+    <div className="profile-container ">
       <div className=" flex flex-col xl:flex-row  max-xl:items-center  lg:gap-7 lg:justify-between">
         <div className="flex lg:gap-6 gap-2">
           <img
@@ -285,7 +287,10 @@ const Profile = () => {
           element={<GridPostList posts={currentUser.posts} showUser={false} />}
         />
         {currentUser.$id === user.id && (
-          <Route path="/liked-posts" element={<LikedPosts />} />
+          <>
+            <Route path="/liked-posts" element={<LikedPosts />} />
+            <Route path="/following" element={<Following />} />
+          </>
         )}
       </Routes>
       <Outlet />

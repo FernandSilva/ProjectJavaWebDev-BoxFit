@@ -603,6 +603,37 @@ export async function getUserRelationships(userId: string) {
     throw error;
   }
 }
+export async function getUserRelationshipsList(userId: string) {
+  try {
+    // Step 1: Get the list of followsUserId for the given userId
+    const followResponse = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userRelationshipsCollectionId,
+      [
+        Query.equal("userId", userId)
+      ]
+    );
+
+    const followsUserIds = followResponse.documents.map(doc => doc.followsUserId);
+
+    // Step 2: Fetch user data for each followsUserId
+    const usersData = [];
+    for (const followsUserId of followsUserIds) {
+      const userResponse = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.userCollectionId,
+        followsUserId
+      );
+      usersData.push(userResponse);
+    }
+
+    return usersData;
+
+  } catch (error) {
+    console.error("Failed to get the list of users I follow:", error);
+    return [];
+  }
+}
 
 // Function to check if one user is following another
 export async function checkFollowStatus(userId: string, followsUserId: string) {

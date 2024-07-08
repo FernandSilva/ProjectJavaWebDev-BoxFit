@@ -1,14 +1,24 @@
 import { Models } from "appwrite";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { checkIsLiked } from "@/lib/utils";
+import { useUserContext } from "@/context/AuthContext";
 import {
+  useCreateComment,
+  useDeleteComment,
+  useDeleteSavedPost,
+  useGetCommentsByPost,
+  useGetCurrentUser,
+  useLikeComment,
   useLikePost,
   useSavePost,
-  useDeleteSavedPost,
-  useGetCurrentUser,
+  useUnlikeComment,
 } from "@/lib/react-query/queries";
+import { checkIsLiked } from "@/lib/utils";
+import { CiBookmark } from "react-icons/ci";
+import { FaRegComment } from "react-icons/fa";
+import { IoMdSend } from "react-icons/io";
+import { IoBookmark } from "react-icons/io5";
 
 type PostStatsProps = {
   post: Models.Document;
@@ -17,7 +27,20 @@ type PostStatsProps = {
 
 const PostStats = ({ post, userId }: PostStatsProps) => {
   const location = useLocation();
+  const likeCommentMutation = useLikeComment();
+  const unlikeCommentMutation = useUnlikeComment();
+  const deleteCommentMutation = useDeleteComment();
+  const createCommentMutation = useCreateComment();
+
   const likesList = post.likes.map((user: Models.Document) => user.$id);
+  
+  const [inputText, setInputText] = useState("");
+  const [showCommentBox, setShowCommentBox] = useState<boolean>(false);
+
+  const { user } = useUserContext();
+
+  const { data: commentsData } = useGetCommentsByPost(post.$id);
+  const comments = commentsData?.documents || [];
 
   const [likes, setLikes] = useState<string[]>(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -31,6 +54,9 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const savedPostRecord = currentUser?.save.find(
     (record: Models.Document) => record.post.$id === post.$id
   );
+  const handleInputChange = (event) => {
+    setInputText(event.target.value);
+  };
 
   useEffect(() => {
     setIsSaved(!!savedPostRecord);
@@ -53,9 +79,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     likePost({ postId: post.$id, likesArray });
   };
 
-  const handleSavePost = (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>
-  ) => {
+  const handleSavePost = (e: any) => {
     e.stopPropagation();
 
     if (savedPostRecord) {
@@ -66,41 +90,186 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     savePost({ userId: userId, postId: post.$id });
     setIsSaved(true);
   };
+  const handleSend = () => {
+    if (inputText.trim()) {
+      createCommentMutation.mutate(
+        {
+          postId: post.$id,
+          userId: user?.id,
+          text: inputText,
+          userImageUrl: user?.imageUrl,
+          userName: user?.name,
+        },
+        {
+          onSuccess: () => setInputText(""), // Clear input after successful comment creation
+        }
+      );
+    }
+  };
 
   const containerStyles = location.pathname.startsWith("/profile")
     ? "w-full"
     : "";
+  const handleToggleLikeComment = (commentId, liked) => {
+    if (liked) {
+      unlikeCommentMutation.mutate({ commentId, userId: user.id });
+    } else {
+      likeCommentMutation.mutate({ commentId, userId: user.id });
+    }
+  };
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      handleSend();
+    }
+  };
+  const sendbutton = () => {
+    if (inputText.trim().length === 0) {
+      return;
+    } else {
+      handleSend();
+    }
+  };
 
   return (
-    <div
-      className={`flex justify-between items-center z-20 ${containerStyles}`}>
-      <div className="flex gap-2 mr-5">
-        <img
-          src={`${
-            checkIsLiked(likes, userId)
-              ? "/assets/icons/liked.svg"
-              : "/assets/icons/like.svg"
-          }`}
-          alt="like"
-          width={20}
-          height={20}
-          onClick={(e) => handleLikePost(e)}
-          className="cursor-pointer"
-        />
-        <p className="small-medium lg:base-medium">{likes.length}</p>
-      </div>
+    <>
+      <div
+        className={`flex justify-between items-center z-20 ${containerStyles}`}
+      >
+        <div className="flex gap-6 mr-5">
+          <div className="flex gap-1">
+            <img
+              src={`${
+                checkIsLiked(likes, userId)
+                  ? "/assets/icons/liked.svg"
+                  : "/assets/icons/like.svg"
+              }`}
+              alt="like"
+              width={20}
+              height={20}
+              onClick={(e) => handleLikePost(e)}
+              className="cursor-pointer"
+            />
+            <p className="small-medium lg:base-medium">{likes.length}</p>
+          </div>
+          <div className="flex gap-1">
+            <FaRegComment
+              className="w-[26px] h-[22px] cursor-pointer"
+              onClick={() => setShowCommentBox(!showCommentBox)}
+            />
+            <p className="small-medium lg:base-medium">{comments.length}</p>
+          </div>
+        </div>
 
-      <div className="flex gap-2">
-        <img
+        <div className="flex gap-2">
+          {isSaved ? (
+            <CiBookmark
+              className="w-[26px] h-[24px] cursor-pointer "
+              onClick={(e) => handleSavePost(e)}
+            />
+          ) : (
+            <IoBookmark
+              className="w-[26px] h-[24px] cursor-pointer"
+              onClick={(e) => handleSavePost(e)}
+            />
+          )}
+
+          {/* <img
           src={isSaved ? "/assets/icons/saved.svg" : "/assets/icons/save.svg"}
           alt="share"
           width={20}
           height={20}
           className="cursor-pointer"
           onClick={(e) => handleSavePost(e)}
-        />
+        /> */}
+        </div>
       </div>
-    </div>
+      {showCommentBox && (
+        <div className="comments-section mt-4">
+          {comments.map((comment, index) => {
+            const liked = comment.likedBy.includes(user.id);
+            return (
+              <div
+                key={index}
+                className="comment-item flex items-center gap-3 mb-3"
+              >
+                <img
+                  src={
+                    comment.userImageUrl ||
+                    "/assets/icons/profile-placeholder.svg"
+                  }
+                  alt={comment.userName}
+                  className="h-7 w-7 rounded-full"
+                />
+                <div className="comment-content  p-2 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold">
+                          {comment.userName}:
+                        </p>
+                      </div>
+                      <p className="text-sm">{comment.text}</p>
+                    </div>
+                    <div
+                      onClick={() =>
+                        handleToggleLikeComment(comment.$id, liked)
+                      }
+                      className={`text-${liked ? "red" : "green"}-500 hover:text-${liked ? "red" : "green"}-700 transition duration-150 cursor-pointer`}
+                    >
+                      <img
+                        src={`/assets/icons/${liked ? "unlike" : "liked"}.svg`}
+                        alt={liked ? "Unlike" : "Like"}
+                        width={16}
+                        height={16}
+                      />
+                    </div>
+                  </div>
+                  {comment.userId === user.id && (
+                    <div className="flex items-center gap-2 cursor-pointer">
+                      <div
+                        className="text-xs text-gray-800 mt-1"
+                        onClick={() =>
+                          deleteCommentMutation.mutate(comment.$id)
+                        }
+                      >
+                        Edit
+                      </div>
+                      <div
+                        className="text-xs text-red mt-1"
+                        onClick={() =>
+                          deleteCommentMutation.mutate(comment.$id)
+                        }
+                      >
+                        Delete
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex items-center gap-3 mt-3">
+            <img
+              src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+              alt={user.name}
+              className="h-7 w-7 rounded-full"
+            />
+            <input
+              type="text"
+              value={inputText}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Write a comment..."
+              className="flex-1 p-2 border border-gray-300 !text-sm rounded-lg"
+            />
+            <IoMdSend
+              className="w-[26px] h-[24px] cursor-pointer "
+              onClick={sendbutton}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

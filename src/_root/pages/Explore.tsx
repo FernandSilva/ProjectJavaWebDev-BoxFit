@@ -182,7 +182,7 @@ const Explore = ({ userId }: { userId: string }) => {
           >
             
             
-            <Select options={options} className="w-[100%]"/>
+            <Select options={options} className="w-[100%]" onChange={(e)=>setFilter(e.value)}/>
           </div>
         </div>
 

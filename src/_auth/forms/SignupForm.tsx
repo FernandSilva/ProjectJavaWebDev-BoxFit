@@ -47,7 +47,6 @@ const SignupForm = () => {
   // Handler
   const handleSignup = async (user: z.infer<typeof SignupValidation | any>) => {
     try {
-      const newUser = await createUserAccount(user);
 
       const session = await signInAccount({
         email: user.email,

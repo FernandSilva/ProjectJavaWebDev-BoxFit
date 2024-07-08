@@ -78,7 +78,7 @@ const Chatbot = () => {
           </div>
         </div>
         <div className="messages">
-          {messages.map((message: any, index: any) => (
+          {messages.map((message: any) => (
             // <div key={index} className={`message ${msg.role}`}>
             //   {msg.content}
             // </div>

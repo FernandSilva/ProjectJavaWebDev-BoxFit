@@ -2,8 +2,8 @@ import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 
 import { PostStats } from "@/components/shared";
-import { multiFormatDateString } from "@/lib/utils";
 import { useUserContext } from "@/context/AuthContext";
+import { multiFormatDateString } from "@/lib/utils";
 
 type PostCardProps = {
   post: Models.Document;
@@ -12,8 +12,8 @@ type PostCardProps = {
 const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
 
-  if (!post.creator) return;
 
+  if (!post.creator) return;
   return (
     <div className="post-card">
       <div className="flex-between">
