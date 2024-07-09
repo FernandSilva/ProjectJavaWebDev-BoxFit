@@ -39,9 +39,9 @@ const Home = () => {
 
   return (
     <div className="flex flex-1">
-      <div className="home-container">
-        <div className="home-posts">
-        <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">Feed</h2>
+      <div className="home-container ">
+        <div className="home-posts max-w-[350px] md:max-w-screen-sm">
+        <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2 overflow-x-hidden">Feed</h2>
           {isPostLoading && !posts ? (
             <Loader />
           ) : (

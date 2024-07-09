@@ -1,3 +1,6 @@
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import { A11y } from "swiper/modules";
 import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 
@@ -5,8 +8,6 @@ import { PostStats } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
 import { multiFormatDateString } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { A11y } from "swiper/modules";
 
 type PostCardProps = {
   post: Models.Document;
@@ -15,7 +16,6 @@ type PostCardProps = {
 const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
   const videoRefs = useRef([]);
-  console.log({ post });
   useEffect(() => {
     videoRefs.current.forEach((videoRef) => {
       if (videoRef) {
@@ -61,7 +61,7 @@ const PostCard = ({ post }: PostCardProps) => {
   }, [post]);
   if (!post.creator) return;
   return (
-    <div className="post-card">
+    <div className="post-card max-w-[350px] sm:max-w-screen-sm">
       <div className="flex-between">
         <div className="flex items-center gap-3">
           <Link to={`/profile/${post.creator.$id}`}>
@@ -115,31 +115,33 @@ const PostCard = ({ post }: PostCardProps) => {
           ))}
         </ul>
       </div>
-      <Swiper
-        modules={[A11y]}
-        spaceBetween={16}
-        slidesPerView={1}
-        onSwiper={(swiper) => console.log(swiper)}
-        onSlideChange={() => console.log("slide change")}
-      >
-        {post?.imageUrl?.map((url, index) => (
-          <SwiperSlide key={index}>
-            {fileTypes[index] === "video" && (
-              <video
-                className="post-card_img"
-                src={url}
-                autoPlay
-                loop
-                ref={(el) => (videoRefs.current[index] = el)}
-              />
-            )}
-            {fileTypes[index] === "image" && (
-              <img className="post-card_img" src={url} alt="File preview" />
-            )}
-            {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      <div>
+        <Swiper
+          modules={[A11y]}
+          spaceBetween={16}
+          slidesPerView={1}
+          onSwiper={(swiper) => console.log(swiper)}
+          onSlideChange={() => console.log("slide change")}
+        >
+          {post?.imageUrl?.map((url, index) => (
+            <SwiperSlide key={index} style={{ width: "100%" }}>
+              {fileTypes[index] === "video" && (
+                <video
+                  className="post-card_img"
+                  src={url}
+                  autoPlay
+                  loop
+                  ref={(el) => (videoRefs.current[index] = el)}
+                />
+              )}
+              {fileTypes[index] === "image" && (
+                <img className="post-card_img" src={url} alt="File preview" />
+              )}
+              {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
       {/* </Link> */}
 
       <PostStats post={post} userId={user.id} />
