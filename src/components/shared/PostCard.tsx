@@ -1,6 +1,6 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
-import { A11y } from "swiper/modules";
+import { A11y, Pagination } from "swiper/modules";
 import { Models } from "appwrite";
 import { Link } from "react-router-dom";
 
@@ -16,52 +16,54 @@ type PostCardProps = {
 const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
   const videoRefs = useRef([]);
-  useEffect(() => {
-    videoRefs.current.forEach((videoRef) => {
-      if (videoRef) {
-        videoRef.play().catch((error) => {
-          console.error("Error playing video:", error);
-        });
-      }
-    });
-  }, [post]);
-
+  const [activeIndex, setActiveIndex] = useState(0);
   const [fileTypes, setFileTypes] = useState([]);
 
   useEffect(() => {
-    async function fetchMimeTypes(urls) {
-      try {
-        const types = await Promise.all(
-          urls.map(async (url) => {
-            const response = await fetch(url, {
-              method: "HEAD",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            });
-
-            const contentType = response.headers.get("Content-Type");
-            if (contentType.startsWith("video/")) {
-              return "video";
-            } else if (contentType.startsWith("image/")) {
-              return "image";
-            } else {
-              return "unknown";
-            }
-          })
-        );
-        setFileTypes(types);
-      } catch (error) {
-        console.error("Error fetching MIME types:", error);
-        setFileTypes(urls.map(() => "unknown"));
-      }
+    if (post?.imageUrl?.length) {
+      fetchMimeTypes(post.imageUrl);
     }
-
-    fetchMimeTypes(post?.imageUrl);
   }, [post]);
-  if (!post.creator) return;
+
+  useEffect(() => {
+    const playVideo = () => {
+      if (videoRefs.current[activeIndex]) {
+        videoRefs.current[activeIndex].play().catch((error) => {
+          console.error("Error playing video:", error);
+        });
+      }
+    };
+    playVideo();
+  }, [activeIndex]);
+
+  const fetchMimeTypes = async (urls) => {
+    try {
+      const types = await Promise.all(
+        urls.map(async (url) => {
+          const response = await fetch(url, {
+            method: "HEAD",
+          });
+          const contentType = response.headers.get("Content-Type");
+          if (contentType.startsWith("video/")) {
+            return "video";
+          } else if (contentType.startsWith("image/")) {
+            return "image";
+          } else {
+            return "unknown";
+          }
+        })
+      );
+      setFileTypes(types);
+    } catch (error) {
+      console.error("Error fetching MIME types:", error);
+      setFileTypes(urls.map(() => "unknown"));
+    }
+  };
+
+  if (!post.creator) return null;
+
   return (
-    <div className="post-card  sm:max-w-screen-sm">
+    <div className="post-card sm:max-w-screen-sm">
       <div className="flex-between">
         <div className="flex items-center gap-3">
           <Link to={`/profile/${post.creator.$id}`}>
@@ -80,7 +82,7 @@ const PostCard = ({ post }: PostCardProps) => {
               {post.creator.name}
             </p>
             <div className="flex-center gap-2 text-light-3">
-              <p className="subtle-semibold lg:small-regular ">
+              <p className="subtle-semibold lg:small-regular">
                 {multiFormatDateString(post.$createdAt)}
               </p>
               •
@@ -104,7 +106,6 @@ const PostCard = ({ post }: PostCardProps) => {
         </Link>
       </div>
 
-      {/* <Link to={`/posts/${post.$id}`}> */}
       <div className="small-medium lg:base-medium py-5">
         <p>{post.caption}</p>
         <ul className="flex gap-1 mt-2">
@@ -117,11 +118,26 @@ const PostCard = ({ post }: PostCardProps) => {
       </div>
       <div>
         <Swiper
-          modules={[A11y]}
+          modules={[A11y, Pagination]}
           spaceBetween={16}
           slidesPerView={1}
-          onSwiper={(swiper) => console.log(swiper)}
-          onSlideChange={() => console.log("slide change")}
+          pagination
+          onInit={(swiper) => {
+            setActiveIndex(swiper.activeIndex);
+            if (videoRefs.current[swiper.activeIndex]) {
+              videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                console.error("Error playing video:", error);
+              });
+            }
+          }}
+          onSlideChange={(swiper) => {
+            setActiveIndex(swiper.activeIndex);
+            if (videoRefs.current[swiper.activeIndex]) {
+              videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                console.error("Error playing video:", error);
+              });
+            }
+          }}
         >
           {post?.imageUrl?.map((url, index) => (
             <SwiperSlide key={index} style={{ width: "100%" }}>
@@ -129,7 +145,6 @@ const PostCard = ({ post }: PostCardProps) => {
                 <video
                   className="post-card_img"
                   src={url}
-                  autoPlay
                   loop
                   ref={(el) => (videoRefs.current[index] = el)}
                 />
@@ -142,7 +157,6 @@ const PostCard = ({ post }: PostCardProps) => {
           ))}
         </Swiper>
       </div>
-      {/* </Link> */}
 
       <PostStats post={post} userId={user.id} />
     </div>
