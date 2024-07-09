@@ -9,6 +9,7 @@ export const convertFileToUrl = (file: File) => {
   const url = URL.createObjectURL(file);
   return { url, type: file.type };
 };
+export const convertFileToUrlProfile = (file: File) => URL.createObjectURL(file);
 
 export function formatDateString(dateString: string) {
   const options: Intl.DateTimeFormatOptions = {

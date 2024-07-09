@@ -10,14 +10,13 @@ type FileUploaderProps = {
 };
 
 const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
-  const [files, setFiles] = useState<FileWithPath[]>([]);
   const [fileUrls, setFileUrls] = useState<Array<{ url: string, type: string }>>(
     mediaUrl ? [{ url: mediaUrl, type: mediaUrl.endsWith(".mp4") ? "video/mp4" : "image/*" }] : []
   );
 
   const onDrop = useCallback(
     (acceptedFiles: FileWithPath[]) => {
-      setFiles(acceptedFiles);
+  
       fieldChange(acceptedFiles);
 
       const newFileUrls = acceptedFiles.map((file) => convertFileToUrl(file));
