@@ -40,7 +40,10 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const { user } = useUserContext();
 
   const { data: commentsData } = useGetCommentsByPost(post.$id);
-  const comments = commentsData?.documents || [];
+  
+  const comments = commentsData?.comments || [];
+  const totalComment = commentsData?.totalComments
+
 
   const [likes, setLikes] = useState<string[]>(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -156,7 +159,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
               className="w-[26px] h-[22px] cursor-pointer"
               onClick={() => setShowCommentBox(!showCommentBox)}
             />
-            <p className="small-medium lg:base-medium">{comments.length}</p>
+            <p className="small-medium lg:base-medium">{totalComment}</p>
           </div>
         </div>
 

@@ -167,7 +167,7 @@
   }
 
   .post_details-card {
-    @apply bg-white w-full max-w-5xl rounded-[10px] flex-col flex xl:flex-row border xl:rounded-l-[24px];
+    @apply bg-white w-full max-w-5xl rounded-[10px] flex-col flex lg:flex-row border xl:rounded-l-[24px];
   }
 
   .post_details-img {
@@ -175,7 +175,7 @@
   }
 
   .post_details-info {
-    @apply bg-white flex flex-col gap-5 lg:gap-7 flex-1 items-start p-8 rounded-[30px];
+    @apply bg-white flex flex-col gap-5 lg:gap-7 flex-1 items-start py-4 px-2 md:py-6 md:px-6 rounded-[30px];
   }
 
   .post_details-delete_btn {
@@ -242,7 +242,7 @@
 
   /* Post Card */
   .post-card {
-    @apply bg-white text-black rounded-3xl border p-5 lg:p-7  w-full md:max-w-screen-sm;
+    @apply bg-white text-black rounded-3xl border p-5 lg:p-7 w-full md:max-w-screen-sm;
   }
 
   .post-card_img {

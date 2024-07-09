@@ -11,10 +11,13 @@ import {
   useUnlikeComment,
 } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { MdAdd, MdEdit } from "react-icons/md";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { A11y, Pagination } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import moment from "moment";
 
 const PostDetails = () => {
   const navigate = useNavigate();
@@ -26,8 +29,51 @@ const PostDetails = () => {
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(
     post?.creator.$id
   );
+  const videoRefs = useRef([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [fileTypes, setFileTypes] = useState([]);
   const { data: commentsData } = useGetCommentsByPost(id);
-  const comments = commentsData?.documents || [];
+  const comments = commentsData?.comments || [];
+  useEffect(() => {
+    if (post?.imageUrl?.length) {
+      fetchMimeTypes(post.imageUrl);
+    }
+  }, [post]);
+
+  useEffect(() => {
+    const playVideo = () => {
+      if (videoRefs.current[activeIndex]) {
+        videoRefs.current[activeIndex].play().catch((error) => {
+          console.error("Error playing video:", error);
+        });
+      }
+    };
+    playVideo();
+  }, [activeIndex]);
+
+  const fetchMimeTypes = async (urls) => {
+    try {
+      const types = await Promise.all(
+        urls.map(async (url) => {
+          const response = await fetch(url, {
+            method: "HEAD",
+          });
+          const contentType = response.headers.get("Content-Type");
+          if (contentType.startsWith("video/")) {
+            return "video";
+          } else if (contentType.startsWith("image/")) {
+            return "image";
+          } else {
+            return "unknown";
+          }
+        })
+      );
+      setFileTypes(types);
+    } catch (error) {
+      console.error("Error fetching MIME types:", error);
+      setFileTypes(urls.map(() => "unknown"));
+    }
+  };
 
   // Hooks for managing CRUD operations
   const deletePostMutation = useDeletePost();
@@ -92,6 +138,8 @@ const PostDetails = () => {
       likeCommentMutation.mutate({ commentId, userId: user.id });
     }
   };
+  const a = multiFormatDateString(post?.$createdAt);
+  console.log(a);
 
   return (
     <div className="post_details-container">
@@ -109,15 +157,50 @@ const PostDetails = () => {
       {postLoading || !post ? (
         <Loader />
       ) : (
-        <div className="post_details-card">
-          <img
-            src={post?.imageUrl}
-            alt="creator"
-            className="post_details-img"
-          />
-          <div className="post_details-info">
-            <div className="flex items-center justify-between w-full">
-              <div className="post-details-header">
+        <div className="post_details-card py-[10px] px-[20px] ">
+          <Swiper
+            modules={[A11y, Pagination]}
+            spaceBetween={16}
+            slidesPerView={1}
+            className="lg:w-[55%] w-[100%]"
+            pagination
+            onInit={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (videoRefs.current[swiper.activeIndex]) {
+                videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                  console.error("Error playing video:", error);
+                });
+              }
+            }}
+            onSlideChange={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (videoRefs.current[swiper.activeIndex]) {
+                videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                  console.error("Error playing video:", error);
+                });
+              }
+            }}
+          >
+            {post?.imageUrl?.map((url, index) => (
+              <SwiperSlide key={index} style={{ width: "100%" }}>
+                {fileTypes[index] === "video" && (
+                  <video
+                    className="post-card_img"
+                    src={url}
+                    loop
+                    ref={(el) => (videoRefs.current[index] = el)}
+                  />
+                )}
+                {fileTypes[index] === "image" && (
+                  <img className="post-card_img" src={url} alt="File preview" />
+                )}
+                {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+              </SwiperSlide>
+            ))}
+          </Swiper>
+          <div className="post_details-info md:w-[45%]">
+            <div className="flex flex-col gap-1 md:gap-0 sm:flex-row md:items-center sm:justify-between w-full">
+              <div className="post-details-header  ">
                 <Link
                   to={`/profile/${post?.creator.$id}`}
                   className="profile-link"
@@ -130,13 +213,14 @@ const PostDetails = () => {
                     alt="creator"
                     className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
                   />
-                  <div className="flex gap-1 flex-col">
+                  <div className="flex gap-1 flex-col ">
                     <p className="base-medium lg:body-bold text-black">
                       {post?.creator.name}
                     </p>
                     <div className="flex-center gap-2 text-light-3">
                       <p className="subtle-semibold lg:small-regular">
-                        {multiFormatDateString(post?.$createdAt)}
+                        {multiFormatDateString(post?.$createdAt)} <br />
+                        {moment(post?.$createdAt).format("h:mm a")}
                       </p>
                       •
                       <p className="subtle-semibold lg:small-regular">
@@ -146,7 +230,7 @@ const PostDetails = () => {
                   </div>
                 </Link>
               </div>
-              <div className="Buttonsflex flex gap-4">
+              <div className="Buttonsflex flex py-[5px] md:py-[0px] gap-4">
                 <div
                   onClick={handleEditPost}
                   className={`${user.id !== post?.creator.$id ? "hidden" : ""} cursor-pointer flex items-center gap-2`}

@@ -16,6 +16,7 @@ import {
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
 import Select from 'react-select'
+import { useUserContext } from "@/context/AuthContext";
 
 const options = [
   { value: 'all', label: 'All' },
@@ -45,13 +46,17 @@ const SearchResults = ({
 
 type PostType = Models.Document; // Define your post type accordingly
 
-const Explore = ({ userId }: { userId: string }) => {
+const Explore = () => {
   const size = useWindowSize();
+  const {user} =useUserContext()
+  const userId = user
   const { ref, inView } = useInView();
   const [filter, setFilter] = useState("all");
   const { data: allPosts, fetchNextPage, hasNextPage } = useGetAllPosts();
-  const { data: followingPosts } = useGetFollowingPosts(userId);
-  const { data: followersPosts } = useGetFollowersPosts(userId);
+  const { data: followingPosts } = useGetFollowingPosts(userId.id);
+  const { data: followersPosts } = useGetFollowersPosts(userId.id);
+  
+  
 
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 500);

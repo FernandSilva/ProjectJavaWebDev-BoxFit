@@ -742,16 +742,40 @@ export async function checkFollowStatus(userId: string, followsUserId: string) {
 // Fetch comments for a specific post
 export const getCommentsByPostId = async (postId: string) => {
   try {
-    return await databases.listDocuments(
+    const pageLimit = 5; // Number of comments per page
+
+    // Fetch first page of comments
+    const firstPageResponse = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.commentsCollectionId,
-      [Query.equal("postId", postId)]
+      [
+        Query.equal("postId", postId),
+        Query.limit(pageLimit) // Limit the number of documents returned
+      ]
     );
+
+    // Fetch total count of comments
+    const totalCountResponse = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.commentsCollectionId,
+      [
+        Query.equal("postId", postId),
+        Query.limit(100) // Fetch up to 100 documents to get an accurate count
+      ]
+    );
+
+    const totalComments = totalCountResponse.documents.length; // Total number of comments
+
+    return {
+      comments: firstPageResponse.documents,
+      totalComments: totalComments
+    };
   } catch (error) {
     console.error("Failed to fetch comments:", error);
     throw error;
   }
 };
+
 
 // Create a new comment
 export const createComment = async ({
@@ -971,12 +995,15 @@ export async function getFollowingPosts(userId: string) {
 
     if (!posts) throw Error;
 
+    console.log(posts); // Log the posts to check the structure
+
     return posts;
   } catch (error) {
     console.log(error);
     throw error;
   }
 }
+
 
 // Function to get posts from followers
 export async function getFollowersPosts(userId: string) {

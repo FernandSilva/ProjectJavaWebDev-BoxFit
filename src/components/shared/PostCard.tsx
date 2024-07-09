@@ -116,6 +116,7 @@ const PostCard = ({ post }: PostCardProps) => {
           ))}
         </ul>
       </div>
+      <Link to={`/posts/${post.$id}`}>
       <div>
         <Swiper
           modules={[A11y, Pagination]}
@@ -157,6 +158,7 @@ const PostCard = ({ post }: PostCardProps) => {
           ))}
         </Swiper>
       </div>
+      </Link>
 
       <PostStats post={post} userId={user.id} />
     </div>
