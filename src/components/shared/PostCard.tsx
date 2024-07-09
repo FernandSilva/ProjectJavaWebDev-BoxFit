@@ -61,7 +61,7 @@ const PostCard = ({ post }: PostCardProps) => {
   }, [post]);
   if (!post.creator) return;
   return (
-    <div className="post-card max-w-[350px] sm:max-w-screen-sm">
+    <div className="post-card  sm:max-w-screen-sm">
       <div className="flex-between">
         <div className="flex items-center gap-3">
           <Link to={`/profile/${post.creator.$id}`}>
