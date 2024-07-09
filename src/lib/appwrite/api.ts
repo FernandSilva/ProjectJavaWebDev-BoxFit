@@ -118,15 +118,15 @@ export async function signOutAccount() {
 export async function createPost(post: INewPost) {
   try {
     // Upload file to appwrite storage
-    const uploadedFile = await uploadFile(post.file[0]);
+    const uploadedFile = await uploadFiles(post.file);
     console.log({ uploadedFile });
     if (!uploadedFile) throw Error;
 
     // Get file url
-    const fileUrl = getFilePreview(uploadedFile.$id);
-    console.log({fileUrl})
+    const fileUrl = await getFilePreviews(uploadedFile);
+    console.log({ fileUrl });
     if (!fileUrl) {
-      await deleteFile(uploadedFile.$id);
+      // await deleteFile(uploadedFile);
       throw Error;
     }
 
@@ -142,14 +142,14 @@ export async function createPost(post: INewPost) {
         creator: post.userId,
         caption: post.caption,
         imageUrl: fileUrl,
-        imageId: uploadedFile.$id,
+        imageId: uploadedFile[0],
         location: post.location,
         tags: tags,
       }
     );
 
     if (!newPost) {
-      await deleteFile(uploadedFile.$id);
+      await deleteFile(uploadedFile[0]);
       throw Error;
     }
 
@@ -173,7 +173,20 @@ export async function uploadFile(file: File) {
     console.log(error);
   }
 }
-
+async function uploadFiles(files: File[]) {
+  try {
+    const fileIds = await Promise.all(
+      files.map(async (file) => {
+        const response = await uploadFile(file); // Assuming uploadFile returns the file ID
+        return response.$id; // Adjust this based on the actual response structure
+      })
+    );
+    return fileIds;
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
 // ============================== GET FILE URL
 export function getFilePreview(fileId: string) {
   try {
@@ -186,7 +199,24 @@ export function getFilePreview(fileId: string) {
     console.log(error);
   }
 }
-
+export async function getFilePreviews(fileIds: string[]) {
+  try {
+    const fileUrls = await Promise.all(
+      fileIds.map(async (fileId) => {
+        const fileUrl = storage.getFileDownload(
+          appwriteConfig.storageId,
+          fileId
+        );
+        if (!fileUrl) throw new Error("File URL not found");
+        return fileUrl;
+      })
+    );
+    return fileUrls;
+  } catch (error) {
+    console.log(error);
+    return [];
+  }
+}
 // ============================== DELETE FILE
 export async function deleteFile(fileId: string) {
   try {
