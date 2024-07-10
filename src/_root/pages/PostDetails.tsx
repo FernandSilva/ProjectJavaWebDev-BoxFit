@@ -138,8 +138,8 @@ const PostDetails = () => {
       likeCommentMutation.mutate({ commentId, userId: user.id });
     }
   };
-  const a = multiFormatDateString(post?.$createdAt);
-  console.log(a);
+  
+  console.log(post);
 
   return (
     <div className="post_details-container">

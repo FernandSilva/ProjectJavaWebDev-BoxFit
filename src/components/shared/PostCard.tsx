@@ -18,7 +18,8 @@ const PostCard = ({ post }: PostCardProps) => {
   const videoRefs = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [fileTypes, setFileTypes] = useState([]);
-
+  console.log(post)
+  
   useEffect(() => {
     if (post?.imageUrl?.length) {
       fetchMimeTypes(post.imageUrl);
@@ -117,47 +118,47 @@ const PostCard = ({ post }: PostCardProps) => {
         </ul>
       </div>
       <Link to={`/posts/${post.$id}`}>
-      <div>
-        <Swiper
-          modules={[A11y, Pagination]}
-          spaceBetween={16}
-          slidesPerView={1}
-          pagination
-          onInit={(swiper) => {
-            setActiveIndex(swiper.activeIndex);
-            if (videoRefs.current[swiper.activeIndex]) {
-              videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                console.error("Error playing video:", error);
-              });
-            }
-          }}
-          onSlideChange={(swiper) => {
-            setActiveIndex(swiper.activeIndex);
-            if (videoRefs.current[swiper.activeIndex]) {
-              videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                console.error("Error playing video:", error);
-              });
-            }
-          }}
-        >
-          {post?.imageUrl?.map((url, index) => (
-            <SwiperSlide key={index} style={{ width: "100%" }}>
-              {fileTypes[index] === "video" && (
-                <video
-                  className="post-card_img"
-                  src={url}
-                  loop
-                  ref={(el) => (videoRefs.current[index] = el)}
-                />
-              )}
-              {fileTypes[index] === "image" && (
-                <img className="post-card_img" src={url} alt="File preview" />
-              )}
-              {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
+        <div>
+          <Swiper
+            modules={[A11y, Pagination]}
+            spaceBetween={16}
+            slidesPerView={1}
+            pagination
+            onInit={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (videoRefs.current[swiper.activeIndex]) {
+                videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                  console.error("Error playing video:", error);
+                });
+              }
+            }}
+            onSlideChange={(swiper) => {
+              setActiveIndex(swiper.activeIndex);
+              if (videoRefs.current[swiper.activeIndex]) {
+                videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                  console.error("Error playing video:", error);
+                });
+              }
+            }}
+          >
+            {post?.imageUrl?.map((url, index) => (
+              <SwiperSlide key={index} style={{ width: "100%" }}>
+                {fileTypes[index] === "video" && (
+                  <video
+                    className="post-card_img"
+                    src={url}
+                    loop
+                    ref={(el) => (videoRefs.current[index] = el)}
+                  />
+                )}
+                {fileTypes[index] === "image" && (
+                  <img className="post-card_img" src={url} alt="File preview" />
+                )}
+                {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
       </Link>
 
       <PostStats post={post} userId={user.id} />

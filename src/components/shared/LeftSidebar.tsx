@@ -1,9 +1,10 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 
-import { INavLink } from "@/types";
-import { sidebarLinks } from "@/constants";
 import { Loader } from "@/components/shared";
+import { sidebarLinks } from "@/constants";
 import { useUserContext } from "@/context/AuthContext";
+import { INavLink } from "@/types";
+import { CiBookmark } from "react-icons/ci";
 
 const LeftSidebar = () => {
   const { pathname } = useLocation();
@@ -48,11 +49,17 @@ const LeftSidebar = () => {
                   to={link.route}
                   className={`flex gap-4 items-center py-2 px-4  rounded-md ${isActive ? "text-green-500 !font-bold" : "text-black !font-normal "}`}
                 >
-                  <img
-                    src={link.imgURL}
-                    alt={link.label}
-                    className={`h-6 w-6 filter ${isActive ? "" : ""}`}
-                  />
+                  {link.label === "Saved" ? (
+                    <CiBookmark
+                      className={`h-6 w-6 filter ${isActive ? "text-black" : "text-black"}`}
+                    />
+                  ) : (
+                    <img
+                      src={link.imgURL}
+                      alt={link.label}
+                      className={`h-6 w-6 filter ${isActive ? "" : ""}`}
+                    />
+                  )}
                   {link.label}
                 </NavLink>
               </li>

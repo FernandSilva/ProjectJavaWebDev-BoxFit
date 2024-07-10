@@ -941,35 +941,96 @@ export const deleteMessage = async (messageId: string) => {
 
 export const getAllUsers = async () => {
   try {
-    const result = await databases.listDocuments(
+    // Step 1: Fetch all users
+    const usersResult = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId
     );
-    return result.documents;
+
+    const users = usersResult.documents;
+
+    // Step 2: Fetch all user relationships
+    const relationshipsResult = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userRelationshipsCollectionId
+    );
+
+    const relationships = relationshipsResult.documents;
+
+    // Step 3: Create a follower count map
+    const followerCounts = {};
+
+    relationships.forEach((relationship) => {
+      const followsUserId = relationship.followsUserId;
+      if (!followerCounts[followsUserId]) {
+        followerCounts[followsUserId] = 0;
+      }
+      followerCounts[followsUserId]++;
+    });
+
+    // Step 4: Sort users by their follower count
+    const sortedUsers = users.sort((a, b) => {
+      const aFollowers = followerCounts[a.$id] || 0;
+      const bFollowers = followerCounts[b.$id] || 0;
+      return bFollowers - aFollowers;
+    });
+
+    return sortedUsers;
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    console.error("Failed to fetch and sort users:", error);
     throw error;
   }
 };
+// export const getAllUsers = async () => {
+//   try {
+//     const result = await databases.listDocuments(
+//       appwriteConfig.databaseId,
+//       appwriteConfig.userCollectionId
+//     );
+
+//     console.log("Fetched user documents:", result.documents); // Log the fetched documents
+
+//     // Ensure documents have 'followers' field and it is a number
+//     const sortedUsers = result.documents.sort((a, b) => {
+//       console.log(`Comparing ${a.followers} with ${b.followers}`); // Log the comparison
+//       return b.followers - a.followers;
+//     });
+
+//     console.log("Sorted user documents:", sortedUsers); // Log the sorted documents
+
+//     return sortedUsers;
+//   } catch (error) {
+//     console.error("Failed to fetch users:", error);
+//     throw error;
+//   }
+// };
+
+
 
 // ============================================================
 // POSTS (NEW FUNCTIONS)
 // ============================================================
 
 // Function to get all posts
-export async function getAllPosts() {
+export async function getAllPosts(key, searchQuery = '') {
   try {
+    let query = [Query.orderDesc("$createdAt")];
+
+    if (searchQuery) {
+      query.push(Query.search("caption", searchQuery)); // Adjust field "$name" to the actual field you want to search
+    }
+
     const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
-      [Query.orderDesc("$createdAt")]
+      query
     );
 
-    if (!posts) throw Error;
+    if (!posts) throw new Error("Failed to fetch posts.");
 
     return posts;
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching posts:", error);
     throw error;
   }
 }
@@ -994,8 +1055,7 @@ export async function getFollowingPosts(userId: string) {
     );
 
     if (!posts) throw Error;
-
-    console.log(posts); // Log the posts to check the structure
+// Log the posts to check the structure
 
     return posts;
   } catch (error) {

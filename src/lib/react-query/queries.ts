@@ -451,11 +451,11 @@ export const useDeleteMessage = () => {
 // ============================================================
 
 // Fetch all posts
-export const useGetAllPosts = () => {
+export const useGetAllPosts = (searchQuery) => {
   return useInfiniteQuery({
-    queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
+    queryKey: [QUERY_KEYS.GET_INFINITE_POSTS, { searchQuery }],
     queryFn: getAllPosts,
-    getNextPageParam: (lastPage: any) => {
+    getNextPageParam: (lastPage) => {
       if (lastPage && lastPage.documents.length === 0) {
         return null;
       }

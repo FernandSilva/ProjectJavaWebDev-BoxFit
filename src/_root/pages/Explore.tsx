@@ -15,14 +15,14 @@ import {
   useSearchPosts,
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
-import Select from 'react-select'
+import Select from "react-select";
 import { useUserContext } from "@/context/AuthContext";
 
 const options = [
-  { value: 'all', label: 'All' },
-  { value: 'followers', label: 'Followers' },
-  { value: 'following', label: 'Following' }
-]
+  { value: "all", label: "All" },
+  { value: "followers", label: "Followers" },
+  { value: "following", label: "Following" },
+];
 
 export type SearchResultProps = {
   isSearchFetching: boolean;
@@ -48,20 +48,22 @@ type PostType = Models.Document; // Define your post type accordingly
 
 const Explore = () => {
   const size = useWindowSize();
-  const {user} =useUserContext()
-  const userId = user
+  const { user } = useUserContext();
+  const userId = user;
   const { ref, inView } = useInView();
+  const [searchValue, setSearchValue] = useState("");
   const [filter, setFilter] = useState("all");
-  const { data: allPosts, fetchNextPage, hasNextPage } = useGetAllPosts();
+  const {
+    data: allPosts,
+    fetchNextPage,
+    hasNextPage,
+  } = useGetAllPosts(searchValue);
   const { data: followingPosts } = useGetFollowingPosts(userId.id);
   const { data: followersPosts } = useGetFollowersPosts(userId.id);
-  
-  
 
-  const [searchValue, setSearchValue] = useState("");
   const debouncedSearch = useDebounce(searchValue, 500);
-  const { data: searchedPosts, isFetching: isSearchFetching } =
-    useSearchPosts(debouncedSearch);
+  // const { data: searchedPosts, isFetching: isSearchFetching } =
+  //   useSearchPosts(debouncedSearch);
   const [users, setUsers] = useState<Models.Document[]>([]);
   const [isFetchingUsers, setIsFetchingUsers] = useState<boolean>(true);
 
@@ -84,8 +86,6 @@ const Explore = () => {
       fetchNextPage();
     }
   }, [inView, searchValue, fetchNextPage]);
-
-  
 
   const filteredPosts = (): PostType[] => {
     if (filter === "followers") {
@@ -115,8 +115,9 @@ const Explore = () => {
   };
 
   const posts = filteredPosts();
-  const shouldShowSearchResults = searchValue !== "";
-  const shouldShowPosts = !shouldShowSearchResults && posts.length === 0;
+  // const shouldShowSearchResults = searchValue !== "";
+  // const shouldShowPosts = !shouldShowSearchResults && posts.length === 0;
+  console.log(posts);
 
   return (
     <div className="main-content !w-full">
@@ -137,11 +138,11 @@ const Explore = () => {
               <div className="overflow-hidden w-[300px] md:w-[900px]">
                 <Swiper
                   // install Swiper modules
-                  modules={[ A11y]}
+                  modules={[A11y]}
                   spaceBetween={16}
-                  slidesPerView={size.width>640 ? 3:size.width<1200?4:2}
-                  
-                 
+                  slidesPerView={
+                    size.width > 640 ? 3 : size.width > 1024 ? 4 : 2
+                  }
                   onSwiper={(swiper) => console.log(swiper)}
                   onSlideChange={() => console.log("slide change")}
                 >
@@ -178,30 +179,38 @@ const Explore = () => {
               alignItems: "center",
               justifyContent: "center",
               gap: "12px",
-                
+
               color: "black",
               borderRadius: "0.75rem",
               padding: "8px 16px",
               cursor: "pointer",
             }}
           >
-            
-            
-            <Select options={options} className="w-[100%]" onChange={(e)=>setFilter(e.value)}/>
+            <Select
+              options={options}
+              className="w-[100%]"
+              onChange={(e) => {
+                setFilter(e.value);
+              }}
+              isSearchable={false}
+            />
           </div>
         </div>
 
         <div className="flex flex-wrap gap-9 w-full">
-          {shouldShowSearchResults ? (
+          {/* {shouldShowSearchResults ? (
             <SearchResults
               isSearchFetching={isSearchFetching}
               searchedPosts={searchedPosts}
             />
           ) : shouldShowPosts ? (
-            <p className="text-black mt-10 text-center w-full">End of posts</p>
+            <p className="text-black mt-10 text-center w-full">
+              There is no post
+            </p>
           ) : (
             <GridPostList posts={posts} />
-          )}
+          )} */}
+          <GridPostList posts={posts} />
         </div>
 
         {hasNextPage && !searchValue && (

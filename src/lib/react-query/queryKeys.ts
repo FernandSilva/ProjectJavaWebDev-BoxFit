@@ -9,6 +9,7 @@ export enum QUERY_KEYS {
   GET_POSTS = "getPosts",
   GET_INFINITE_POSTS = "getInfinitePosts",
   GET_RECENT_POSTS = "getRecentPosts",
+  GET_SAVED_POSTS = "getSavedPosts",
   GET_POST_BY_ID = "getPostById",
   GET_USER_POSTS = "getUserPosts",
   GET_FILE_PREVIEW = "getFilePreview",
@@ -33,9 +34,3 @@ export enum QUERY_KEYS {
   GET_FOLLOWING_POSTS = "getFollowingPosts",
   GET_FOLLOWERS_POSTS = "getFollowersPosts",
 }
-
-
-
-
-
-

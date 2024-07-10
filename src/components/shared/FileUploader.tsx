@@ -11,7 +11,7 @@ type FileUploaderProps = {
 
 const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
   const [fileUrls, setFileUrls] = useState<Array<{ url: string, type: string }>>(
-    mediaUrl ? [{ url: mediaUrl, type: mediaUrl.endsWith(".mp4") ? "video/mp4" : "image/*" }] : []
+    typeof mediaUrl === 'string' ? [{ url: mediaUrl, type: mediaUrl.endsWith(".mp4") ? "video/mp4" : "image/*" }] : []
   );
 
   const onDrop = useCallback(

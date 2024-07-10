@@ -5,6 +5,7 @@ import { useGetCurrentUser } from "@/lib/react-query/queries";
 
 const Saved = () => {
   const { data: currentUser } = useGetCurrentUser();
+  
 
   const savePosts = currentUser?.save
     .map((savePost: Models.Document) => ({
@@ -37,7 +38,7 @@ const Saved = () => {
           {savePosts.length === 0 ? (
             <p className="text-light-4">No available posts</p>
           ) : (
-            <GridPostList posts={savePosts} showStats={false} />
+            <GridPostList posts={savePosts} showStats={false} showcreator={false} />
           )}
         </ul>
       )}

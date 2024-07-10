@@ -55,7 +55,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const { data: currentUser } = useGetCurrentUser();
 
   const savedPostRecord = currentUser?.save.find(
-    (record: Models.Document) => record.post.$id === post.$id
+    (record: Models.Document) => record?.post?.$id === post?.$id
   );
   const handleInputChange = (event) => {
     setInputText(event.target.value);
@@ -164,7 +164,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
         </div>
 
         <div className="flex gap-2">
-          {isSaved ? (
+          {!isSaved ? (
             <CiBookmark
               className="w-[26px] h-[24px] cursor-pointer "
               onClick={(e) => handleSavePost(e)}

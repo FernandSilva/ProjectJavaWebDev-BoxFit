@@ -22,6 +22,7 @@ const Home = () => {
     isLoading: isUserLoading,
     isError: isErrorCreators,
   } = useGetUsers(10);
+  
 
   if (isErrorPosts || isErrorCreators) {
     return (
