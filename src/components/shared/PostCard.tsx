@@ -17,14 +17,36 @@ const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
   const videoRefs = useRef([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [fileTypes, setFileTypes] = useState([]);
-  console.log(post)
-  
+  const [fileTypes, setFileTypes] = useState<string[]>([]);
+  const [cleanUrls, setCleanUrls] = useState<string[]>([]);
+  console.log({ post });
   useEffect(() => {
-    if (post?.imageUrl?.length) {
-      fetchMimeTypes(post.imageUrl);
-    }
-  }, [post]);
+    const types: string[] = [];
+    const urls: string[] = [];
+
+    post.imageUrl.forEach((url: string) => {
+      // Extract the type parameter from the URL
+      const typeStartIndex = url.indexOf("?type=");
+      let typeMatch = "unknown";
+      if (typeStartIndex !== -1) {
+        const typeEndIndex = url.indexOf("&", typeStartIndex);
+        typeMatch =
+          typeEndIndex !== -1
+            ? url.substring(typeStartIndex + 6, typeEndIndex)
+            : url.substring(typeStartIndex + 6);
+      }
+
+      console.log(`URL: ${url}, Type: ${typeMatch}`); // Log the URL and extracted type
+      types.push(typeMatch.split("/")[0]);
+
+      // Remove the type parameter from the URL and the last question mark if it's at the end
+      const cleanUrl = url.replace(/\?type=[^&]*(&|$)/, "").replace(/\?$/, "");
+      urls.push(cleanUrl);
+    });
+
+    setFileTypes(types);
+    setCleanUrls(urls);
+  }, [post.imageUrl]);
 
   useEffect(() => {
     const playVideo = () => {
@@ -37,111 +59,94 @@ const PostCard = ({ post }: PostCardProps) => {
     playVideo();
   }, [activeIndex]);
 
-  const fetchMimeTypes = async (urls) => {
-    try {
-      const types = await Promise.all(
-        urls.map(async (url) => {
-          const response = await fetch(url, {
-            method: "HEAD",
-          });
-          const contentType = response.headers.get("Content-Type");
-          if (contentType.startsWith("video/")) {
-            return "video";
-          } else if (contentType.startsWith("image/")) {
-            return "image";
-          } else {
-            return "unknown";
-          }
-        })
-      );
-      setFileTypes(types);
-    } catch (error) {
-      console.error("Error fetching MIME types:", error);
-      setFileTypes(urls.map(() => "unknown"));
-    }
-  };
-
   if (!post.creator) return null;
 
   return (
     <div className="post-card sm:max-w-screen-sm">
-      <div className="flex-between">
-        <div className="flex items-center gap-3">
-          <Link to={`/profile/${post.creator.$id}`}>
-            <img
-              src={
-                post.creator?.imageUrl ||
-                "/assets/icons/profile-placeholder1.svg"
-              }
-              alt="creator"
-              className="w-12 lg:h-12 rounded-full"
-            />
-          </Link>
-
-          <div className="flex flex-col">
-            <p className="base-medium lg:body-bold text-black">
-              {post.creator.name}
-            </p>
-            <div className="flex-center gap-2 text-light-3">
-              <p className="subtle-semibold lg:small-regular">
-                {multiFormatDateString(post.$createdAt)}
-              </p>
-              •
-              <p className="subtle-semibold lg:small-regular">
-                {post.location}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Link
-          to={`/update-post/${post.$id}`}
-          className={`${user.id !== post.creator.$id && "hidden"}`}
-        >
-          <img
-            src={"/assets/icons/edit.svg"}
-            alt="edit"
-            width={20}
-            height={20}
-          />
-        </Link>
-      </div>
-
-      <div className="small-medium lg:base-medium py-5">
-        <p>{post.caption}</p>
-        <ul className="flex gap-1 mt-2">
-          {post.tags.map((tag: string, index: string) => (
-            <li key={`${tag}${index}`} className="text-light-3 small-regular">
-              #{tag}
-            </li>
-          ))}
-        </ul>
-      </div>
       <Link to={`/posts/${post.$id}`}>
-        <div>
-          <Swiper
-            modules={[A11y, Pagination]}
-            spaceBetween={16}
-            slidesPerView={1}
-            pagination
-            onInit={(swiper) => {
-              setActiveIndex(swiper.activeIndex);
-              if (videoRefs.current[swiper.activeIndex]) {
-                videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                  console.error("Error playing video:", error);
-                });
-              }
-            }}
-            onSlideChange={(swiper) => {
-              setActiveIndex(swiper.activeIndex);
-              if (videoRefs.current[swiper.activeIndex]) {
-                videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                  console.error("Error playing video:", error);
-                });
-              }
-            }}
-          >
-            {post?.imageUrl?.map((url, index) => (
+        <>
+          <div className="flex-between">
+            <div className="flex items-center gap-3">
+              <Link to={`/profile/${post.creator.$id}`}>
+                <img
+                  src={
+                    post.creator?.imageUrl ||
+                    "/assets/icons/profile-placeholder1.svg"
+                  }
+                  alt="creator"
+                  className="w-12 lg:h-12 rounded-full"
+                />
+              </Link>
+
+              <div className="flex flex-col">
+                <p className="base-medium lg:body-bold text-black">
+                  {post.creator.name}
+                </p>
+                <div className="flex-center gap-2 text-light-3">
+                  <p className="subtle-semibold lg:small-regular">
+                    {multiFormatDateString(post.$createdAt)}
+                  </p>
+                  •
+                  <p className="subtle-semibold lg:small-regular">
+                    {post.location}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              to={`/update-post/${post.$id}`}
+              className={`${user.id !== post.creator.$id && "hidden"}`}
+            >
+              <img
+                src={"/assets/icons/edit.svg"}
+                alt="edit"
+                width={20}
+                height={20}
+              />
+            </Link>
+          </div>
+
+          <div className="small-medium lg:base-medium py-5">
+            <p>{post.caption}</p>
+            <ul className="flex gap-1 mt-2">
+              {post.tags.map((tag: string, index: string) => (
+                <li
+                  key={`${tag}${index}`}
+                  className="text-light-3 small-regular"
+                >
+                  #{tag}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      </Link>
+      <div>
+        <Swiper
+          modules={[A11y, Pagination]}
+          spaceBetween={16}
+          slidesPerView={1}
+          pagination
+          onInit={(swiper) => {
+            setActiveIndex(swiper.activeIndex);
+            if (videoRefs.current[swiper.activeIndex]) {
+              videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                console.error("Error playing video:", error);
+              });
+            }
+          }}
+          onSlideChange={(swiper) => {
+            setActiveIndex(swiper.activeIndex);
+            if (videoRefs.current[swiper.activeIndex]) {
+              videoRefs.current[swiper.activeIndex].play().catch((error) => {
+                console.error("Error playing video:", error);
+              });
+            }
+          }}
+        >
+          {cleanUrls.map((url, index) => {
+            return (
               <SwiperSlide key={index} style={{ width: "100%" }}>
                 {fileTypes[index] === "video" && (
                   <video
@@ -156,10 +161,10 @@ const PostCard = ({ post }: PostCardProps) => {
                 )}
                 {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
               </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      </Link>
+            );
+          })}
+        </Swiper>
+      </div>
 
       <PostStats post={post} userId={user.id} />
     </div>

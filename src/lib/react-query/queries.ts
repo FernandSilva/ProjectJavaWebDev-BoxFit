@@ -410,13 +410,15 @@ export const useFollowStatus = (userId: string, followsUserId: string) => {
 // Fetch all messages
 // Fetch all messages
 // Fetch all messages
-export const useGetMessages = () => {
+export const useGetMessages = (Id:string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_MESSAGES],
-    queryFn: api.getMessages, // Assuming getMessages is defined to fetch messages from Appwrite
+    queryFn: () => api.getMessages(Id), // Assuming getMessages accepts userId as a parameter
     onError: (error) => {
       console.error("Failed to fetch messages:", error);
     },
+    staleTime: 5000, // Mark data as stale after 5 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 };
 

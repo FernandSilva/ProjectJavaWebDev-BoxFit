@@ -1,22 +1,20 @@
 import { GridPostList, Loader, UserCard } from "@/components/shared";
 import { Input } from "@/components/ui";
-import useDebounce from "@/hooks/useDebounce";
+import { useWindowSize } from "@uidotdev/usehooks";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { A11y } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { useWindowSize } from "@uidotdev/usehooks";
 
+import { useUserContext } from "@/context/AuthContext";
 import { getAllUsers } from "@/lib/appwrite/api";
 import {
   useGetAllPosts,
   useGetFollowersPosts,
-  useGetFollowingPosts,
-  useSearchPosts,
+  useGetFollowingPosts
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
 import Select from "react-select";
-import { useUserContext } from "@/context/AuthContext";
 
 const options = [
   { value: "all", label: "All" },
@@ -61,7 +59,7 @@ const Explore = () => {
   const { data: followingPosts } = useGetFollowingPosts(userId.id);
   const { data: followersPosts } = useGetFollowersPosts(userId.id);
 
-  const debouncedSearch = useDebounce(searchValue, 500);
+  // const debouncedSearch = useDebounce(searchValue, 500);
   // const { data: searchedPosts, isFetching: isSearchFetching } =
   //   useSearchPosts(debouncedSearch);
   const [users, setUsers] = useState<Models.Document[]>([]);

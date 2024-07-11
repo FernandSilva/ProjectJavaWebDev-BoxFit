@@ -22,23 +22,50 @@ import moment from "moment";
 const PostDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  console.log({ id });
   const { user } = useUserContext();
 
   // Fetching post details, related user posts, and comments
-  const { data: post, isLoading: postLoading } = useGetPostById(id);
+  const { data: post, isLoading: postLoading, error } = useGetPostById(id);
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(
     post?.creator.$id
   );
+  console.log({ error });
   const videoRefs = useRef([]);
+  console.log({ post });
   const [activeIndex, setActiveIndex] = useState(0);
-  const [fileTypes, setFileTypes] = useState([]);
   const { data: commentsData } = useGetCommentsByPost(id);
   const comments = commentsData?.comments || [];
+  const [fileTypes, setFileTypes] = useState<string[]>([]);
+  const [cleanUrls, setCleanUrls] = useState<string[]>([]);
+
   useEffect(() => {
-    if (post?.imageUrl?.length) {
-      fetchMimeTypes(post.imageUrl);
-    }
-  }, [post]);
+    const types: string[] = [];
+    const urls: string[] = [];
+
+    post?.imageUrl?.forEach((url: string) => {
+      // Extract the type parameter from the URL
+      const typeStartIndex = url.indexOf("?type=");
+      let typeMatch = "unknown";
+      if (typeStartIndex !== -1) {
+        const typeEndIndex = url.indexOf("&", typeStartIndex);
+        typeMatch =
+          typeEndIndex !== -1
+            ? url.substring(typeStartIndex + 6, typeEndIndex)
+            : url.substring(typeStartIndex + 6);
+      }
+
+      console.log(`URL: ${url}, Type: ${typeMatch}`); // Log the URL and extracted type
+      types.push(typeMatch.split("/")[0]);
+
+      // Remove the type parameter from the URL and the last question mark if it's at the end
+      const cleanUrl = url.replace(/\?type=[^&]*(&|$)/, "").replace(/\?$/, "");
+      urls.push(cleanUrl);
+    });
+
+    setFileTypes(types);
+    setCleanUrls(urls);
+  }, [post?.imageUrl]);
 
   useEffect(() => {
     const playVideo = () => {
@@ -50,30 +77,6 @@ const PostDetails = () => {
     };
     playVideo();
   }, [activeIndex]);
-
-  const fetchMimeTypes = async (urls) => {
-    try {
-      const types = await Promise.all(
-        urls.map(async (url) => {
-          const response = await fetch(url, {
-            method: "HEAD",
-          });
-          const contentType = response.headers.get("Content-Type");
-          if (contentType.startsWith("video/")) {
-            return "video";
-          } else if (contentType.startsWith("image/")) {
-            return "image";
-          } else {
-            return "unknown";
-          }
-        })
-      );
-      setFileTypes(types);
-    } catch (error) {
-      console.error("Error fetching MIME types:", error);
-      setFileTypes(urls.map(() => "unknown"));
-    }
-  };
 
   // Hooks for managing CRUD operations
   const deletePostMutation = useDeletePost();
@@ -138,7 +141,7 @@ const PostDetails = () => {
       likeCommentMutation.mutate({ commentId, userId: user.id });
     }
   };
-  
+
   console.log(post);
 
   return (
@@ -181,22 +184,30 @@ const PostDetails = () => {
               }
             }}
           >
-            {post?.imageUrl?.map((url, index) => (
-              <SwiperSlide key={index} style={{ width: "100%" }}>
-                {fileTypes[index] === "video" && (
-                  <video
-                    className="post-card_img"
-                    src={url}
-                    loop
-                    ref={(el) => (videoRefs.current[index] = el)}
-                  />
-                )}
-                {fileTypes[index] === "image" && (
-                  <img className="post-card_img" src={url} alt="File preview" />
-                )}
-                {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-              </SwiperSlide>
-            ))}
+            {cleanUrls.map((url, index) => {
+              console.log({ url });
+
+              return (
+                <SwiperSlide key={index} style={{ width: "100%" }}>
+                  {fileTypes[index] === "video" && (
+                    <video
+                      className="post-card_img"
+                      src={url}
+                      loop
+                      ref={(el) => (videoRefs.current[index] = el)}
+                    />
+                  )}
+                  {fileTypes[index] === "image" && (
+                    <img
+                      className="post-card_img"
+                      src={url}
+                      alt="File preview"
+                    />
+                  )}
+                  {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+                </SwiperSlide>
+              );
+            })}
           </Swiper>
           <div className="post_details-info md:w-[45%]">
             <div className="flex flex-col gap-1 md:gap-0 sm:flex-row md:items-center sm:justify-between w-full">

@@ -10,7 +10,7 @@ function UsersList({
 }: {
   onSelectUser: (user: User) => void;
   selectedUser: User | null;
-  setSteps?: any;
+  setSteps?: React.Dispatch<React.SetStateAction<number>>;
 }) {
   const [users, setUsers] = useState<User[]>([]);
 

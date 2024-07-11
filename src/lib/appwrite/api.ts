@@ -203,11 +203,18 @@ export async function getFilePreviews(fileIds: string[]) {
   try {
     const fileUrls = await Promise.all(
       fileIds.map(async (fileId) => {
-        const fileUrl = storage.getFileDownload(
+        // Fetch the file details
+        const fileDetails = await storage.getFile(
           appwriteConfig.storageId,
           fileId
         );
-        if (!fileUrl) throw new Error("File URL not found");
+
+        if (!fileDetails || !fileDetails.mimeType)
+          throw new Error("File details not found");
+
+        // Construct the file URL with file type
+        const fileUrl = `${storage.getFileDownload(appwriteConfig.storageId, fileId)}?type=${fileDetails.mimeType}`;
+
         return fileUrl;
       })
     );
@@ -750,7 +757,7 @@ export const getCommentsByPostId = async (postId: string) => {
       appwriteConfig.commentsCollectionId,
       [
         Query.equal("postId", postId),
-        Query.limit(pageLimit) // Limit the number of documents returned
+        Query.limit(pageLimit), // Limit the number of documents returned
       ]
     );
 
@@ -760,7 +767,7 @@ export const getCommentsByPostId = async (postId: string) => {
       appwriteConfig.commentsCollectionId,
       [
         Query.equal("postId", postId),
-        Query.limit(100) // Fetch up to 100 documents to get an accurate count
+        Query.limit(100), // Fetch up to 100 documents to get an accurate count
       ]
     );
 
@@ -768,14 +775,13 @@ export const getCommentsByPostId = async (postId: string) => {
 
     return {
       comments: firstPageResponse.documents,
-      totalComments: totalComments
+      totalComments: totalComments,
     };
   } catch (error) {
     console.error("Failed to fetch comments:", error);
     throw error;
   }
 };
-
 
 // Create a new comment
 export const createComment = async ({
@@ -883,7 +889,7 @@ export const deleteComment = async (commentId: string) => {
 // ============================================================
 
 // Function to fetch messages
-export const getMessages = async () => {
+export const getMessages = async (id) => {
   try {
     return await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -896,9 +902,15 @@ export const getMessages = async () => {
 };
 
 // Create a new message
-export async function createMessage({ userId, content, username }) {
+export async function createMessage({
+  userId,
+  content,
+  username,
+  recipientId,
+}) {
   const document = {
     userId,
+    recipientId,
     content,
     username,
     createdAt: new Date().toISOString(),
@@ -1005,14 +1017,12 @@ export const getAllUsers = async () => {
 //   }
 // };
 
-
-
 // ============================================================
 // POSTS (NEW FUNCTIONS)
 // ============================================================
 
 // Function to get all posts
-export async function getAllPosts(key, searchQuery = '') {
+export async function getAllPosts(key, searchQuery = "") {
   try {
     let query = [Query.orderDesc("$createdAt")];
 
@@ -1055,7 +1065,7 @@ export async function getFollowingPosts(userId: string) {
     );
 
     if (!posts) throw Error;
-// Log the posts to check the structure
+    // Log the posts to check the structure
 
     return posts;
   } catch (error) {
@@ -1063,7 +1073,6 @@ export async function getFollowingPosts(userId: string) {
     throw error;
   }
 }
-
 
 // Function to get posts from followers
 export async function getFollowersPosts(userId: string) {
