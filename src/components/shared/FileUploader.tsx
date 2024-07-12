@@ -76,16 +76,19 @@ const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
       {fileUrls?.length > 0 || mediaUrl?.length > 0 ? (
         <>
           <div className="flex gap-2 flex-1 justify-center w-full p-5 lg:p-10 flex-wrap">
-            {mediaUrl
+            {mediaUrl && fileUrls.length === 0
               ? cleanUrls.map((url, index) => {
                   return (
                     <div
                       key={index}
                       className="file_uploader-img-wrapper flex gap-2"
-                    
                     >
                       {fileTypes[index] === "video" && (
-                        <video className="h-[50px] md:h-[70px] rounded-[10px]" src={url} loop />
+                        <video
+                          className="h-[50px] md:h-[70px] rounded-[10px]"
+                          src={url}
+                          loop
+                        />
                       )}
                       {fileTypes[index] === "image" && (
                         <img

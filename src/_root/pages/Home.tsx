@@ -60,13 +60,8 @@ const Home = () => {
 
       {/* Chatbot trigger icon */}
       <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-5">
-        <img
-          src="/assets/icons/GrowB.jpeg"
-          alt="Open Chatbot"
-          className="chatbot-trigger"
-          onClick={toggleChatbot}
-        />
-        {showChatbot && <Chatbot />}
+       
+        <Chatbot />
       </div>
 
       <div className="home-creators">
@@ -77,7 +72,7 @@ const Home = () => {
           <Loader />
         ) : (
           <ul className="grid 2xl:grid-cols-2 gap-4">
-            {creators?.documents.map((creator) => (
+            {creators?.map((creator) => (
               <li key={creator?.$id}>
                 <UserCard user={creator} />
               </li>

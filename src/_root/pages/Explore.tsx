@@ -11,7 +11,8 @@ import { getAllUsers } from "@/lib/appwrite/api";
 import {
   useGetAllPosts,
   useGetFollowersPosts,
-  useGetFollowingPosts
+  useGetFollowingPosts,
+  useGetUsers,
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
 import Select from "react-select";
@@ -62,22 +63,7 @@ const Explore = () => {
   // const debouncedSearch = useDebounce(searchValue, 500);
   // const { data: searchedPosts, isFetching: isSearchFetching } =
   //   useSearchPosts(debouncedSearch);
-  const [users, setUsers] = useState<Models.Document[]>([]);
-  const [isFetchingUsers, setIsFetchingUsers] = useState<boolean>(true);
-
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const usersData: Models.Document[] = await getAllUsers();
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
-      } finally {
-        setIsFetchingUsers(false);
-      }
-    }
-    fetchUsers();
-  }, []);
+  const { data: users, isLoading: isFetchingUsers } = useGetUsers(10);
 
   useEffect(() => {
     if (inView && !searchValue) {
@@ -139,7 +125,7 @@ const Explore = () => {
                   modules={[A11y]}
                   spaceBetween={16}
                   slidesPerView={
-                    size.width > 640 ? 3 : size.width > 1024 ? 4 : 2
+                    size.width > 1024 ? 4 : size.width > 640 ? 3 : 2
                   }
                   onSwiper={(swiper) => console.log(swiper)}
                   onSlideChange={() => console.log("slide change")}

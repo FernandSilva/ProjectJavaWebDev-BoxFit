@@ -142,7 +142,7 @@ export async function createPost(post: INewPost) {
         creator: post.userId,
         caption: post.caption,
         imageUrl: fileUrl,
-        imageId: uploadedFile[0],
+        imageId: uploadedFile,
         location: post.location,
         tags: tags,
       }
@@ -295,41 +295,50 @@ export async function getPostById(postId?: string) {
 
 // ============================== UPDATE POST
 export async function updatePost(post: IUpdatePost) {
-  const hasFileToUpdate = post.file.length > 0;
-
   try {
-    let image = {
-      imageUrl: post.imageUrl,
-      imageId: post.imageId,
-    };
+    // Check if there are files to update
+    const hasFilesToUpdate = post.file.length > 0;
 
-    if (hasFileToUpdate) {
-      // Upload new file to appwrite storage
-      const uploadedFile = await uploadFile(post.file[0]);
-      if (!uploadedFile) throw Error;
-
-      // Get new file url
-      const fileUrl = getFilePreview(uploadedFile.$id);
-      if (!fileUrl) {
-        await deleteFile(uploadedFile.$id);
-        throw Error;
+    // Upload files to appwrite storage and get IDs
+    let uploadedFileIds: string[] = [];
+    if (hasFilesToUpdate) {
+      uploadedFileIds = await uploadFiles(post.file);
+      if (!uploadedFileIds || uploadedFileIds.length !== post.file.length) {
+        throw new Error("Failed to upload all files.");
       }
-
-      image = { ...image, imageUrl: fileUrl, imageId: uploadedFile.$id };
     }
+
+    // Get image URLs based on uploaded file IDs
+    let imageUrls: string[] = [];
+    if (uploadedFileIds.length > 0) {
+      imageUrls = await getFilePreviews(uploadedFileIds);
+      if (!imageUrls || imageUrls.length !== uploadedFileIds.length) {
+        // Clean up uploaded files if getting URLs fails
+        for (let i = 0; i < uploadedFileIds.length; i++) {
+          await deleteFile(uploadedFileIds[i]);
+        }
+        throw new Error("Failed to get image URLs.");
+      }
+    }
+
+    // Prepare updated images array
+    const images = uploadedFileIds.map((fileId, index) => ({
+      imageUrl: imageUrls[index],
+      imageId: fileId,
+    }));
 
     // Convert tags into array
     const tags = post.tags?.replace(/ /g, "").split(",") || [];
 
-    //  Update post
+    // Update post
     const updatedPost = await databases.updateDocument(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       post.postId,
       {
         caption: post.caption,
-        imageUrl: image.imageUrl,
-        imageId: image.imageId,
+        imageId: uploadedFileIds,
+        imageUrl: imageUrls,
         location: post.location,
         tags: tags,
       }
@@ -337,23 +346,22 @@ export async function updatePost(post: IUpdatePost) {
 
     // Failed to update
     if (!updatedPost) {
-      // Delete new file that has been recently uploaded
-      if (hasFileToUpdate) {
-        await deleteFile(image.imageId);
+      // Delete newly uploaded files
+      for (let i = 0; i < uploadedFileIds.length; i++) {
+        await deleteFile(uploadedFileIds[i]);
       }
-
-      // If no new file uploaded, just throw error
-      throw Error;
+      throw new Error("Failed to update post.");
     }
 
-    // Safely delete old file after successful update
-    if (hasFileToUpdate) {
-      await deleteFile(post.imageId);
+    // Safely delete old files after successful update
+    for (let i = 0; i < post.imageId.length; i++) {
+      await deleteFile(post.imageId[i]);
     }
 
     return updatedPost;
   } catch (error) {
-    console.log(error);
+    console.error("Error updating post:", error);
+    return null; // or handle the error appropriately
   }
 }
 

@@ -18,50 +18,57 @@ const SavedGridPostList = ({
   const [fileType, setFileType] = useState("unknown");
   const firstImageUrl = post?.imageUrl?.[0];
 
+  const [fileTypes, setFileTypes] = useState<string[]>([]);
+  const [cleanUrls, setCleanUrls] = useState<string[]>([]);
   useEffect(() => {
-    if (firstImageUrl) {
-      fetchMimeType(firstImageUrl);
-    }
-  }, [firstImageUrl]);
+    const types: string[] = [];
+    const urls: string[] = [];
 
-  const fetchMimeType = async (url) => {
-    try {
-      const response = await fetch(url, {
-        method: "HEAD",
-      });
-      const contentType = response.headers.get("Content-Type");
-      if (contentType.startsWith("video/")) {
-        setFileType("video");
-      } else if (contentType.startsWith("image/")) {
-        setFileType("image");
-      } else {
-        setFileType("unknown");
+    post.imageUrl.forEach((url: string) => {
+      // Extract the type parameter from the URL
+      const typeStartIndex = url.indexOf("?type=");
+      let typeMatch = "unknown";
+      if (typeStartIndex !== -1) {
+        const typeEndIndex = url.indexOf("&", typeStartIndex);
+        typeMatch =
+          typeEndIndex !== -1
+            ? url.substring(typeStartIndex + 6, typeEndIndex)
+            : url.substring(typeStartIndex + 6);
       }
-    } catch (error) {
-      console.error("Error fetching MIME type:", error);
-      setFileType("unknown");
-    }
-  };
+
+      console.log(`URL: ${url}, Type: ${typeMatch}`); // Log the URL and extracted type
+      types.push(typeMatch.split("/")[0]);
+
+      // Remove the type parameter from the URL and the last question mark if it's at the end
+      const cleanUrl = url.replace(/\?type=[^&]*(&|$)/, "").replace(/\?$/, "");
+      urls.push(cleanUrl);
+    });
+
+    setFileTypes(types);
+    setCleanUrls(urls);
+  }, [post.imageUrl]);
 
   return (
     <li key={post.$id} className="relative min-w-80 h-80">
       <Link to={`/posts/${post.$id}`} className="grid-post_link">
-        {fileType === "video" && (
-          <video className="post-card_img" src={firstImageUrl} loop />
+        {fileTypes[0] === "video" && (
+          <video className="post-card_img" src={cleanUrls[0]} loop />
         )}
-        {fileType === "image" && (
+        {fileTypes[0] === "image" && (
           <img
-            className="post-card_img"
-            src={firstImageUrl}
+            className="post-card_img  !brightness-75"
+            src={cleanUrls[0]}
             alt="File preview"
           />
         )}
+        {fileTypes[0] === "unknown" && <p>Unknown file type</p>}
       </Link>
 
       <div className="grid-post_user">
         {showUser && (
           <div className="flex items-center justify-start gap-2 flex-1">
             <img
+            
               src={
                 post.creator.imageUrl || "/assets/icons/profile-placeholder.svg"
               }

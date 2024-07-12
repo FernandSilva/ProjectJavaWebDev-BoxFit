@@ -7,6 +7,7 @@ import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";
 import { ID } from "appwrite"; // Assuming `Permission` and `Role` are not used directly here
 import UsersList from "./UsersList";
+import moment from "moment";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
@@ -23,7 +24,7 @@ function Chat() {
     selectedUser?.id,
     user?.id
   );
-  console.log({loading});
+  console.log({ loading });
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
@@ -296,13 +297,17 @@ function Chat() {
                           src={user?.imageUrl}
                           className="w-6 h-6 rounded-full"
                         /> */}
-                        <div className={`message ${
-                          message.userId === user.id
-                            ? "!bg-green-500"
-                            : "!bg-gray-400"
-                        }`}>
-                          <span>{message.content}</span>
+
+                        <div
+                          className={`message ${
+                            message.userId === user.id
+                              ? "bg-green-500"
+                              : "!bg-gray-500"
+                          }`}
+                        >
+                          <span>{message.content}  <sub className="text-[10px] font-medium ml-2">{moment(message.$createdAt).format("hh:mm")}</sub></span>
                         </div>
+                       
                       </div>
                     ))
                   ) : (
