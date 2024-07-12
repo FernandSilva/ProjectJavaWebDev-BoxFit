@@ -26,25 +26,25 @@ function Chat() {
       if (!selectedUser) return;
       try {
         setLoading(true);
-        const result = await databases.listDocuments(
-          appwriteConfig.databaseId,
-          appwriteConfig.messageCollectionId,
-          [
-            Query.orderDesc("$createdAt"),
-            Query.limit(50),
-            Query.equal("userId", selectedUser.id),
-          ]
-        );
-        const typedMessages: Message[] = result.documents.map((doc: any) => ({
-          $id: doc.$id,
-          userId: doc.userId,
-          username: doc.username,
-          id: doc.$id,
-          content: doc.content,
-          text: doc.content,
-          createdAt: doc.createdAt,
-          recipientId: selectedUser.$id,
-        }));
+        // const result = await databases.listDocuments(
+        //   appwriteConfig.databaseId,
+        //   appwriteConfig.messageCollectionId,
+        //   [
+        //     Query.orderDesc("$createdAt"),
+        //     Query.limit(50),
+        //     Query.equal("userId", selectedUser.id),
+        //   ]
+        // );
+        // const typedMessages: Message[] = result.documents.map((doc: any) => ({
+        //   $id: doc.$id,
+        //   userId: doc.userId,
+        //   username: doc.username,
+        //   id: doc.$id,
+        //   content: doc.content,
+        //   text: doc.content,
+        //   createdAt: doc.createdAt,
+        //   recipientId: selectedUser.$id,
+        // }));
         // setMessages(typedMessages);
       } catch (error) {
         console.error("Error fetching messages:", error);
