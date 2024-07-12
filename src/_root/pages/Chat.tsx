@@ -14,18 +14,21 @@ function Chat() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { user } = useUserContext();
   const [steps, setSteps] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  // const [loading, setLoading] = useState<boolean>(false);
   const { width } = useWindowSize();
 
   // Initialize the useCreateMessage hook
   const { mutateAsync: createMessage } = useCreateMessage();
-  const { data: recievedMessages } = useGetMessages(selectedUser?.id, user?.id);
-  console.log(recievedMessages);
+  const { data: recievedMessages, isLoading: loading } = useGetMessages(
+    selectedUser?.id,
+    user?.id
+  );
+  console.log({loading});
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
       try {
-        setLoading(true);
+        // setLoading(true);
         // const result = await databases.listDocuments(
         //   appwriteConfig.databaseId,
         //   appwriteConfig.messageCollectionId,
@@ -49,7 +52,7 @@ function Chat() {
       } catch (error) {
         console.error("Error fetching messages:", error);
       } finally {
-        setLoading(false);
+        // setLoading(false);
       }
     };
 
@@ -279,7 +282,7 @@ function Chat() {
               </div>
               <div className="chat-messages">
                 {!loading ? (
-                  recievedMessages?.documents?.length ? (
+                  recievedMessages?.documents?.length > 0 ? (
                     recievedMessages?.documents?.map((message) => (
                       <div
                         key={message.$id}
