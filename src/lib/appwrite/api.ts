@@ -897,7 +897,79 @@ export const deleteComment = async (commentId: string) => {
 // ============================================================
 
 // Function to fetch messages
+export async function fetchUsersAndMessages(currentUserId: string) {
+  try {
+    const usersResult = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId
+    );
+    const messagesResult = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.messageCollectionId
+    );
 
+    const users = usersResult.documents
+      .map((doc: any) => ({
+        $id: doc.$id,
+        name: doc.name,
+        username: doc.username,
+        email: doc.email,
+        id: doc.$id,
+        imageUrl: doc.imageUrl,
+        bio: doc.bio,
+        latestMessage: null, // Initialize with null, will be updated below
+      }))
+      .filter((user) => user.$id !== currentUserId); // Exclude current user
+
+    const messages = messagesResult.documents.map((doc: any) => ({
+      id: doc.$id,
+      userId: doc.senderId,
+      recipientId: doc.recipentId,
+      timestamp: doc.$createdAt, // Assuming you have a timestamp field
+      content: doc.content, // Example of message content field
+    }));
+
+    // Process messages to find the latest message for each user
+    const usersWithLatestMessages = users.map((user) => {
+      // Find messages involving this user
+      const userMessages = messages.filter(
+        (msg) => msg.userId === user.$id || msg.recipientId === user.$id
+      );
+
+      // Sort messages by timestamp (most recent first)
+      userMessages.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Get the latest message (if any)
+      const latestMessage =
+        userMessages.length > 0
+          ? userMessages[userMessages.length - 1] // Most recent message first
+          : null;
+
+      return {
+        ...user,
+        latestMessage: latestMessage
+          ? {
+              content: latestMessage.content,
+              timestamp: latestMessage.timestamp,
+            }
+          : null,
+      };
+    });
+
+    // Sort users based on the full text of the latest message content
+    usersWithLatestMessages.sort((a, b) => {
+      if (!a.latestMessage && !b.latestMessage) return 0;
+      if (!a.latestMessage) return 1;
+      if (!b.latestMessage) return -1;
+      return a.latestMessage.content.localeCompare(b.latestMessage.content);
+    });
+
+    return usersWithLatestMessages;
+  } catch (error) {
+    console.error("Error fetching users and messages:", error);
+    throw new Error("Error fetching users and messages");
+  }
+}
 export const getMessages = async (recipientId, userId) => {
   try {
     const messagesSentByUser = await databases.listDocuments(
