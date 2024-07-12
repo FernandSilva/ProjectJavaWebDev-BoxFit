@@ -151,10 +151,12 @@ const PostCard = ({ post }: PostCardProps) => {
                 {fileTypes[index] === "video" && (
                   <video
                     className="post-card_img"
-                    src={url}
                     loop
+                    muted
                     ref={(el) => (videoRefs.current[index] = el)}
-                  />
+                  >
+                    <source src={url} />
+                  </video>
                 )}
                 {fileTypes[index] === "image" && (
                   <img className="post-card_img" src={url} alt="File preview" />

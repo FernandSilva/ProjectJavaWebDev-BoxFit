@@ -4,6 +4,7 @@ import { multiFormatDateString } from "@/lib/utils";
 import { useState } from "react";
 import { useUsersAndMessages } from "@/lib/react-query/queries";
 import { useUserContext } from "@/context/AuthContext";
+import { Loader } from "lucide-react";
 
 function UsersList({
   onSelectUser,
@@ -27,7 +28,6 @@ function UsersList({
     user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error loading users</div>;
 
   return (
@@ -79,37 +79,60 @@ function UsersList({
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
       />
-      {filteredUsers.map((user) => (
-        <div
-          key={user.$id}
-          onClick={() => {
-            onSelectUser(user);
-            if (setSteps) setSteps(1);
-          }}
-          className={`user-item ${
-            user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
-          } flex items-center gap-4`}
-        >
-          <img
-            src={user.imageUrl}
-            className="w-8 h-8 rounded-full"
-            alt={`Profile of ${user.username}`}
-          />
-          <div className="w-full">
-            <span className="font-semibold">{user.username}</span>
-            {user.latestMessage && (
-              <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
-                <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
-                  {user.latestMessage.content}
-                </span>{" "}
-                <span className="text-[10px]">
-                  {multiFormatDateString(user.latestMessage.timestamp)}
-                </span>
+      {isLoading
+        ? [1, 2, 3, 4, 5].map((val) => (
+            <div
+              role="status"
+              className="max-w-sm p-2 rounded animate-pulse"
+            >
+              <div className="flex items-center mt-4">
+                <svg
+                  className="w-10 h-10 me-3 text-gray-200 dark:text-gray-700"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z" />
+                </svg>
+                <div>
+                  <div className="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-32 mb-2"></div>
+                  <div className="w-48 h-2 bg-gray-200 rounded-full dark:bg-gray-700"></div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      ))}
+            </div>
+          ))
+        : filteredUsers.map((user) => (
+            <div
+              key={user.$id}
+              onClick={() => {
+                onSelectUser(user);
+                if (setSteps) setSteps(1);
+              }}
+              className={`user-item ${
+                user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
+              } flex items-center gap-4`}
+            >
+              <img
+                src={user.imageUrl}
+                className="w-8 h-8 rounded-full"
+                alt={`Profile of ${user.username}`}
+              />
+              <div className="w-full">
+                <span className="font-semibold">{user.username}</span>
+                {user.latestMessage && (
+                  <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
+                    <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
+                      {user.latestMessage.content}
+                    </span>{" "}
+                    <span className="text-[10px]">
+                      {multiFormatDateString(user.latestMessage.timestamp)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
     </div>
   );
 }

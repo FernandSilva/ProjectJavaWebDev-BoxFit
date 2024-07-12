@@ -52,11 +52,20 @@ const SavedGridPostList = ({
     <li key={post.$id} className="relative min-w-80 h-80">
       <Link to={`/posts/${post.$id}`} className="grid-post_link">
         {fileTypes[0] === "video" && (
-          <video className="post-card_img" src={cleanUrls[0]} loop />
+          <video
+            className="post-card_img !brightness-75 !h-auto"
+            src={cleanUrls[0]}
+            loop
+            autoPlay
+            muted
+          >
+            {" "}
+            <source src={cleanUrls[0]} />
+          </video>
         )}
         {fileTypes[0] === "image" && (
           <img
-            className="post-card_img  !brightness-75"
+            className="post-card_img  !brightness-75 !h-auto"
             src={cleanUrls[0]}
             alt="File preview"
           />
@@ -68,7 +77,6 @@ const SavedGridPostList = ({
         {showUser && (
           <div className="flex items-center justify-start gap-2 flex-1">
             <img
-            
               src={
                 post.creator.imageUrl || "/assets/icons/profile-placeholder.svg"
               }
