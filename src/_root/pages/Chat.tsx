@@ -179,8 +179,17 @@ function Chat() {
                               src={user?.imageUrl}
                               className="w-6 h-6 rounded-full"
                             /> */}
-                            <div className="message">
-                              <span>{message.content}</span>
+                            <div
+                              className={`message ${
+                                message.userId === user.id
+                                  ? "bg-green-500"
+                                  : "!bg-gray-500"
+                              }`}
+                            >
+                              <span className="text-sm">{message.content}</span>
+                              <sub className="text-[10px] font-medium ml-2">
+                                {moment(message.$createdAt).format("hh:mm")}
+                              </sub>
                             </div>
                           </div>
                         );
