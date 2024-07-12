@@ -889,11 +889,12 @@ export const deleteComment = async (commentId: string) => {
 // ============================================================
 
 // Function to fetch messages
-export const getMessages = async (id) => {
+export const getMessages = async (recipentId, userId) => {
   try {
     return await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId
+      appwriteConfig.messageCollectionId,
+      [Query.equal("recipentId", recipentId), Query.equal("userId", userId)]
     );
   } catch (error) {
     console.error("Error fetching messages:", error);
@@ -910,7 +911,7 @@ export async function createMessage({
 }) {
   const document = {
     userId,
-    recipientId,
+    recipentId: recipientId,
     content,
     username,
     createdAt: new Date().toISOString(),

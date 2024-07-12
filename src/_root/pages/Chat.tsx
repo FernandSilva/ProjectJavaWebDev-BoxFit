@@ -19,7 +19,7 @@ function Chat() {
 
   // Initialize the useCreateMessage hook
   const { mutateAsync: createMessage } = useCreateMessage();
-  const { data:recievedMessages } = useGetMessages(selectedUser?.id);
+  const { data:recievedMessages } = useGetMessages(selectedUser?.id, user?.id);
   console.log(recievedMessages)
   useEffect(() => {
     const fetchMessages = async () => {

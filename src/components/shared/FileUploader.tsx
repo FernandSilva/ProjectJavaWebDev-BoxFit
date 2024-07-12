@@ -73,7 +73,7 @@ const FileUploader = ({ fieldChange, mediaUrl }: FileUploaderProps) => {
       className="flex flex-center h-[20rem] flex-col border border-gray-300 border-dashed rounded-xl cursor-pointer"
     >
       <input {...getInputProps()} className="cursor-pointer" />
-      {fileUrls.length > 0 || mediaUrl.length > 0 ? (
+      {fileUrls?.length > 0 || mediaUrl?.length > 0 ? (
         <>
           <div className="flex gap-2 flex-1 justify-center w-full p-5 lg:p-10 flex-wrap">
             {mediaUrl

@@ -410,10 +410,10 @@ export const useFollowStatus = (userId: string, followsUserId: string) => {
 // Fetch all messages
 // Fetch all messages
 // Fetch all messages
-export const useGetMessages = (Id:string) => {
+export const useGetMessages = (Id:string, userId:string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_MESSAGES],
-    queryFn: () => api.getMessages(Id), // Assuming getMessages accepts userId as a parameter
+    queryFn: () => api.getMessages(Id, userId), // Assuming getMessages accepts userId as a parameter
     onError: (error) => {
       console.error("Failed to fetch messages:", error);
     },
