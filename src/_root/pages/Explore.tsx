@@ -27,20 +27,20 @@ export type SearchResultProps = {
   searchedPosts: Models.Document[] | any;
 };
 
-const SearchResults = ({
-  isSearchFetching,
-  searchedPosts,
-}: SearchResultProps) => {
-  if (isSearchFetching) {
-    return <Loader />;
-  } else if (searchedPosts && searchedPosts.length > 0) {
-    return <GridPostList posts={searchedPosts} />;
-  } else {
-    return (
-      <p className="text-light-4 mt-10 text-center w-full">No results found</p>
-    );
-  }
-};
+// const SearchResults = ({
+//   isSearchFetching,
+//   searchedPosts,
+// }: SearchResultProps) => {
+//   if (isSearchFetching) {
+//     return <Loader />;
+//   } else if (searchedPosts && searchedPosts.length > 0) {
+//     return <GridPostList posts={searchedPosts} />;
+//   } else {
+//     return (
+//       <p className="text-light-4 mt-10 text-center w-full">No results found</p>
+//     );
+//   }
+// };
 
 type PostType = Models.Document; // Define your post type accordingly
 

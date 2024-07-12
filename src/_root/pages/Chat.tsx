@@ -10,7 +10,7 @@ import UsersList from "./UsersList";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  // const [messages, setMessages] = useState<Message[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { user } = useUserContext();
   const [steps, setSteps] = useState<number>(0);
@@ -19,8 +19,8 @@ function Chat() {
 
   // Initialize the useCreateMessage hook
   const { mutateAsync: createMessage } = useCreateMessage();
-  const { data:recievedMessages } = useGetMessages(selectedUser?.id, user?.id);
-  console.log(recievedMessages)
+  const { data: recievedMessages } = useGetMessages(selectedUser?.id, user?.id);
+  console.log(recievedMessages);
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
@@ -43,9 +43,9 @@ function Chat() {
           content: doc.content,
           text: doc.content,
           createdAt: doc.createdAt,
-          recipientId: selectedUser.$id
+          recipientId: selectedUser.$id,
         }));
-        setMessages(typedMessages);
+        // setMessages(typedMessages);
       } catch (error) {
         console.error("Error fetching messages:", error);
       } finally {
@@ -73,13 +73,13 @@ function Chat() {
 
     try {
       // Optimistically update messages state
-      setMessages((prevMessages) => [...prevMessages, messageData]);
+      // setMessages((prevMessages) => [...prevMessages, messageData]);
 
       // Clear input field after sending message
       setNewMessage("");
 
       // Call the mutation hook to send the message
-      console.log(messageData)
+      console.log(messageData);
       await createMessage(messageData);
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -156,25 +156,26 @@ function Chat() {
                   {!loading ? (
                     recievedMessages.documents.length ? (
                       recievedMessages.documents.map((message) => {
-                        console.log(message)
-                        return(
-                        <div
-                          key={message.$id}
-                          className={`${
-                            message.userId === user.id
-                              ? "flex-row-reverse justify-start"
-                              : " flex-row"
-                          } flex items-center w-full gap-2`}
-                        >
-                          {/* <img
+                        console.log(message);
+                        return (
+                          <div
+                            key={message.$id}
+                            className={`${
+                              message.userId === user.id
+                                ? "flex-row-reverse justify-start"
+                                : " flex-row"
+                            } flex items-center w-full gap-2`}
+                          >
+                            {/* <img
                               src={user?.imageUrl}
                               className="w-6 h-6 rounded-full"
                             /> */}
-                          <div className="message">
-                            <span>{message.content}</span>
+                            <div className="message">
+                              <span>{message.content}</span>
+                            </div>
                           </div>
-                        </div>
-                      )})
+                        );
+                      })
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full gap-2">
                         <img

@@ -1024,6 +1024,7 @@ export const getAllUsers = async () => {
 
 // Function to get all posts
 export async function getAllPosts(key, searchQuery = "") {
+  console.log(key)
   try {
     let query = [Query.orderDesc("$createdAt")];
 
