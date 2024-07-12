@@ -889,13 +889,36 @@ export const deleteComment = async (commentId: string) => {
 // ============================================================
 
 // Function to fetch messages
-export const getMessages = async (recipentId, userId) => {
+
+export const getMessages = async (recipientId, userId) => {
   try {
-    return await databases.listDocuments(
+    const messagesSentByUser = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.messageCollectionId,
-      [Query.equal("recipentId", recipentId), Query.equal("userId", userId)]
+      [Query.equal("recipentId", recipientId), Query.equal("userId", userId)]
     );
+
+    const messagesReceivedByUser = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.messageCollectionId,
+      [Query.equal("recipentId", userId), Query.equal("userId", recipientId)]
+    );
+
+    const combinedMessages = [
+      ...messagesSentByUser.documents,
+      ...messagesReceivedByUser.documents,
+    ];
+
+    // Sort the combined messages by the createdAt timestamp
+    combinedMessages.sort(
+      (a, b) =>
+        new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime()
+    );
+
+    return {
+      total: combinedMessages.length,
+      documents: combinedMessages,
+    };
   } catch (error) {
     console.error("Error fetching messages:", error);
     throw error; // Or handle more gracefully
@@ -1024,7 +1047,7 @@ export const getAllUsers = async () => {
 
 // Function to get all posts
 export async function getAllPosts(key, searchQuery = "") {
-  console.log(key)
+  console.log(key);
   try {
     let query = [Query.orderDesc("$createdAt")];
 
