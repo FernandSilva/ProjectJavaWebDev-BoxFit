@@ -68,15 +68,47 @@ const PostDetails = () => {
   }, [post?.imageUrl]);
 
   useEffect(() => {
-    const playVideo = () => {
-      if (videoRefs.current[activeIndex]) {
-        videoRefs.current[activeIndex].play().catch((error) => {
-          console.error("Error playing video:", error);
-        });
-      }
+    const observerOptions = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.5, // Trigger when 50% of the element is in view
     };
-    playVideo();
-  }, [activeIndex]);
+
+    const handleIntersection: IntersectionObserverCallback = (entries) => {
+      entries.forEach((entry) => {
+        const { target, isIntersecting } = entry;
+        const index = parseInt(target.getAttribute("data-index") || "0", 10);
+
+        if (isIntersecting) {
+          if (videoRefs.current[index]) {
+            videoRefs.current[index].play().catch((error) => {
+              console.error("Error playing video:", error);
+            });
+          }
+        } else {
+          if (videoRefs.current[index]) {
+            videoRefs.current[index].pause();
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      handleIntersection,
+      observerOptions
+    );
+
+    cleanUrls.forEach((_, index) => {
+      const element = videoRefs.current[index];
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [cleanUrls]);
 
   // Hooks for managing CRUD operations
   const deletePostMutation = useDeletePost();
@@ -167,22 +199,8 @@ const PostDetails = () => {
             slidesPerView={1}
             className="lg:w-[55%] w-[100%]"
             pagination
-            onInit={(swiper) => {
-              setActiveIndex(swiper.activeIndex);
-              if (videoRefs.current[swiper.activeIndex]) {
-                videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                  console.error("Error playing video:", error);
-                });
-              }
-            }}
-            onSlideChange={(swiper) => {
-              setActiveIndex(swiper.activeIndex);
-              if (videoRefs.current[swiper.activeIndex]) {
-                videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                  console.error("Error playing video:", error);
-                });
-              }
-            }}
+            onInit={(swiper) => setActiveIndex(swiper.activeIndex)}
+            onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
           >
             {cleanUrls.map((url, index) => {
               console.log({ url });
@@ -190,12 +208,14 @@ const PostDetails = () => {
               return (
                 <SwiperSlide key={index} style={{ width: "100%" }}>
                   {fileTypes[index] === "video" && (
-                    <video
-                      className="post-card_img"
-                      src={url}
-                      loop
-                      ref={(el) => (videoRefs.current[index] = el)}
-                    />
+                   <video
+                   className="post-card_img"
+                   loop
+                   ref={(el) => (videoRefs.current[index] = el)}
+                   data-index={index} // Add data-index for IntersectionObserver
+                 >
+                   <source src={url} />
+                 </video>
                   )}
                   {fileTypes[index] === "image" && (
                     <img

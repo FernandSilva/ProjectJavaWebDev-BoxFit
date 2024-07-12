@@ -3,11 +3,11 @@ import "swiper/css";
 import { A11y, Pagination } from "swiper/modules";
 import { Models } from "appwrite";
 import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 
 import { PostStats } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
 import { multiFormatDateString } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
 
 type PostCardProps = {
   post: Models.Document;
@@ -15,17 +15,16 @@ type PostCardProps = {
 
 const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
-  const videoRefs = useRef([]);
+  const videoRefs = useRef<HTMLVideoElement[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [fileTypes, setFileTypes] = useState<string[]>([]);
   const [cleanUrls, setCleanUrls] = useState<string[]>([]);
-  console.log({ post });
+
   useEffect(() => {
     const types: string[] = [];
     const urls: string[] = [];
 
     post.imageUrl.forEach((url: string) => {
-      // Extract the type parameter from the URL
       const typeStartIndex = url.indexOf("?type=");
       let typeMatch = "unknown";
       if (typeStartIndex !== -1) {
@@ -36,10 +35,8 @@ const PostCard = ({ post }: PostCardProps) => {
             : url.substring(typeStartIndex + 6);
       }
 
-      console.log(`URL: ${url}, Type: ${typeMatch}`); // Log the URL and extracted type
       types.push(typeMatch.split("/")[0]);
 
-      // Remove the type parameter from the URL and the last question mark if it's at the end
       const cleanUrl = url.replace(/\?type=[^&]*(&|$)/, "").replace(/\?$/, "");
       urls.push(cleanUrl);
     });
@@ -49,21 +46,51 @@ const PostCard = ({ post }: PostCardProps) => {
   }, [post.imageUrl]);
 
   useEffect(() => {
-    const playVideo = () => {
-      if (videoRefs.current[activeIndex]) {
-        videoRefs.current[activeIndex].play().catch((error) => {
-          console.error("Error playing video:", error);
-        });
-      }
+    const observerOptions = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.5, // Trigger when 50% of the element is in view
     };
-    playVideo();
-  }, [activeIndex]);
 
-  if (!post.creator) return null;
+    const handleIntersection: IntersectionObserverCallback = (entries) => {
+      entries.forEach((entry) => {
+        const { target, isIntersecting } = entry;
+        const index = parseInt(target.getAttribute("data-index") || "0", 10);
+
+        if (isIntersecting) {
+          if (videoRefs.current[index]) {
+            videoRefs.current[index].play().catch((error) => {
+              console.error("Error playing video:", error);
+            });
+          }
+        } else {
+          if (videoRefs.current[index]) {
+            videoRefs.current[index].pause();
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      handleIntersection,
+      observerOptions
+    );
+
+    cleanUrls.forEach((_, index) => {
+      const element = videoRefs.current[index];
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [cleanUrls]);
 
   return (
     <div className="post-card sm:max-w-screen-sm">
-      <Link to={`/posts/${post.$id}`}>
+       <Link to={`/posts/${post.$id}`}>
         <>
           <div className="flex-between">
             <div className="flex items-center gap-3">
@@ -122,51 +149,33 @@ const PostCard = ({ post }: PostCardProps) => {
           </div>
         </>
       </Link>
-      <div>
-        <Swiper
-          modules={[A11y, Pagination]}
-          spaceBetween={16}
-          slidesPerView={1}
-          pagination
-          onInit={(swiper) => {
-            setActiveIndex(swiper.activeIndex);
-            if (videoRefs.current[swiper.activeIndex]) {
-              videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                console.error("Error playing video:", error);
-              });
-            }
-          }}
-          onSlideChange={(swiper) => {
-            setActiveIndex(swiper.activeIndex);
-            if (videoRefs.current[swiper.activeIndex]) {
-              videoRefs.current[swiper.activeIndex].play().catch((error) => {
-                console.error("Error playing video:", error);
-              });
-            }
-          }}
-        >
-          {cleanUrls.map((url, index) => {
-            return (
-              <SwiperSlide key={index} style={{ width: "100%" }}>
-                {fileTypes[index] === "video" && (
-                  <video
-                    className="post-card_img"
-                    loop
-                    muted
-                    ref={(el) => (videoRefs.current[index] = el)}
-                  >
-                    <source src={url} />
-                  </video>
-                )}
-                {fileTypes[index] === "image" && (
-                  <img className="post-card_img" src={url} alt="File preview" />
-                )}
-                {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-              </SwiperSlide>
-            );
-          })}
-        </Swiper>
-      </div>
+      <Swiper
+        modules={[A11y, Pagination]}
+        spaceBetween={16}
+        slidesPerView={1}
+        pagination
+        onInit={(swiper) => setActiveIndex(swiper.activeIndex)}
+        onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
+      >
+        {cleanUrls.map((url, index) => (
+          <SwiperSlide key={index} style={{ width: "100%" }}>
+            {fileTypes[index] === "video" && (
+              <video
+                className="post-card_img"
+                loop
+                ref={(el) => (videoRefs.current[index] = el)}
+                data-index={index} // Add data-index for IntersectionObserver
+              >
+                <source src={url} />
+              </video>
+            )}
+            {fileTypes[index] === "image" && (
+              <img className="post-card_img" src={url} alt="File preview" />
+            )}
+            {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+          </SwiperSlide>
+        ))}
+      </Swiper>
 
       <PostStats post={post} userId={user.id} />
     </div>
