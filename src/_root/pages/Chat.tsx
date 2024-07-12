@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
-import { appwriteConfig, databases } from "@/lib/appwrite/config";
+// import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries"; // Assuming correct path to your useCreateMessage hook
 import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";
-import { ID, Query } from "appwrite"; // Assuming `Permission` and `Role` are not used directly here
+import { ID } from "appwrite"; // Assuming `Permission` and `Role` are not used directly here
 import UsersList from "./UsersList";
 
 function Chat() {
