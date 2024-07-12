@@ -296,7 +296,11 @@ function Chat() {
                           src={user?.imageUrl}
                           className="w-6 h-6 rounded-full"
                         /> */}
-                        <div className="message">
+                        <div className={`message ${
+                          message.userId === user.id
+                            ? "!bg-green-500"
+                            : "!bg-gray-400"
+                        }`}>
                           <span>{message.content}</span>
                         </div>
                       </div>
