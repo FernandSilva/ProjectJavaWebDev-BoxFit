@@ -64,7 +64,7 @@ const Home = () => {
         <Chatbot />
       </div>
 
-      <div className="home-creators">
+      <div className="home-creators !overflow-x-hidden">
         <h3 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
           Top Growers
         </h3>

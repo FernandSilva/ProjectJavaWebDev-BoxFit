@@ -537,7 +537,7 @@ textarea:focus {
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
+  transform: translateX(110%);
   transition: transform 0.3s ease;
   border: 1px solid rgba(0, 0, 0, 0.1); /* Adding a black border */
 }
