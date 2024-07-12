@@ -90,7 +90,7 @@ const PostCard = ({ post }: PostCardProps) => {
 
   return (
     <div className="post-card sm:max-w-screen-sm">
-       <Link to={`/posts/${post.$id}`}>
+      <Link to={`/posts/${post.$id}`}>
         <>
           <div className="flex-between">
             <div className="flex items-center gap-3">
@@ -163,6 +163,7 @@ const PostCard = ({ post }: PostCardProps) => {
               <video
                 className="post-card_img"
                 loop
+                preload="auto" // Preload the video for smoother playback
                 ref={(el) => (videoRefs.current[index] = el)}
                 data-index={index} // Add data-index for IntersectionObserver
               >
