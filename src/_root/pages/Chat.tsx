@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
 import { Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
 // import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries"; // Assuming correct path to your useCreateMessage hook
 import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";
 import { ID } from "appwrite"; // Assuming `Permission` and `Role` are not used directly here
-import UsersList from "./UsersList";
 import moment from "moment";
+import { MdArrowBack } from "react-icons/md";
+import UsersList from "./UsersList";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
@@ -105,6 +106,10 @@ function Chat() {
               <div className="chat-messages-section !w-full lg:!w-[70%] !h-[84vh] lg:!h-[100vh]">
                 <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center">
                   <div className="flex items-center gap-2">
+                    <MdArrowBack
+                      onClick={() => setSteps(0)}
+                      className="text-black text-lg"
+                    />
                     <img
                       src={selectedUser?.imageUrl}
                       className="w-8 h-8 rounded-full"
@@ -305,9 +310,13 @@ function Chat() {
                               : "!bg-gray-500"
                           }`}
                         >
-                          <span>{message.content}  <sub className="text-[10px] font-medium ml-2">{moment(message.$createdAt).format("hh:mm")}</sub></span>
+                          <span>
+                            {message.content}{" "}
+                            <sub className="text-[10px] font-medium ml-2">
+                              {moment(message.$createdAt).format("hh:mm")}
+                            </sub>
+                          </span>
                         </div>
-                       
                       </div>
                     ))
                   ) : (
