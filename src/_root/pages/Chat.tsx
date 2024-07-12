@@ -103,7 +103,7 @@ function Chat() {
               />
             )}
             {steps === 1 && (
-              <div className="chat-messages-section !w-full lg:!w-[70%] !h-[84vh] lg:!h-[100vh]">
+              <div className="chat-messages-section !w-full lg:!w-[70%] !h-[80vh] lg:!h-[100vh]">
                 <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <MdArrowBack
