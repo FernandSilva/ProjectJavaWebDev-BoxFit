@@ -725,6 +725,15 @@ button:last-child:hover {
   width: fit-content;
   border-radius: 16px;
 }
+.swiper-pagination-bullet-active {
+  background: #28a745 !important;
+}
+.swiper-pagination-fraction,
+.swiper-pagination-custom,
+.swiper-horizontal > .swiper-pagination-bullets,
+.swiper-pagination-bullets.swiper-pagination-horizontal {
+  top: 90% !important;
+}
 
 .message.user {
   background: #dcf8c6;
