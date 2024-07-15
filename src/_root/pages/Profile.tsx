@@ -32,6 +32,7 @@ const Profile = () => {
   const { pathname } = useLocation();
   const { data: currentUser } = useGetUserById(id || "");
   const { data: userRelationships } = useGetUserRelationships(id);
+  console.log(userRelationships);
 
   const { mutate: signOut } = useSignOutAccount();
   const isOwnProfile = user?.id === currentUser?.$id;
@@ -42,6 +43,10 @@ const Profile = () => {
 
   useEffect(() => {
     setIsFollowing(!!followStatusData);
+  }, [followStatusData]);
+
+  useEffect(() => {
+    console.log("Follow Status Data:", followStatusData);
   }, [followStatusData]);
 
   const followMutation = useFollowUser();
@@ -61,10 +66,14 @@ const Profile = () => {
   };
 
   const handleUnfollow = () => {
+    console.log({ isFollowing, followStatusData });
     if (isFollowing && followStatusData) {
       unfollowMutation.mutate(followStatusData.$id, {
         onSuccess: () => {
           setIsFollowing(false);
+        },
+        onError: (error) => {
+          console.error("Failed to unfollow user:", error);
         },
       });
     }
@@ -94,8 +103,8 @@ const Profile = () => {
     );
 
   return (
-    <div className="profile-container ">
-      <div className=" flex flex-col xl:flex-row  max-xl:items-center  lg:gap-7 lg:justify-between">
+    <div className="profile-container">
+      <div className="flex flex-col xl:flex-row max-xl:items-center lg:gap-7 lg:justify-between">
         <div className="flex lg:gap-6 gap-2">
           <img
             src={
@@ -112,8 +121,8 @@ const Profile = () => {
               alt="profile"
               className="w-[4rem] h-[4rem] lg:h-[6rem] lg:w-[6rem] rounded-full"
             />
-            <div className=" md:hidden">
-              <h1 className="lg:text-center xl:text-left !text-[14px]   w-full">
+            <div className="md:hidden">
+              <h1 className="lg:text-center xl:text-left !text-[14px] w-full">
                 {currentUser.name}
               </h1>
               <p className="small-regular md:body-medium !text-[12px] text-light-3 ">
@@ -121,16 +130,16 @@ const Profile = () => {
               </p>
             </div>
           </div>
-          <div className="flex flex-col  md:mt-2">
-            <div className="hidden md:flex flex-col w-full ">
-              <h1 className="lg:text-center xl:text-left  md:!text-[32px] h3-bold md:h1-semibold w-full">
+          <div className="flex flex-col md:mt-2">
+            <div className="hidden md:flex flex-col w-full">
+              <h1 className="lg:text-center xl:text-left md:!text-[32px] h3-bold md:h1-semibold w-full">
                 {currentUser.name}
               </h1>
               <p className="small-regular md:body-medium !text-[14px] text-light-3 lg:text-center xl:text-left">
                 @{currentUser.username}
               </p>
             </div>
-            <div className="flex flex-row mt-[10px] md:mt-[0px] gap-2 md:gap-8 pt-[10px] lg:pt-[20px] items-center justify-center xl:justify-start  z-20">
+            <div className="flex flex-row mt-[10px] md:mt-[0px] gap-2 md:gap-8 pt-[10px] lg:pt-[20px] items-center justify-center xl:justify-start z-20">
               <Link
                 to={`/profile/${id}`}
                 className="flex-center gap-1 md:gap-2 cursor-pointer"
@@ -147,7 +156,6 @@ const Profile = () => {
                 className="flex-center gap-1 md:gap-2 cursor-pointer"
               >
                 <p className="small-semibold lg:body-bold text-green-500">
-                  {" "}
                   {userRelationships?.followers || 0}
                 </p>
                 <p className="small-medium lg:base-medium text-light-3">
@@ -172,7 +180,7 @@ const Profile = () => {
           </div>
         </div>
         <div className="w-[100%] md:hidden pl-[10px] py-[10px]">
-          <p className="text-[10px]  text-[#555555]">{currentUser.bio}</p>
+          <p className="text-[10px] text-[#555555]">{currentUser.bio}</p>
         </div>
         <div className="flex justify-between xl:justify-end xl:gap-4 md:mt-4 w-full">
           {isOwnProfile && (
@@ -180,7 +188,7 @@ const Profile = () => {
               <Link to={`/update-profile/${currentUser.$id}`}>
                 <Button
                   variant="ghost"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2  text-gray-700 border border-gray-300  rounded-md hover:bg-gray-200  transition duration-150 ease-in-out"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out"
                 >
                   <span className="md:text-sm text-[14px] font-medium">
                     Edit Profile
@@ -287,14 +295,12 @@ const Profile = () => {
           index
           element={<GridPostList posts={currentUser.posts} showUser={false} />}
         />
-        
-          <>
-            <Route path="/liked-posts" element={<LikedPosts />} />
-            <Route path="/following" element={<Following />} />
-            <Route path="/followers" element={<Follower />} />
 
-          </>
-       
+        <>
+          <Route path="/liked-posts" element={<LikedPosts />} />
+          <Route path="/following" element={<Following />} />
+          <Route path="/followers" element={<Follower />} />
+        </>
       </Routes>
       <Outlet />
     </div>

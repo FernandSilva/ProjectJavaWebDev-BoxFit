@@ -25,9 +25,10 @@ type PostStatsProps = {
   post: Models.Document;
   userId: string;
   isPost?: boolean;
+  showComments?:boolean
 };
 
-const PostStats = ({ post, userId, isPost }: PostStatsProps) => {
+const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   const location = useLocation();
   const likeCommentMutation = useLikeComment();
   const unlikeCommentMutation = useUnlikeComment();
@@ -131,6 +132,9 @@ const PostStats = ({ post, userId, isPost }: PostStatsProps) => {
       handleSend();
     }
   };
+  const handleCommentsSection=()=>{
+    {showComments && setShowCommentBox(!showCommentBox)}
+  }
 
   return (
     <>
@@ -176,7 +180,7 @@ const PostStats = ({ post, userId, isPost }: PostStatsProps) => {
           <div className="flex gap-1">
             <FaRegComment
               className="w-[26px] h-[22px] cursor-pointer"
-              onClick={() => setShowCommentBox(!showCommentBox)}
+              onClick={handleCommentsSection}
             />
             <p className="small-medium lg:base-medium">{totalComment}</p>
           </div>

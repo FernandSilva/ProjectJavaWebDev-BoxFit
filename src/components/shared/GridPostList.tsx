@@ -7,6 +7,7 @@ type GridPostListProps = {
   showUser?: boolean;
   showStats?: boolean;
   showcreator?:boolean;
+  showComments?:boolean
 };
 
 const GridPostList = ({
@@ -14,14 +15,15 @@ const GridPostList = ({
   showUser = true,
   showStats = true,
   showcreator = true,
+  showComments
   
 }: GridPostListProps) => {
   
 
   return (
     <ul className="grid-container">
-      {posts.map((post) => (
-        <SavedGridPostList post={post} showUser={showUser} showcreator={showcreator} showStats={showStats}  />
+      {posts.map((post, index) => (
+        <SavedGridPostList key={index} post={post} showUser={showUser} showcreator={showcreator} showStats={showStats}  showComments={showComments}/>
       ))}
     </ul>
   );

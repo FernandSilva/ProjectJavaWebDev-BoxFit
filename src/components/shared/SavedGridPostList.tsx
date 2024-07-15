@@ -8,11 +8,13 @@ const SavedGridPostList = ({
   showUser,
   showStats,
   showcreator,
+  showComments,
 }: {
   post: any;
   showUser: boolean;
   showcreator: boolean;
   showStats: boolean;
+  showComments: boolean
 }) => {
   const { user } = useUserContext();
   const [fileType, setFileType] = useState("unknown");
@@ -36,7 +38,7 @@ const SavedGridPostList = ({
             : url.substring(typeStartIndex + 6);
       }
 
-      console.log(`URL: ${url}, Type: ${typeMatch}`); // Log the URL and extracted type
+      
       types.push(typeMatch.split("/")[0]);
 
       // Remove the type parameter from the URL and the last question mark if it's at the end
@@ -84,11 +86,11 @@ const SavedGridPostList = ({
               className="w-8 h-8 rounded-full"
             />
             <p className="line-clamp-1">
-              {showcreator ? user.name : post.creator.name}
+              {!showcreator ? user.name : post.creator.name}
             </p>
           </div>
         )}
-        {showStats && <PostStats isPost post={post} userId={user.id} />}
+        {showStats && <PostStats isPost post={post} userId={user.id} showComments={showComments}/>}
       </div>
     </li>
   );

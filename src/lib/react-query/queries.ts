@@ -327,8 +327,10 @@ export const useGetUserRelationships = (userId: string) => {
   return useQuery(
     [QUERY_KEYS.GET_USER_RELATIONSHIPS, userId],
     () => getUserRelationships(userId),
+
     {
       enabled: !!userId, // Only runs if userId is truthy
+      refetchInterval: 1000,
     }
   );
 };
@@ -408,6 +410,7 @@ export const useFollowStatus = (userId: string, followsUserId: string) => {
     () => checkFollowStatus(userId, followsUserId),
     {
       enabled: !!userId && !!followsUserId,
+      refetchInterval: 1000,
     }
   );
 };

@@ -178,7 +178,7 @@ const PostCard = ({ post }: PostCardProps) => {
         ))}
       </Swiper>
 
-      <PostStats post={post} userId={user.id} />
+      <PostStats post={post} userId={user.id} showComments={true}/>
     </div>
   );
 };
