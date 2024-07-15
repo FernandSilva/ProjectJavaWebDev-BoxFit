@@ -24,7 +24,7 @@ const SavedGridPostList = ({
     const types: string[] = [];
     const urls: string[] = [];
 
-    post.imageUrl.forEach((url: string) => {
+    post?.imageUrl?.forEach((url: string) => {
       // Extract the type parameter from the URL
       const typeStartIndex = url.indexOf("?type=");
       let typeMatch = "unknown";
@@ -88,7 +88,7 @@ const SavedGridPostList = ({
             </p>
           </div>
         )}
-        {showStats && <PostStats post={post} userId={user.id} />}
+        {showStats && <PostStats isPost post={post} userId={user.id} />}
       </div>
     </li>
   );

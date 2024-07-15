@@ -1127,12 +1127,11 @@ export const getAllUsers = async () => {
 
 // Function to get all posts
 export async function getAllPosts(key, searchQuery = "") {
-  console.log(key);
   try {
     let query = [Query.orderDesc("$createdAt")];
 
     if (searchQuery) {
-      query.push(Query.search("caption", searchQuery)); // Adjust field "$name" to the actual field you want to search
+      query.push(Query.search("caption", searchQuery));
     }
 
     const posts = await databases.listDocuments(
@@ -1141,12 +1140,13 @@ export async function getAllPosts(key, searchQuery = "") {
       query
     );
 
-    if (!posts) throw new Error("Failed to fetch posts.");
-
-    return posts;
+    return {
+      documents: posts.documents,
+      total: posts.total,
+    };
   } catch (error) {
     console.error("Error fetching posts:", error);
-    throw error;
+    throw new Error(error.message);
   }
 }
 

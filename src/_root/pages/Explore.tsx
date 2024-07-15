@@ -7,7 +7,6 @@ import { A11y } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import { useUserContext } from "@/context/AuthContext";
-import { getAllUsers } from "@/lib/appwrite/api";
 import {
   useGetAllPosts,
   useGetFollowersPosts,
@@ -194,12 +193,12 @@ const Explore = () => {
           ) : (
             <GridPostList posts={posts} />
           )} */}
-          <GridPostList posts={posts} />
+          {posts?.length===0 ?<p className=" w-[100%] text-center">No result found</p>:<GridPostList posts={posts} />}
         </div>
 
         {hasNextPage && !searchValue && (
           <div ref={ref} className="mt-10">
-            <Loader />
+            <p>There are no posts</p>
           </div>
         )}
       </div>

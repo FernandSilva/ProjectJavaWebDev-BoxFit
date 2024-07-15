@@ -19,13 +19,15 @@ import { CiBookmark } from "react-icons/ci";
 import { FaRegComment } from "react-icons/fa";
 import { IoMdSend } from "react-icons/io";
 import { IoBookmark } from "react-icons/io5";
+import { PiFireLight } from "react-icons/pi";
 
 type PostStatsProps = {
   post: Models.Document;
   userId: string;
+  isPost?: boolean;
 };
 
-const PostStats = ({ post, userId }: PostStatsProps) => {
+const PostStats = ({ post, userId, isPost }: PostStatsProps) => {
   const location = useLocation();
   const likeCommentMutation = useLikeComment();
   const unlikeCommentMutation = useUnlikeComment();
@@ -33,17 +35,16 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
   const createCommentMutation = useCreateComment();
 
   const likesList = post.likes.map((user: Models.Document) => user.$id);
-  
+
   const [inputText, setInputText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState<boolean>(false);
 
   const { user } = useUserContext();
 
   const { data: commentsData } = useGetCommentsByPost(post.$id);
-  
-  const comments = commentsData?.comments || [];
-  const totalComment = commentsData?.totalComments
 
+  const comments = commentsData?.comments || [];
+  const totalComment = commentsData?.totalComments;
 
   const [likes, setLikes] = useState<string[]>(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -65,9 +66,7 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
     setIsSaved(!!savedPostRecord);
   }, [currentUser]);
 
-  const handleLikePost = (
-    e: React.MouseEvent<HTMLImageElement, MouseEvent>
-  ) => {
+  const handleLikePost = (e: any) => {
     e.stopPropagation();
 
     let likesArray = [...likes];
@@ -140,18 +139,38 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
       >
         <div className="flex gap-6 mr-5">
           <div className="flex gap-1">
-            <img
-              src={`${
-                checkIsLiked(likes, userId)
-                  ? "/assets/icons/liked.svg"
-                  : "/assets/icons/like.svg"
-              }`}
-              alt="like"
-              width={20}
-              height={20}
-              onClick={(e) => handleLikePost(e)}
-              className="cursor-pointer"
-            />
+            {isPost ? (
+              <>
+                {!checkIsLiked(likes, userId) ? (
+                  <PiFireLight
+                    className="w-[20px] h-[24px] cursor-pointer"
+                    onClick={(e) => handleLikePost(e)}
+                  />
+                ) : (
+                  <img
+                    src="/assets/icons/liked.svg"
+                    alt="like"
+                    width={20}
+                    height={20}
+                    onClick={(e) => handleLikePost(e)}
+                    className="cursor-pointer"
+                  />
+                )}
+              </>
+            ) : (
+              <img
+                src={`${
+                  checkIsLiked(likes, userId)
+                    ? "/assets/icons/liked.svg"
+                    : "/assets/icons/like.svg"
+                }`}
+                alt="like"
+                width={20}
+                height={20}
+                onClick={(e) => handleLikePost(e)}
+                className="cursor-pointer"
+              />
+            )}
             <p className="small-medium lg:base-medium">{likes.length}</p>
           </div>
           <div className="flex gap-1">
