@@ -25,6 +25,7 @@ function Chat() {
     selectedUser?.id,
     user?.id
   );
+  console.log(recievedMessages)
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;

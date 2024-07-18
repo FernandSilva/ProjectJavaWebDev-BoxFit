@@ -28,6 +28,7 @@ function UsersList({
   );
 
   if (isError) return <div>Error loading users</div>;
+  console.log(filteredUsers)
 
   return (
     <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%] ">

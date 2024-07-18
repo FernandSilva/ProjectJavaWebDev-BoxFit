@@ -945,29 +945,33 @@ export async function fetchUsersAndMessages(currentUserId: string) {
           ...messagesReceivedByUser.documents,
         ];
 
-        allMessages.sort((a, b) => b.createdAt - a.createdAt);
+        allMessages.sort(
+          (a, b) =>
+            new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime()
+        );
 
         // Get the latest message (if any)
-        const latestMessage = allMessages.length > 0 ? allMessages[0] : null;
+        const latestMessage =
+          allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
 
         return {
           ...user,
           latestMessage: latestMessage
             ? {
                 content: latestMessage.content,
-                timestamp: latestMessage.createdAt,
+                timestamp: latestMessage.$createdAt,
               }
             : null,
         };
       })
     );
 
-    // Sort users based on the full text of the latest message content
+    // Sort users based on the timestamp of the latest message in descending order
     usersWithLatestMessages.sort((a, b) => {
       if (!a.latestMessage && !b.latestMessage) return 0;
       if (!a.latestMessage) return 1;
       if (!b.latestMessage) return -1;
-      return a.latestMessage.content.localeCompare(b.latestMessage.content);
+      return new Date(b.latestMessage.timestamp).getTime() - new Date(a.latestMessage.timestamp).getTime();
     });
 
     return usersWithLatestMessages;
@@ -976,6 +980,8 @@ export async function fetchUsersAndMessages(currentUserId: string) {
     throw new Error("Error fetching users and messages");
   }
 }
+
+
 export const getMessages = async (recipientId, userId) => {
   try {
     const messagesSentByUser = await databases.listDocuments(
