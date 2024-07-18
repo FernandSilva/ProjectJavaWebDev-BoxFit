@@ -178,7 +178,7 @@ const PostDetails = () => {
 
   return (
     <div className="post_details-container">
-      <div className="hidden md:flex max-w-5xl w-full">
+      <div className="flex max-w-5xl w-full">
         <div
           onClick={() => navigate(-1)}
           className="flex cursor-pointer items-center gap-2"
@@ -250,7 +250,7 @@ const PostDetails = () => {
                     </p>
                     <div className="flex-center gap-2 text-light-3">
                       <p className="subtle-semibold lg:small-regular !text-xs">
-                        {multiFormatDateString(post?.$createdAt)}{" "}
+                        {multiFormatDateString(post?.$createdAt)}
                         {moment(post?.$createdAt).format("h:mm a")}
                       </p>
                       • <br />
@@ -271,7 +271,7 @@ const PostDetails = () => {
                 </div>
                 <div
                   onClick={handleDeletePost}
-                  className="cursor-pointer flex items-center gap-1"
+                  className={`cursor-pointer flex items-center gap-1 ${user.id !== post?.creator.$id ? "hidden" : ""}`}
                 >
                   <img
                     src={"/assets/icons/delete.svg"}

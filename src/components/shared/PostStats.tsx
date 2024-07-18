@@ -14,12 +14,13 @@ import {
   useSavePost,
   useUnlikeComment,
 } from "@/lib/react-query/queries";
-import { checkIsLiked } from "@/lib/utils";
+import { checkIsLiked, multiFormatDateString } from "@/lib/utils";
 import { CiBookmark } from "react-icons/ci";
 import { FaRegComment } from "react-icons/fa";
 import { IoMdSend } from "react-icons/io";
 import { IoBookmark } from "react-icons/io5";
 import { PiFireLight } from "react-icons/pi";
+import moment from "moment";
 
 type PostStatsProps = {
   post: Models.Document;
@@ -34,8 +35,8 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   const unlikeCommentMutation = useUnlikeComment();
   const deleteCommentMutation = useDeleteComment();
   const createCommentMutation = useCreateComment();
-
-  const likesList = post.likes.map((user: Models.Document) => user.$id);
+console.log({post})
+  const likesList = post?.likes?.map((user: Models.Document) => user.$id);
 
   const [inputText, setInputText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState<boolean>(false);
@@ -135,6 +136,7 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   const handleCommentsSection=()=>{
     {showComments && setShowCommentBox(!showCommentBox)}
   }
+  console.log({likes})
 
   return (
     <>
@@ -175,7 +177,7 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
                 className="cursor-pointer"
               />
             )}
-            <p className="small-medium lg:base-medium">{likes.length}</p>
+            <p className="small-medium lg:base-medium">{likes?.length}</p>
           </div>
           <div className="flex gap-1">
             <FaRegComment
@@ -213,6 +215,7 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
         <div className="comments-section mt-4">
           {comments.map((comment, index) => {
             const liked = comment.likedBy.includes(user.id);
+            console.log(comments)
             return (
               <div
                 key={index}
@@ -228,8 +231,8 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
                 />
                 <div className="comment-content  p-2 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <div className="flex items-center justify-between">
+                    <div className="flex flex-col justify-center gap-1">
+                      <div className="flex  items-center justify-between">
                         <p className="text-sm font-semibold">
                           {comment.userName}:
                         </p>
@@ -243,12 +246,20 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
                       className={`text-${liked ? "red" : "green"}-500 hover:text-${liked ? "red" : "green"}-700 transition duration-150 cursor-pointer`}
                     >
                       <img
-                        src={`/assets/icons/${liked ? "unlike" : "liked"}.svg`}
+                        src={`/assets/icons/${!liked ? "unlike" : "liked"}.svg`}
                         alt={liked ? "Unlike" : "Like"}
                         width={16}
                         height={16}
                       />
                     </div>
+                  </div>
+                  <div className="text-[10px] text-gray-500 flex gap-1">
+                    <span>
+                  {multiFormatDateString(comment?.$createdAt)}
+                    </span>
+                    <span>
+                  {moment(comment?.$createdAt).format("h:mm a")}
+                    </span>
                   </div>
                   {comment.userId === user.id && (
                     <div className="flex items-center gap-2 cursor-pointer">

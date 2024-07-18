@@ -17,6 +17,7 @@ const PostCard = ({ post }: PostCardProps) => {
   const { user } = useUserContext();
   const videoRefs = useRef<HTMLVideoElement[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
+  console.log({post})
   const [fileTypes, setFileTypes] = useState<string[]>([]);
   const [cleanUrls, setCleanUrls] = useState<string[]>([]);
 
@@ -178,7 +179,7 @@ const PostCard = ({ post }: PostCardProps) => {
         ))}
       </Swiper>
 
-      <PostStats post={post} userId={user.id} showComments={true}/>
+      <PostStats post={post} userId={user.id} showComments={true} />
     </div>
   );
 };

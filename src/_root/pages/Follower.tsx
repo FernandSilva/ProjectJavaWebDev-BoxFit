@@ -28,7 +28,7 @@ const Follower = () => {
     style={{borderTop:!isOwnProfile ? "1px solid rgb(0,0,0,0.1)":""}}>
 
     
-      <ul  className="grid grid-cols-6 gap-4">
+      <ul  className="grid 2xl:grid-cols-4 gap-4">
         {userRelationships.map((val) => (
           <li key={val.$id}>
             <UserCard user={val} />

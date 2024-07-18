@@ -1,8 +1,10 @@
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
+import Loader from "@/components/shared/Loader";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,19 +14,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import Loader from "@/components/shared/Loader";
-import { useToast } from "@/components/ui/use-toast";
+// import { useToast } from "@/components/ui/use-toast";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
+import { useUserContext } from "@/context/AuthContext";
 import {
   useCreateUserAccount,
   useSignInAccount,
 } from "@/lib/react-query/queries";
 import { SignupValidation } from "@/lib/validation";
-import { useUserContext } from "@/context/AuthContext";
 
 const SignupForm = () => {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const navigate = useNavigate();
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
@@ -55,7 +57,10 @@ const SignupForm = () => {
       });
 
       if (!session) {
-        toast({ title: "Something went wrong. Please login your new account" });
+        // toast({ title: "Something went wrong. Please login your new account" });
+        toast.error("Something went wrong. Please login your new account",{
+          position:"top-center"
+        })
 
         navigate("/sign-in");
 
@@ -70,6 +75,9 @@ const SignupForm = () => {
         navigate("/");
       }
     } catch (error) {
+      toast.error("Account already exists",{
+        position: "top-center",
+      })
       console.log({ error });
     }
   };
@@ -189,6 +197,7 @@ const SignupForm = () => {
           </p>
         </form>
       </div>
+      <ToastContainer />
     </Form>
   );
 };

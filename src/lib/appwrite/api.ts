@@ -903,10 +903,6 @@ export async function fetchUsersAndMessages(currentUserId: string) {
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId
     );
-    const messagesResult = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId
-    );
 
     const users = usersResult.documents
       .map((doc: any) => ({
@@ -921,40 +917,50 @@ export async function fetchUsersAndMessages(currentUserId: string) {
       }))
       .filter((user) => user.$id !== currentUserId); // Exclude current user
 
-    const messages = messagesResult.documents.map((doc: any) => ({
-      id: doc.$id,
-      userId: doc.senderId,
-      recipientId: doc.recipentId,
-      timestamp: doc.$createdAt, // Assuming you have a timestamp field
-      content: doc.content, // Example of message content field
-    }));
+    const usersWithLatestMessages = await Promise.all(
+      users.map(async (user) => {
+        // Fetch messages sent by current user to this user
+        const messagesSentByUser = await databases.listDocuments(
+          appwriteConfig.databaseId,
+          appwriteConfig.messageCollectionId,
+          [
+            Query.equal("recipentId", user.$id),
+            Query.equal("userId", currentUserId),
+          ]
+        );
 
-    // Process messages to find the latest message for each user
-    const usersWithLatestMessages = users.map((user) => {
-      // Find messages involving this user
-      const userMessages = messages.filter(
-        (msg) => msg.userId === user.$id || msg.recipientId === user.$id
-      );
+        // Fetch messages received by current user from this user
+        const messagesReceivedByUser = await databases.listDocuments(
+          appwriteConfig.databaseId,
+          appwriteConfig.messageCollectionId,
+          [
+            Query.equal("recipentId", currentUserId),
+            Query.equal("userId", user.$id),
+          ]
+        );
 
-      // Sort messages by timestamp (most recent first)
-      userMessages.sort((a, b) => b.timestamp - a.timestamp);
+        // Combine and sort messages
+        const allMessages = [
+          ...messagesSentByUser.documents,
+          ...messagesReceivedByUser.documents,
+        ];
 
-      // Get the latest message (if any)
-      const latestMessage =
-        userMessages.length > 0
-          ? userMessages[userMessages.length - 1] // Most recent message first
-          : null;
+        allMessages.sort((a, b) => b.createdAt - a.createdAt);
 
-      return {
-        ...user,
-        latestMessage: latestMessage
-          ? {
-              content: latestMessage.content,
-              timestamp: latestMessage.timestamp,
-            }
-          : null,
-      };
-    });
+        // Get the latest message (if any)
+        const latestMessage = allMessages.length > 0 ? allMessages[0] : null;
+
+        return {
+          ...user,
+          latestMessage: latestMessage
+            ? {
+                content: latestMessage.content,
+                timestamp: latestMessage.createdAt,
+              }
+            : null,
+        };
+      })
+    );
 
     // Sort users based on the full text of the latest message content
     usersWithLatestMessages.sort((a, b) => {
@@ -1131,7 +1137,10 @@ export async function getAllPosts(key, searchQuery = "") {
     let query = [Query.orderDesc("$createdAt")];
 
     if (searchQuery) {
-      query.push(Query.search("caption", searchQuery));
+      // query.push(Query.search("caption", searchQuery));
+      // query.push(Query.search("username", searchQuery));
+      // query.push(Query.search("name", searchQuery));
+      query.push(Query.search("tags", searchQuery));
     }
 
     const posts = await databases.listDocuments(

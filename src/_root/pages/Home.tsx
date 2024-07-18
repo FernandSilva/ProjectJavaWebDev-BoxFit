@@ -64,7 +64,7 @@ const Home = () => {
         <Chatbot />
       </div>
 
-      <div className="home-creators !overflow-x-hidden">
+      <div className="home-creators !overflow-x-hidden ">
         <h3 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
           Top Growers
         </h3>
@@ -72,7 +72,7 @@ const Home = () => {
           <Loader />
         ) : (
           <ul className="grid 2xl:grid-cols-2 gap-4">
-            {creators?.map((creator) => (
+            {creators?.slice(0, 10).map((creator) => (
               <li key={creator?.$id}>
                 <UserCard user={creator} />
               </li>

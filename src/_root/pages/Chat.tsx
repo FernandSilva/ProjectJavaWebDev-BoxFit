@@ -25,7 +25,6 @@ function Chat() {
     selectedUser?.id,
     user?.id
   );
-  console.log({ loading });
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedUser) return;
@@ -90,6 +89,7 @@ function Chat() {
       console.error("Failed to send message:", error);
     }
   };
+  
   return (
     <div className="chat-container">
       <div className="chat-layout !h-[84vh] sm:!h-full">

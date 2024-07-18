@@ -124,7 +124,7 @@ const Explore = () => {
                   modules={[A11y]}
                   spaceBetween={16}
                   slidesPerView={
-                    size.width > 1024 ? 4 : size.width > 640 ? 3 : 2
+                    size.width > 1024 ? 4.5 : size.width > 640 ? 3.5 : 2.5
                   }
                   onSwiper={(swiper) => console.log(swiper)}
                   onSlideChange={() => console.log("slide change")}
@@ -169,14 +169,14 @@ const Explore = () => {
               cursor: "pointer",
             }}
           >
-            <Select
+            {/* <Select
               options={options}
               className="w-[100%]"
               onChange={(e) => {
                 setFilter(e.value);
               }}
               isSearchable={false}
-            />
+            /> */}
           </div>
         </div>
 
@@ -193,14 +193,13 @@ const Explore = () => {
           ) : (
             <GridPostList posts={posts} />
           )} */}
-          {posts?.length===0 ?<p className=" w-[100%] text-center">No result found</p>:<GridPostList posts={posts} />}
+          {posts?.length === 0 ? (
+            <Loader />
+          ) : (
+            <GridPostList posts={posts} />
+          )}
         </div>
 
-        {hasNextPage && !searchValue && (
-          <div ref={ref} className="mt-10">
-            <p>There are no posts</p>
-          </div>
-        )}
       </div>
     </div>
   );

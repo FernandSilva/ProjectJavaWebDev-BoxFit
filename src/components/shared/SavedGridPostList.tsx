@@ -19,7 +19,7 @@ const SavedGridPostList = ({
   const { user } = useUserContext();
   const [fileType, setFileType] = useState("unknown");
   const firstImageUrl = post?.imageUrl?.[0];
-
+console.log({post})
   const [fileTypes, setFileTypes] = useState<string[]>([]);
   const [cleanUrls, setCleanUrls] = useState<string[]>([]);
   useEffect(() => {
@@ -86,7 +86,7 @@ const SavedGridPostList = ({
               className="w-8 h-8 rounded-full"
             />
             <p className="line-clamp-1">
-              {!showcreator ? user.name : post.creator.name}
+              {post.creator.name}
             </p>
           </div>
         )}
