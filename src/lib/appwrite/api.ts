@@ -971,7 +971,10 @@ export async function fetchUsersAndMessages(currentUserId: string) {
       if (!a.latestMessage && !b.latestMessage) return 0;
       if (!a.latestMessage) return 1;
       if (!b.latestMessage) return -1;
-      return new Date(b.latestMessage.timestamp).getTime() - new Date(a.latestMessage.timestamp).getTime();
+      return (
+        new Date(b.latestMessage.timestamp).getTime() -
+        new Date(a.latestMessage.timestamp).getTime()
+      );
     });
 
     return usersWithLatestMessages;
@@ -980,7 +983,6 @@ export async function fetchUsersAndMessages(currentUserId: string) {
     throw new Error("Error fetching users and messages");
   }
 }
-
 
 export const getMessages = async (recipientId, userId) => {
   try {
@@ -1143,10 +1145,8 @@ export async function getAllPosts(key, searchQuery = "") {
     let query = [Query.orderDesc("$createdAt")];
 
     if (searchQuery) {
-      // query.push(Query.search("caption", searchQuery));
-      // query.push(Query.search("username", searchQuery));
-      // query.push(Query.search("name", searchQuery));
       query.push(Query.search("tags", searchQuery));
+      
     }
 
     const posts = await databases.listDocuments(
@@ -1164,7 +1164,6 @@ export async function getAllPosts(key, searchQuery = "") {
     throw new Error(error.message);
   }
 }
-
 // Function to get posts from followed users
 export async function getFollowingPosts(userId: string) {
   try {

@@ -56,6 +56,7 @@ const Explore = () => {
     fetchNextPage,
     hasNextPage,
   } = useGetAllPosts(searchValue);
+  console.log({ allPosts });
   const { data: followingPosts } = useGetFollowingPosts(userId.id);
   const { data: followersPosts } = useGetFollowersPosts(userId.id);
 
@@ -169,14 +170,15 @@ const Explore = () => {
               cursor: "pointer",
             }}
           >
-            {/* <Select
+            <Select
               options={options}
+              defaultValue={options.filter((option) => option.label === "All")}
               className="w-[100%]"
               onChange={(e) => {
                 setFilter(e.value);
               }}
               isSearchable={false}
-            /> */}
+            />
           </div>
         </div>
 
@@ -193,13 +195,8 @@ const Explore = () => {
           ) : (
             <GridPostList posts={posts} />
           )} */}
-          {posts?.length === 0 ? (
-            <Loader />
-          ) : (
-            <GridPostList posts={posts} />
-          )}
+          {posts?.length === 0 ? <Loader /> : <GridPostList posts={posts} />}
         </div>
-
       </div>
     </div>
   );
