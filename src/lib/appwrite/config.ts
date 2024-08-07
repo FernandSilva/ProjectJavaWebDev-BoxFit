@@ -1,7 +1,5 @@
 // Import the necessary modules from the Appwrite SDK
-import { Client, Account, Databases, Storage, Avatars } from "appwrite";
-
-
+import { Client, Account, Databases, Storage, Avatars, Functions } from "appwrite";
 
 // Environment Variables from Vite
 interface Config {
@@ -16,6 +14,7 @@ interface Config {
   commentsCollectionId: string;
   messageCollectionId: string;  // Added this line
   functionKey: string;
+  gptKey: string;
 }
 
 // Define your Appwrite configuration using environment variables
@@ -30,7 +29,8 @@ export const appwriteConfig: Config = {
   userRelationshipsCollectionId: import.meta.env.VITE_APPWRITE_USER_RELATIONSHIPS_COLLECTION_ID, // The collection ID for user relationships
   commentsCollectionId: import.meta.env.VITE_APPWRITE_USER_COMMENTS_COLLECTION_ID, // The collection ID for comments
   messageCollectionId: import.meta.env.VITE_APPWRITE_MESSAGES_COLLECTION_ID, // The collection ID for messages
-  functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY // Appwrite function key for server-side operations
+  functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY, // Appwrite function key for server-side operations
+  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY // Key for GPT or other integrations
 };
 
 // Initialize the Appwrite client
@@ -43,4 +43,4 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const avatars = new Avatars(client);
-
+export const functions = new Functions(client); // Initialize the Functions service

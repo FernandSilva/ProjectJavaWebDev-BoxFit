@@ -1,4 +1,5 @@
 import { LikedPosts } from "@/_root/pages";
+import { BiMessageDetail } from "react-icons/bi";
 import { GridPostList, Loader } from "@/components/shared";
 import { Button } from "@/components/ui";
 import { INITIAL_USER, useUserContext } from "@/context/AuthContext";
@@ -65,6 +66,8 @@ const Profile = () => {
     }
   };
 
+  const MessageActive = pathname === "/Chat";
+
   const handleUnfollow = () => {
     console.log({ isFollowing, followStatusData });
     if (isFollowing && followStatusData) {
@@ -95,12 +98,18 @@ const Profile = () => {
     navigate("/settings");
   };
 
+
   if (!currentUser)
     return (
       <div className="flex-center w-full h-full">
         <Loader />
       </div>
     );
+
+  
+  function handleClick(event: MouseEvent<HTMLButtonElement, MouseEvent>): void {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <div className="profile-container">
@@ -234,8 +243,18 @@ const Profile = () => {
                 >
                   Follow
                 </Button>
+
               )}
-            </div>
+              <Button
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${MessageActive ? "bg-green-500 text-white" : ""}`}
+              onClick={() => navigate('/Chat')}
+            >
+              <BiMessageDetail />
+              <p className="text-sm">Message</p>
+            </Button>
+
+              
+             </div>
           )}
         </div>
       </div>

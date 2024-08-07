@@ -254,10 +254,26 @@
     @apply sticky top-0 z-50 md:hidden  bg-white border-b border-gray-300 w-full;
   }
 
-  /* User card */
-  .user-card {
-    @apply flex-start flex-col gap-2 border border-gray-200 rounded-[10px] px-4 py-4;
-  }
+/* User card */
+.user-card {
+  @apply relative flex flex-col justify-end items-center gap-2 border border-gray-200 rounded-[10px] overflow-hidden;
+  height: 200px; /* Example fixed height, adjust as necessary */
+}
+
+.user-card_image {
+  @apply absolute inset-0 w-full h-full object-cover;
+}
+
+.user-card_overlay {
+  @apply absolute bottom-0 flex flex-col justify-center items-center gap-1 bg-black bg-opacity-50 p-2 w-full;
+}
+
+.shad-button_primary {
+  @apply text-sm px-5 py-1; /* Adjust button padding and size as needed */
+}
+
+
+
 }
 
 @layer components {
