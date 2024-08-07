@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import { LikedPosts } from "@/_root/pages";
 import { BiMessageDetail } from "react-icons/bi";
 import { GridPostList, Loader } from "@/components/shared";
@@ -11,7 +12,6 @@ import {
   useSignOutAccount,
   useUnfollowUser,
 } from "@/lib/react-query/queries";
-import { useEffect, useState } from "react";
 import { TbLogout2 } from "react-icons/tb";
 import {
   Link,
@@ -28,7 +28,6 @@ import Follower from "./Follower";
 const Profile = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { id: profileId } = useParams();
   const { user, setUser, setIsAuthenticated } = useUserContext();
   const { pathname } = useLocation();
   const { data: currentUser } = useGetUserById(id || "");
@@ -38,7 +37,7 @@ const Profile = () => {
   const { mutate: signOut } = useSignOutAccount();
   const isOwnProfile = user?.id === currentUser?.$id;
 
-  const { data: followStatusData } = useFollowStatus(user?.id, profileId);
+  const { data: followStatusData } = useFollowStatus(user?.id, id);
 
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -56,7 +55,7 @@ const Profile = () => {
   const handleFollow = () => {
     if (!isFollowing) {
       followMutation.mutate(
-        { userId: user?.id, followsUserId: profileId },
+        { userId: user?.id, followsUserId: id },
         {
           onSuccess: () => {
             setIsFollowing(true);
@@ -82,7 +81,7 @@ const Profile = () => {
     }
   };
 
-  const handleSignOut = async (e) => {
+  const handleSignOut = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     try {
       await signOut();
@@ -98,18 +97,12 @@ const Profile = () => {
     navigate("/settings");
   };
 
-
   if (!currentUser)
     return (
       <div className="flex-center w-full h-full">
         <Loader />
       </div>
     );
-
-  
-  function handleClick(event: MouseEvent<HTMLButtonElement, MouseEvent>): void {
-    throw new Error("Function not implemented.");
-  }
 
   return (
     <div className="profile-container">
@@ -243,18 +236,15 @@ const Profile = () => {
                 >
                   Follow
                 </Button>
-
               )}
               <Button
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${MessageActive ? "bg-green-500 text-white" : ""}`}
-              onClick={() => navigate('/Chat')}
-            >
-              <BiMessageDetail />
-              <p className="text-sm">Message</p>
-            </Button>
-
-              
-             </div>
+                className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${MessageActive ? "bg-green-500 text-white" : ""}`}
+                onClick={() => navigate('/Chat')}
+              >
+                <BiMessageDetail />
+                <p className="text-sm">Message</p>
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -314,12 +304,9 @@ const Profile = () => {
           index
           element={<GridPostList posts={currentUser.posts} showUser={false} />}
         />
-
-        <>
-          <Route path="/liked-posts" element={<LikedPosts />} />
-          <Route path="/following" element={<Following />} />
-          <Route path="/followers" element={<Follower />} />
-        </>
+        <Route path="/liked-posts" element={<LikedPosts />} />
+        <Route path="/following" element={<Following />} />
+        <Route path="/followers" element={<Follower />} />
       </Routes>
       <Outlet />
     </div>
