@@ -15,6 +15,7 @@ interface Config {
   messageCollectionId: string;  // Added this line
   functionKey: string;
   gptKey: string;
+  gptchatbotKey: string;
 }
 
 // Define your Appwrite configuration using environment variables
@@ -30,7 +31,8 @@ export const appwriteConfig: Config = {
   commentsCollectionId: import.meta.env.VITE_APPWRITE_USER_COMMENTS_COLLECTION_ID, // The collection ID for comments
   messageCollectionId: import.meta.env.VITE_APPWRITE_MESSAGES_COLLECTION_ID, // The collection ID for messages
   functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY, // Appwrite function key for server-side operations
-  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY // Key for GPT or other integrations
+  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY, // Key for GPT or other integrations
+  gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY
 };
 
 // Initialize the Appwrite client

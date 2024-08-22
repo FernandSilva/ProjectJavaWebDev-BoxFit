@@ -102,7 +102,7 @@ export interface Message {
   username: string;
   content: string;
   createdAt: string;
-  recipientId: string
+  recipentId: string
 }
 
 

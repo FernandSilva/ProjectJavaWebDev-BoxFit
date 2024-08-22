@@ -24,11 +24,11 @@ function UsersList({
 
   // Filter users based on search query
   const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (isError) return <div>Error loading users</div>;
-  console.log(filteredUsers)
 
   return (
     <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%] ">
@@ -73,15 +73,17 @@ function UsersList({
           ></line>
         </svg>
       </div>
-      <Input
-        placeholder="Search for users"
-        className="shad-input"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+      <div className="search-section py-4 border-b">
+        <Input
+          placeholder="Search for users"
+          className="shad-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
       {isLoading
         ? [1, 2, 3, 4, 5].map((val) => (
-            <div role="status" className="max-w-sm p-2 rounded animate-pulse">
+            <div key={val} role="status" className="max-w-sm p-2 rounded animate-pulse">
               <div className="flex items-center mt-4">
                 <svg
                   className="w-10 h-10 me-3 text-gray-200 dark:text-gray-700"
@@ -99,42 +101,45 @@ function UsersList({
               </div>
             </div>
           ))
-        : filteredUsers
-        .filter((user) => user.latestMessage) // Filter users who have a latestMessage
-        .map((user) => (
-          <div
-            key={user.$id}
-            onClick={() => {
-              onSelectUser(user);
-              if (setSteps) setSteps(1);
-            }}
-            className={`user-item ${
-              user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
-            } flex items-center gap-4`}
-          >
-            <img
-              src={user.imageUrl}
-              className="w-8 h-8 rounded-full"
-              alt={`Profile of ${user.username}`}
-            />
-            <div className="w-full">
-              <span className="font-semibold">{user.username}</span>
-              {user.latestMessage && (
-                <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
-                  <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
-                    {user.latestMessage.content}
-                  </span>{" "}
-                  <span className="text-[10px]">
-                    {multiFormatDateString(user.latestMessage.timestamp)}
-                  </span>
-                </div>
-              )}
+        : filteredUsers.length > 0
+        ? filteredUsers.map((user) => (
+            <div
+              key={user.$id}
+              onClick={() => {
+                onSelectUser(user);
+                if (setSteps) setSteps(1);
+              }}
+              className={`user-item ${
+                user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
+              } flex items-center gap-4`}
+            >
+              <img
+                src={user.imageUrl}
+                className="w-8 h-8 rounded-full"
+                alt={`Profile of ${user.username}`}
+              />
+              <div className="w-full">
+                <span className="font-semibold">{user.username}</span>
+                {user.latestMessage && (
+                  <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
+                    <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
+                      {user.latestMessage.content}
+                    </span>{" "}
+                    <span className="text-[10px]">
+                      {multiFormatDateString(user.latestMessage.timestamp)}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))
+          ))
+        : (
+          <div className="no-results">No users found</div>
+        )
       }
     </div>
   );
 }
 
 export default UsersList;
+
