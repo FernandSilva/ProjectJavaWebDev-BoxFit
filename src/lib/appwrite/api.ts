@@ -7,7 +7,12 @@ import { account, appwriteConfig, avatars, databases, storage } from "./config";
 // ============================================================
 
 // ============================== SIGN UP
-export async function createUserAccount(user: INewUser) {
+export async function createUserAccount(user: {
+  email: string;
+  password: string;
+  name: string;
+  username?: string;
+}) {
   try {
     const newAccount = await account.create(
       ID.unique(),
@@ -15,6 +20,8 @@ export async function createUserAccount(user: INewUser) {
       user.password,
       user.name
     );
+
+    console.log("New account created:", newAccount);
 
     const avatarUrl = avatars.getInitials(user.name);
 
@@ -26,11 +33,16 @@ export async function createUserAccount(user: INewUser) {
       imageUrl: avatarUrl,
     });
 
+    console.log("User saved to DB:", newUser);
+
     return newUser;
   } catch (error) {
+    console.error("Error creating user account:", error);
     throw error;
   }
 }
+
+
 
 // ============================== SAVE USER TO DB
 export async function saveUserToDB(user: {
@@ -55,34 +67,59 @@ export async function saveUserToDB(user: {
 }
 
 // ============================== SIGN IN
-export async function signInAccount(user: { email: string; password: string }) {
+export async function signInAccount(user: {
+  email: string;
+  password: string;
+}) {
   try {
-    const session = await account.createEmailSession(user.email, user.password);
+    const activeSession = await getActiveSession();
 
+    if (activeSession) {
+      return activeSession; // Return the active session if already logged in
+    }
+
+    const session = await account.createEmailSession(user.email, user.password);
     return session;
   } catch (error) {
-    console.log(error);
+    console.log("Error signing in:", error);
     throw error;
   }
 }
+
+async function getActiveSession() {
+  try {
+    return await account.getSession("current");
+  } catch (error) {
+    if (error.code === 401) {
+      // No active session found
+      return null;
+    }
+    throw error;
+  }
+}
+
 
 // ============================== GET ACCOUNT
 export async function getAccount() {
   try {
     const currentAccount = await account.get();
-
     return currentAccount;
   } catch (error) {
-    console.log(error);
+    console.log("Error fetching account:", error);
+    return null; // Explicitly return null on error
   }
 }
+
 
 // ============================== GET USER
 export async function getCurrentUser() {
   try {
     const currentAccount = await getAccount();
+    if (!currentAccount) {
+      throw new Error("No current account found");
+    }
 
-    if (!currentAccount) throw Error;
+    console.log("Current account ID:", currentAccount.$id);
 
     const currentUser = await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -90,14 +127,24 @@ export async function getCurrentUser() {
       [Query.equal("accountId", currentAccount.$id)]
     );
 
-    if (!currentUser) throw Error;
+    console.log("Current user documents:", currentUser);
+
+    if (currentUser.total === 0) {
+      console.warn("No user document found for account ID:", currentAccount.$id);
+      return null;
+    }
 
     return currentUser.documents[0];
   } catch (error) {
-    console.log(error);
+    console.error("Error fetching current user:", error);
     return null;
   }
 }
+
+
+
+
+
 
 // ============================== SIGN OUT
 export async function signOutAccount() {
@@ -251,6 +298,9 @@ export async function searchPosts(searchTerm: string) {
     console.log(error);
   }
 }
+
+
+
 
 export async function getInfinitePosts({ pageParam }: { pageParam: number }) {
   const queries: any[] = [Query.orderDesc("$updatedAt"), Query.limit(9)];

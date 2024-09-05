@@ -1,7 +1,8 @@
 import { Models } from "appwrite";
 import { useState } from "react";
 // import { useToast } from "@/components/ui/use-toast";
-import { Chatbot, Loader, PostCard, UserCard } from "@/components/shared";
+//import { Chatbot } from "@/components/shared";
+import { Loader, PostCard, UserCard } from "@/components/shared";
 import { useGetRecentPosts, useGetUsers } from "@/lib/react-query/queries";
 
 const Home = () => {
@@ -61,7 +62,7 @@ const Home = () => {
       {/* Chatbot trigger icon */}
       <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-5">
        
-        <Chatbot />
+      {/*<Chatbot>*/}
       </div>
 
       <div className="home-creators !overflow-x-hidden ">

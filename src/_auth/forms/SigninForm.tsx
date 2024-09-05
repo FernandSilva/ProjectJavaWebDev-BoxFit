@@ -37,29 +37,43 @@ const SigninForm = () => {
     },
   });
 
-  const handleSignin = async (user: z.infer<typeof SigninValidation> | any) => {
+  const handleSignin = async (user: z.infer<typeof SigninValidation>) => {
     try {
-      const session = await signInAccount(user);
-
+      // Ensure user object contains the required fields
+      if (!user.email || !user.password) {
+        throw new Error("Email and password are required");
+      }
+  
+      // Sign in the user
+      const session = await signInAccount({
+        email: user.email,
+        password: user.password,
+      });
+  
       if (!session) {
         throw new Error("Login failed. Please try again.");
       }
-
+  
       const isLoggedIn = await checkAuthUser();
-
+  
       if (isLoggedIn) {
         form.reset();
         navigate("/");
       } else {
         throw new Error("Login failed. Please try again.");
       }
-    } catch (error) {
-      toast.error(error.response.message, {
+    } catch (error: any) {
+      const errorMessage = error?.response?.message || error?.message || "An unknown error occurred.";
+      toast.error(errorMessage, {
         position: "bottom-center"
       });
+      console.error("Sign-in error:", error);
     }
   };
-
+  
+  
+  
+  
   return (
     <Form {...form}>
       <div className="sm:w-4200 flex-center flex-col">

@@ -47,40 +47,54 @@ const SignupForm = () => {
     useSignInAccount();
 
   // Handler
-  const handleSignup = async (user: z.infer<typeof SignupValidation | any>) => {
+  const handleSignup = async (user: z.infer<typeof SignupValidation>) => {
     try {
-      const newUser = await createUserAccount(user);
-      console.log(newUser);
+      // Ensure user object contains the required fields
+      if (!user.email || !user.password) {
+        throw new Error("Email and password are required");
+      }
+  
+      // Create user account
+      const newUser = await createUserAccount({
+        email: user.email,
+        password: user.password,
+        name: user.name,
+        username: user.username,
+      });
+  
+      console.log("New user created:", newUser);
+  
+      // Sign in with the new account
       const session = await signInAccount({
         email: user.email,
         password: user.password,
       });
-
+  
       if (!session) {
-        // toast({ title: "Something went wrong. Please login your new account" });
-        toast.error("Something went wrong. Please login your new account",{
-          position:"top-center"
-        })
-
+        toast.error("Something went wrong. Please log in with your new account", {
+          position: "top-center"
+        });
         navigate("/sign-in");
-
         return;
       }
-
+  
       const isLoggedIn = await checkAuthUser();
-
+  
       if (isLoggedIn) {
         form.reset();
-
         navigate("/");
       }
-    } catch (error) {
-      toast.error("Account already exists",{
-        position: "top-center",
-      })
-      console.log({ error });
+    } catch (error: any) {
+      const errorMessage = error?.response?.message || error?.message || "An unknown error occurred.";
+      toast.error(errorMessage, {
+        position: "top-center"
+      });
+      console.error("Signup error:", error);
     }
   };
+  
+  
+  
 
   return (
     <Form {...form}>
