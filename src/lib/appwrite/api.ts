@@ -974,7 +974,7 @@ export async function fetchUsersAndMessages(currentUserId: string) {
           appwriteConfig.databaseId,
           appwriteConfig.messageCollectionId,
           [
-            Query.equal("recipentId", user.$id),
+            Query.equal("recipientId", user.$id),
             Query.equal("userId", currentUserId),
           ]
         );
@@ -984,7 +984,7 @@ export async function fetchUsersAndMessages(currentUserId: string) {
           appwriteConfig.databaseId,
           appwriteConfig.messageCollectionId,
           [
-            Query.equal("recipentId", currentUserId),
+            Query.equal("recipientId", currentUserId),
             Query.equal("userId", user.$id),
           ]
         );
@@ -1039,13 +1039,13 @@ export const getMessages = async (recipientId, userId) => {
     const messagesSentByUser = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.messageCollectionId,
-      [Query.equal("recipentId", recipientId), Query.equal("userId", userId)]
+      [Query.equal("recipientId", recipientId), Query.equal("userId", userId)]
     );
 
     const messagesReceivedByUser = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.messageCollectionId,
-      [Query.equal("recipentId", userId), Query.equal("userId", recipientId)]
+      [Query.equal("recipientId", userId), Query.equal("userId", recipientId)]
     );
 
     const combinedMessages = [
@@ -1078,7 +1078,7 @@ export async function createMessage({
 }) {
   const document = {
     userId,
-    recipentId: recipientId,
+    recipientId,
     content,
     username,
     createdAt: new Date().toISOString(),
