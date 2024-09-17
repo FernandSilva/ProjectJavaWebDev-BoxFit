@@ -280,6 +280,23 @@ export const useDeleteSavedPost = () => {
 // USER QUERIES
 // ============================================================
 
+//Explore.tsx
+
+// // Assume this function retrieves all users and includes their follower count
+// export const useGetTopUsers = (limit = 10) => {
+//   return useQuery({
+//     queryKey: [QUERY_KEYS.GET_TOP_USERS],
+//     queryFn: async () => {
+//       const users = await api.getAllUsers(); // Adjust this according to your API
+//       // Sort users by follower count
+//       return users.sort((a, b) => b.followerCount - a.followerCount).slice(0, limit);
+//     },
+//   });
+// };
+
+
+
+
 export const useGetCurrentUser = () => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_CURRENT_USER],

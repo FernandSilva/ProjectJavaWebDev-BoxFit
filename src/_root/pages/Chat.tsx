@@ -1,7 +1,7 @@
 import { Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
 import React, { useEffect, useState } from "react";
-// import { appwriteConfig, databases } from "@/lib/appwrite/config";
+ import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries"; // Assuming correct path to your useCreateMessage hook
 import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";

@@ -853,5 +853,19 @@ button:last-child:hover {
   padding: 20px;
 }
 
+/* scrol for explore */
+.top-user-card {
+  position: relative;
+}
+
+.user-rank {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: #ffcc00; /* Gold color for rank */
+  border-radius: 50%;
+  padding: 5px;
+  font-weight: bold;
+}
 
 
