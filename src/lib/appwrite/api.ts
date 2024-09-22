@@ -946,14 +946,16 @@ export const deleteComment = async (commentId: string) => {
 // MESSAGES
 // ============================================================
 
-// Function to fetch messages
-export async function fetchUsersAndMessages(currentUserId: string) {
+// Function to fetch users and messages
+export async function fetchUsersAndMessages(currentUserId: string, searchQuery: string = "") {
   try {
+    // Fetch all users from the user collection
     const usersResult = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId
     );
 
+    // Map users to include necessary fields and exclude the current user
     const users = usersResult.documents
       .map((doc: any) => ({
         $id: doc.$id,
@@ -967,8 +969,15 @@ export async function fetchUsersAndMessages(currentUserId: string) {
       }))
       .filter((user) => user.$id !== currentUserId); // Exclude current user
 
+    // Filter users based on search query
+    const filteredUsers = users.filter(user => 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Initialize an array to hold promises for fetching messages
     const usersWithLatestMessages = await Promise.all(
-      users.map(async (user) => {
+      filteredUsers.map(async (user) => {
         // Fetch messages sent by current user to this user
         const messagesSentByUser = await databases.listDocuments(
           appwriteConfig.databaseId,
@@ -995,10 +1004,8 @@ export async function fetchUsersAndMessages(currentUserId: string) {
           ...messagesReceivedByUser.documents,
         ];
 
-        allMessages.sort(
-          (a, b) =>
-            new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime()
-        );
+        // Sort messages by creation date
+        allMessages.sort((a, b) => new Date(a.$createdAt) - new Date(b.$createdAt));
 
         // Get the latest message (if any)
         const latestMessage =
@@ -1027,12 +1034,13 @@ export async function fetchUsersAndMessages(currentUserId: string) {
       );
     });
 
-    return usersWithLatestMessages;
+    return usersWithLatestMessages; // Return users with messages
   } catch (error) {
     console.error("Error fetching users and messages:", error);
     throw new Error("Error fetching users and messages");
   }
 }
+
 
 export const getMessages = async (recipientId, userId) => {
   try {

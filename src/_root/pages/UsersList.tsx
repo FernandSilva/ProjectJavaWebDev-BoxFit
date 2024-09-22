@@ -3,7 +3,7 @@ import { useUserContext } from "@/context/AuthContext";
 import { useUsersAndMessages } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
 import { User } from "@/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function UsersList({
   onSelectUser,
@@ -16,19 +16,36 @@ function UsersList({
 }) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const { user } = useUserContext();
+  
+  // Fetch users and messages based on current user ID
   const {
-    data: users = [],
+    data: allUsers = [],
     isLoading,
     isError,
   } = useUsersAndMessages(user?.id);
 
-  // Filter users based on search query
-  const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // State to hold users for the search results
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+
+  // Effect to filter users based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      // Reset search results when the search query is empty
+      setSearchResults([]);
+    } else {
+      // Filter users based on search query
+      const filteredUsers = allUsers.filter((user) =>
+        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setSearchResults(filteredUsers);
+    }
+  }, [searchQuery, allUsers]);
 
   if (isError) return <div>Error loading users</div>;
+
+  // Only show users with existing chats in the main list
+  const chatUsers = allUsers.filter(user => user.latestMessage !== null);
 
   return (
     <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%] ">
@@ -101,8 +118,8 @@ function UsersList({
               </div>
             </div>
           ))
-        : filteredUsers.length > 0
-        ? filteredUsers.map((user) => (
+        : searchQuery ? searchResults.length > 0
+        ? searchResults.map((user) => (
             <div
               key={user.$id}
               onClick={() => {
@@ -136,10 +153,44 @@ function UsersList({
         : (
           <div className="no-results">No users found</div>
         )
+        : chatUsers.length > 0
+        ? chatUsers.map((user) => (
+            <div
+              key={user.$id}
+              onClick={() => {
+                onSelectUser(user);
+                if (setSteps) setSteps(1);
+              }}
+              className={`user-item ${
+                user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
+              } flex items-center gap-4`}
+            >
+              <img
+                src={user.imageUrl}
+                className="w-8 h-8 rounded-full"
+                alt={`Profile of ${user.username}`}
+              />
+              <div className="w-full">
+                <span className="font-semibold">{user.username}</span>
+                {user.latestMessage && (
+                  <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
+                    <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
+                      {user.latestMessage.content}
+                    </span>{" "}
+                    <span className="text-[10px]">
+                      {multiFormatDateString(user.latestMessage.timestamp)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        : (
+          <div className="no-results">No chat users found</div>
+        )
       }
     </div>
   );
 }
 
 export default UsersList;
-

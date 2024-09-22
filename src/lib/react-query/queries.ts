@@ -33,6 +33,7 @@ import {
   unlikeComment,
   updatePost,
   updateUser,
+  fetchUsersAndMessages,
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
@@ -310,12 +311,14 @@ export const useGetUsers = (limit?: number) => {
     queryFn: () => api.getAllUsers(),
   });
 };
-export const useUsersAndMessages = (userId) => {
+export const useUsersAndMessages = (userId: string, searchQuery: string) => {
   return useQuery({
-    queryKey: ["userMessages", userId],
-    queryFn: () => api.fetchUsersAndMessages(userId),
+    queryKey: ["userMessages", userId, searchQuery],
+    queryFn: () => fetchUsersAndMessages(userId, searchQuery),
+    enabled: !!userId, // Only run if userId is available
   });
 };
+
 export const useGetUserById = (userId: string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.GET_USER_BY_ID, userId],
