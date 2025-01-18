@@ -19,7 +19,11 @@ import { PostValidation } from "@/lib/validation";
 import { useToast } from "@/components/ui/use-toast";
 import { useUserContext } from "@/context/AuthContext";
 import { FileUploader, Loader } from "@/components/shared";
-import { useCreatePost, useUpdatePost } from "@/lib/react-query/queries";
+import {
+  useCreatePost,
+  useUpdatePost,
+  useCreateNotification, // Import notification mutation hook
+} from "@/lib/react-query/queries";
 
 type PostFormProps = {
   post?: Models.Document;
@@ -27,7 +31,6 @@ type PostFormProps = {
 };
 
 const PostForm = ({ post, action }: PostFormProps) => {
- 
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useUserContext();
@@ -41,51 +44,83 @@ const PostForm = ({ post, action }: PostFormProps) => {
     },
   });
 
-  // Query
+  // Queries for post and notification creation
   const { mutateAsync: createPost, isLoading: isLoadingCreate } =
     useCreatePost();
   const { mutateAsync: updatePost, isLoading: isLoadingUpdate } =
     useUpdatePost();
+  const { mutateAsync: createNotification } = useCreateNotification();
 
-  // Handler
+  // Handler for form submission
   const handleSubmit = async (value: z.infer<typeof PostValidation>) => {
-    // ACTION = UPDATE
-    console.log({ value });
-    if (post && action === "Update") {
-      const updatedPost = await updatePost({
-        ...value,
-        postId: post.$id,
-        imageId: post.imageId,
-        imageUrl: post.imageUrl,
-      });
-
-      if (!updatedPost) {
-        toast({
-          title: `${action} post failed. Please try again.`,
+    try {
+      if (post && action === "Update") {
+        // Update Post Logic
+        const updatedPost = await updatePost({
+          ...value,
+          postId: post.$id,
+          imageId: post.imageId,
+          imageUrl: post.imageUrl,
         });
+
+        if (!updatedPost) {
+          toast({
+            title: `${action} post failed. Please try again.`,
+          });
+          return;
+        }
+
+        toast({
+          title: "Post updated successfully!",
+        });
+        navigate(`/posts/${post.$id}`);
+      } else {
+        // Create Post Logic
+        const newPost = await createPost({
+          ...value,
+          userId: user.id,
+        });
+
+        if (!newPost) {
+          toast({
+            title: `${action} post failed. Please try again.`,
+          });
+          return;
+        }
+
+        // Notify all followers of the new post
+        if (user.followers?.length) {
+          for (const followerId of user.followers) {
+            await createNotification({
+              userId: followerId,
+              senderId: user.id,
+              type: "like", // Customize this type if necessary
+              content: `${user.name} has created a new post!`,
+              relatedId: newPost.$id,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        toast({
+          title: "Post created successfully!",
+        });
+        navigate("/");
       }
-      return navigate(`/posts/${post.$id}`);
-    }
-
-    // ACTION = CREATE
-    const newPost = await createPost({
-      ...value,
-      userId: user.id,
-    });
-
-    if (!newPost) {
+    } catch (error) {
+      console.error("Error handling post form submission:", error);
       toast({
         title: `${action} post failed. Please try again.`,
       });
     }
-    navigate("/");
   };
 
   return (
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(handleSubmit)}
-        className="flex flex-col gap-4 md:gap-9 w-full  max-w-5xl"
+        className="flex flex-col gap-4 md:gap-9 w-full max-w-5xl"
       >
         <div className="flex flex-col lg:flex-row items-start gap-4 md:gap-8 justify-between">
           <div className="w-[100%] lg:w-[50%]">
@@ -137,7 +172,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Indoor , Greenhouse, Outdoor "
+                        placeholder="Indoor, Greenhouse, Outdoor"
                         type="text"
                         className="shad-input"
                         {...field}
@@ -149,7 +184,8 @@ const PostForm = ({ post, action }: PostFormProps) => {
               />
             </div>
           </div>
-          <div className="w-[100%] lg:w-[50%]">
+          <div className="w-full">
+
             <FormField
               control={form.control}
               name="file"
@@ -192,3 +228,4 @@ const PostForm = ({ post, action }: PostFormProps) => {
 };
 
 export default PostForm;
+

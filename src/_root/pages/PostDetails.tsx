@@ -9,6 +9,7 @@ import {
   useGetUserPosts,
   useLikeComment,
   useUnlikeComment,
+  createNotification
 } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
@@ -123,8 +124,8 @@ const PostDetails = () => {
 
   const handleInputChange = (event) => setInputText(event.target.value);
 
-  // Handles the creation of new comments
-  const handleSend = () => {
+  // Handles adding comments and sending notifications
+  const handleSend = async () => {
     if (inputText.trim()) {
       createCommentMutation.mutate(
         {
@@ -135,7 +136,21 @@ const PostDetails = () => {
           userName: user?.name,
         },
         {
-          onSuccess: () => setInputText(""), // Clear input after successful comment creation
+          onSuccess: async (comment) => {
+            setInputText("");
+            await createNotification({
+              userId: post?.creator.$id,
+              senderId: user?.id,
+              type: "comment",
+              content: `${user?.name} commented: "${inputText}"`,
+              relatedId: post?.$id,
+              referenceId: comment?.$id,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              senderName: user?.name,
+              ImageUrl: user?.imageUrl,
+            });
+          },
         }
       );
     }
@@ -148,15 +163,30 @@ const PostDetails = () => {
     }
   };
 
-  // Delete post and navigate upon successful deletion
-  const handleDeletePost = () => {
+   // Delete post and send notification
+  const handleDeletePost = async () => {
     deletePostMutation.mutate(
       { postId: id, imageId: post?.imageId },
       {
-        onSuccess: () => navigate(-1),
+        onSuccess: async () => {
+          navigate(-1);
+          await createNotification({
+            userId: post?.creator.$id,
+            senderId: user?.id,
+            type: "delete",
+            content: `${user?.name} deleted a post.`,
+            relatedId: post?.$id,
+            referenceId: post?.$id,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            senderName: user?.name,
+            ImageUrl: user?.imageUrl,
+          });
+        },
       }
     );
   };
+
 
   // Excludes the current post from related posts
   const relatedPosts = userPosts?.documents.filter((post) => post.$id !== id);
@@ -165,12 +195,31 @@ const PostDetails = () => {
     navigate(`/update-post/${post?.$id}`);
   };
 
-  // Handle liking and unliking a comment
-  const handleToggleLikeComment = (commentId, liked) => {
+  // Handles liking/unliking comments and sending notifications
+  const handleToggleLikeComment = async (commentId, liked) => {
+    const comment = comments.find((c) => c.$id === commentId);
     if (liked) {
       unlikeCommentMutation.mutate({ commentId, userId: user.id });
     } else {
-      likeCommentMutation.mutate({ commentId, userId: user.id });
+      likeCommentMutation.mutate(
+        { commentId, userId: user.id },
+        {
+          onSuccess: async () => {
+            await createNotification({
+              userId: comment?.userId,
+              senderId: user?.id,
+              type: "like",
+              content: `${user?.name} liked your comment.`,
+              relatedId: comment?.$id,
+              referenceId: comment?.$id,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              senderName: user?.name,
+              ImageUrl: user?.imageUrl,
+            });
+          },
+        }
+      );
     }
   };
 
@@ -251,7 +300,7 @@ const PostDetails = () => {
                     <div className="flex-center gap-2 text-light-3">
                       <p className="subtle-semibold lg:small-regular !text-xs">
                         {multiFormatDateString(post?.$createdAt)}
-                        {moment(post?.$createdAt).format("h:mm a")}
+                        {moment(post?.$createdAt).format("h:m a")}
                       </p>
                       • <br />
                       <p className="subtle-semibold lg:small-regular !text-xs">

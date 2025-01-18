@@ -1,6 +1,10 @@
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { ID, Query } from "appwrite";
 import { account, appwriteConfig, avatars, databases, storage } from "./config";
+import { NotificationResponse, Notification } from "@/types/index";
+
+import { Models } from "appwrite";
+
 
 // ============================================================
 // AUTH
@@ -437,24 +441,38 @@ export async function deletePost(postId?: string, imageId?: string) {
 }
 
 // ============================== LIKE / UNLIKE POST
-export async function likePost(postId: string, likesArray: string[]) {
+
+export const likePost = async (
+  postId: string,
+  likesArray: string[],
+  userId: string,
+  postOwnerId: string,
+  relatedId: string,
+  referenceId: string
+) => {
   try {
-    const updatedPost = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId,
+    if (!postId || typeof postId !== "string" || postId.length > 36) {
+      throw new Error("Invalid postId");
+    }
+
+    // Update the document with the likes array
+    return await databases.updateDocument(
+      "65e6dd32daee0a037492", // Replace with your database ID
+      "65e6ddc2ec2b81614419", // Replace with your collection ID
+      postId, // Document ID
       {
         likes: likesArray,
+        relatedId, // Optional fields for tracking
+        referenceId, // Optional fields for tracking
       }
     );
-
-    if (!updatedPost) throw Error;
-
-    return updatedPost;
   } catch (error) {
-    console.log(error);
+    console.error("Failed to like post:", error);
+    throw error;
   }
-}
+};
+
+
 
 // ============================== SAVE POST
 export async function savePost(userId: string, postId: string) {
@@ -998,15 +1016,15 @@ export async function fetchUsersAndMessages(currentUserId: string, searchQuery: 
           ]
         );
 
-        // Combine and sort messages
-        const allMessages = [
-          ...messagesSentByUser.documents,
-          ...messagesReceivedByUser.documents,
-        ];
 
         // Sort messages by creation date
-        allMessages.sort((a, b) => new Date(a.$createdAt) - new Date(b.$createdAt));
+        const allMessages = [
+          ...messagesSentByUser.documents, 
+          ...messagesReceivedByUser.documents];
 
+        // Convert string dates to timestamps for sorting
+        allMessages.sort((a, b) => new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime());
+        
         // Get the latest message (if any)
         const latestMessage =
           allMessages.length > 0 ? allMessages[allMessages.length - 1] : null;
@@ -1042,7 +1060,8 @@ export async function fetchUsersAndMessages(currentUserId: string, searchQuery: 
 }
 
 
-export const getMessages = async (recipientId, userId) => {
+// Fetch messages for a specific conversation
+export const getMessages = async (recipientId: string, userId: string) => {
   try {
     const messagesSentByUser = await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -1073,7 +1092,7 @@ export const getMessages = async (recipientId, userId) => {
     };
   } catch (error) {
     console.error("Error fetching messages:", error);
-    throw error; // Or handle more gracefully
+    throw error;
   }
 };
 
@@ -1083,31 +1102,58 @@ export async function createMessage({
   content,
   username,
   recipientId,
+  senderImageUrl,
+}: {
+  userId: string;
+  content: string;
+  username: string;
+  recipientId: string;
+  senderImageUrl: string; // Ensure the sender's profile picture URL is included
 }) {
-  const document = {
-    userId,
-    recipientId,
-    content,
-    username,
-    createdAt: new Date().toISOString(),
-    $permissions: {
-      read: ["*"], // Public read
-      write: ["user:" + userId], // Only creator can modify
-    },
-  };
-
   try {
-    return await databases.createDocument(
+    // Prepare the message payload
+    const messagePayload = {
+      userId,
+      recipientId,
+      content,
+      username,
+      createdAt: new Date().toISOString(), // Ensure `createdAt` is included
+    };
+
+    // Create the message in the database
+    const message = await databases.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.messageCollectionId,
       ID.unique(),
-      document
+      messagePayload
     );
+
+    // Prepare the notification payload
+    const notificationPayload = {
+      userId: recipientId,
+      senderId: userId,
+      type: "message",
+      relatedId: recipientId, // Assuming the `relatedId` is the recipient
+      referenceId: message.$id,
+      content: `${username} sent you a message.`,
+      isRead: false,
+      createdAt: new Date().toISOString(), // Include `createdAt` for the notification
+      senderName: username,
+      senderImageUrl, // Pass the sender's profile picture
+    };
+
+    // Create a notification for the recipient
+    await createNotification(notificationPayload);
+
+    return message;
   } catch (error) {
     console.error("Failed to create message:", error);
     throw error;
   }
 }
+
+
+
 
 // Delete a message
 export const deleteMessage = async (messageId: string) => {
@@ -1275,6 +1321,66 @@ export async function getFollowersPosts(userId: string) {
     return posts;
   } catch (error) {
     console.log(error);
+    throw error;
+  }
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+
+
+// Create a notification
+
+export const createNotification = async (notification: {
+  userId: string;
+  senderId: string;
+  type: string;
+  relatedId: string;
+  referenceId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  senderName: string;
+  senderImageUrl: string,
+}) => {
+  return await databases.createDocument(
+    "DATABASE_ID", // Replace with your actual database ID
+    "COLLECTION_ID", // Replace with your actual collection ID
+    "unique()", // Generate a unique document ID
+    notification
+  );
+};
+
+
+// Mark a notification as read
+export async function markNotificationAsRead(notificationId: string) {
+  try {
+    return await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      notificationId,
+      { isRead: true }
+    );
+  } catch (error) {
+    console.error("Failed to mark notification as read:", error);
+    throw error;
+  }
+}
+
+// Ensure the updateNotification function exists and is exported
+export async function updateNotification(notificationId: string) {
+  try {
+    const response = await databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      notificationId,
+      { isRead: true }
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to update notification:", error);
     throw error;
   }
 }

@@ -158,25 +158,35 @@ const PostCard = ({ post }: PostCardProps) => {
         onInit={(swiper) => setActiveIndex(swiper.activeIndex)}
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
       >
-        {cleanUrls.map((url, index) => (
-          <SwiperSlide key={index} style={{ width: "100%" }}>
-            {fileTypes[index] === "video" && (
-              <video
-                className="post-card_img"
-                loop
-                preload="auto" // Preload the video for smoother playback
-                ref={(el) => (videoRefs.current[index] = el)}
-                data-index={index} // Add data-index for IntersectionObserver
-              >
-                <source src={url} />
-              </video>
-            )}
-            {fileTypes[index] === "image" && (
-              <img className="post-card_img" src={url} alt="File preview" />
-            )}
-            {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-          </SwiperSlide>
-        ))}
+       {cleanUrls.map((url, index) => (
+  <SwiperSlide key={index} style={{ width: "100%" }}>
+    {fileTypes[index] === "video" && (
+      <video
+        className="post-card_img"
+        loop
+        preload="auto"
+        ref={(el) => (videoRefs.current[index] = el)}
+        data-index={index}
+      >
+        <source src={url} />
+      </video>
+    )}
+    {fileTypes[index] === "image" && (
+      <img
+        className="post-card_img"
+        src={url}
+        alt="File preview"
+        style={{
+          objectFit: "cover",
+          width: "100%",
+          height: "100%",
+        }}
+      />
+    )}
+    {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
+  </SwiperSlide>
+))}
+
       </Swiper>
 
       <PostStats post={post} userId={user.id} showComments={true} />

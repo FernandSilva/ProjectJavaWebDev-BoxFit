@@ -1,7 +1,6 @@
 import { Models } from "appwrite";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-
 import { useUserContext } from "@/context/AuthContext";
 import {
   useCreateComment,
@@ -13,6 +12,7 @@ import {
   useLikePost,
   useSavePost,
   useUnlikeComment,
+  useCreateNotification,
 } from "@/lib/react-query/queries";
 import { checkIsLiked, multiFormatDateString } from "@/lib/utils";
 import { CiBookmark } from "react-icons/ci";
@@ -20,70 +20,88 @@ import { FaRegComment } from "react-icons/fa";
 import { IoMdSend } from "react-icons/io";
 import { IoBookmark } from "react-icons/io5";
 import { PiFireLight } from "react-icons/pi";
-import moment from "moment";
 
 type PostStatsProps = {
   post: Models.Document;
   userId: string;
   isPost?: boolean;
-  showComments?:boolean
+  showComments?: boolean;
 };
 
 const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   const location = useLocation();
+  const { user } = useUserContext();
+
+  // Fetch comments for the post
+  const { data: commentsData } = useGetCommentsByPost(post.$id);
+  const comments = commentsData?.comments || [];
+  const totalComment = commentsData?.totalComments;
+
+  const likesList = post?.likes?.map((like: Models.Document) => like.$id) || [];
+  const [likes, setLikes] = useState<string[]>(likesList);
+  const [inputText, setInputText] = useState("");
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Mutations
+  const { mutate: likePost } = useLikePost();
+  const { mutate: savePost } = useSavePost();
+  const { mutate: deleteSavePost } = useDeleteSavedPost();
   const likeCommentMutation = useLikeComment();
   const unlikeCommentMutation = useUnlikeComment();
   const deleteCommentMutation = useDeleteComment();
   const createCommentMutation = useCreateComment();
-console.log({post})
-  const likesList = post?.likes?.map((user: Models.Document) => user.$id);
-
-  const [inputText, setInputText] = useState("");
-  const [showCommentBox, setShowCommentBox] = useState<boolean>(false);
-
-  const { user } = useUserContext();
-
-  const { data: commentsData } = useGetCommentsByPost(post.$id);
-
-  const comments = commentsData?.comments || [];
-  const totalComment = commentsData?.totalComments;
-
-  const [likes, setLikes] = useState<string[]>(likesList);
-  const [isSaved, setIsSaved] = useState(false);
-
-  const { mutate: likePost } = useLikePost();
-  const { mutate: savePost } = useSavePost();
-  const { mutate: deleteSavePost } = useDeleteSavedPost();
+  const createNotification = useCreateNotification();
 
   const { data: currentUser } = useGetCurrentUser();
-
   const savedPostRecord = currentUser?.save.find(
-    (record: Models.Document) => record?.post?.$id === post?.$id
+    (record: Models.Document) => record?.post?.$id === post.$id
   );
-  const handleInputChange = (event) => {
-    setInputText(event.target.value);
-  };
 
   useEffect(() => {
     setIsSaved(!!savedPostRecord);
   }, [currentUser]);
 
-  const handleLikePost = (e: any) => {
+  const handleLikePost = (e: React.MouseEvent<SVGElement | HTMLImageElement>) => {
     e.stopPropagation();
-
-    let likesArray = [...likes];
-
-    if (likesArray.includes(userId)) {
-      likesArray = likesArray.filter((Id) => Id !== userId);
+  
+    let updatedLikes = [...likes];
+    const isLiked = updatedLikes.includes(userId);
+  
+    if (isLiked) {
+      updatedLikes = updatedLikes.filter((id) => id !== userId);
     } else {
-      likesArray.push(userId);
+      updatedLikes.push(userId);
+  
+      // Trigger notification when liking a post
+      createNotification.mutate({
+        userId: post.creator.$id, // Notify the post creator
+        senderId: user.id, // The current user liking the post
+        senderName: user.name, // Current user's name
+        type: "like",
+        relatedId: post.$id, // ID of the liked post
+        referenceId: post.$id, // Reference the same post ID for tracking
+        content: `liked your post: "${post.caption || ""}"`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        ImageUrl: user.imageUrl || "/assets/icons/profile-placeholder.svg", // Add ImageUrl
+      });
     }
-
-    setLikes(likesArray);
-    likePost({ postId: post.$id, likesArray });
+  
+    setLikes(updatedLikes);
+  
+    likePost({
+      postId: post.$id,
+      likesArray: updatedLikes,
+      userId, // The user liking the post
+      postOwnerId: post.creator.$id, // Owner of the post
+      relatedId: post.$id, // Related ID for tracking
+      referenceId: post.$id, // Reference ID for tracking
+    });
   };
+  
 
-  const handleSavePost = (e: any) => {
+  const handleSavePost = (e: React.MouseEvent<SVGElement | HTMLImageElement>) => {
     e.stopPropagation();
 
     if (savedPostRecord) {
@@ -91,18 +109,23 @@ console.log({post})
       return deleteSavePost(savedPostRecord.$id);
     }
 
-    savePost({ userId: userId, postId: post.$id });
+    savePost({ userId, postId: post.$id });
     setIsSaved(true);
   };
-  const handleSend = () => {
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value);
+  };
+
+  const handleSendComment = () => {
     if (inputText.trim()) {
       createCommentMutation.mutate(
         {
           postId: post.$id,
-          userId: user?.id,
+          userId: user?.id || "",
           text: inputText,
-          userImageUrl: user?.imageUrl,
-          userName: user?.name,
+          userImageUrl: user?.imageUrl || "",
+          userName: user?.name || "",
         },
         {
           onSuccess: () => setInputText(""), // Clear input after successful comment creation
@@ -111,198 +134,116 @@ console.log({post})
     }
   };
 
-  const containerStyles = location.pathname.startsWith("/profile")
-    ? "w-full"
-    : "";
-  const handleToggleLikeComment = (commentId, liked) => {
+  const handleToggleLikeComment = (commentId: string, liked: boolean) => {
     if (liked) {
-      unlikeCommentMutation.mutate({ commentId, userId: user.id });
+      unlikeCommentMutation.mutate({ commentId, userId });
     } else {
-      likeCommentMutation.mutate({ commentId, userId: user.id });
+      likeCommentMutation.mutate({ commentId, userId });
     }
   };
-  const handleKeyPress = (event) => {
-    if (event.key === "Enter") {
-      handleSend();
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSendComment();
     }
   };
-  const sendbutton = () => {
-    if (inputText.trim().length === 0) {
-      return;
-    } else {
-      handleSend();
+
+  const handleCommentsSection = () => {
+    if (showComments) {
+      setShowCommentBox(!showCommentBox);
     }
   };
-  const handleCommentsSection=()=>{
-    {showComments && setShowCommentBox(!showCommentBox)}
-  }
-  console.log({likes})
 
   return (
     <>
-      <div
-        className={`flex justify-between items-center z-20 ${containerStyles}`}
-      >
-        <div className="flex gap-6 mr-5">
-          <div className="flex gap-1">
+      <div className={`flex justify-between items-center ${location.pathname.startsWith("/profile") ? "w-full" : ""}`}>
+        <div className="flex gap-6">
+          {/* Likes Section */}
+          <div className="flex items-center gap-1">
             {isPost ? (
-              <>
-                {!checkIsLiked(likes, userId) ? (
-                  <PiFireLight
-                    className="w-[20px] h-[24px] cursor-pointer"
-                    onClick={(e) => handleLikePost(e)}
-                  />
-                ) : (
-                  <img
-                    src="/assets/icons/liked.svg"
-                    alt="like"
-                    width={20}
-                    height={20}
-                    onClick={(e) => handleLikePost(e)}
-                    className="cursor-pointer"
-                  />
-                )}
-              </>
+              checkIsLiked(likes, userId) ? (
+                <img
+                  src="/assets/icons/liked.svg"
+                  alt="Liked"
+                  className="cursor-pointer"
+                  width={20}
+                  height={20}
+                  onClick={handleLikePost}
+                />
+              ) : (
+                <PiFireLight className="cursor-pointer w-6 h-6" onClick={handleLikePost} />
+              )
             ) : (
               <img
-                src={`${
-                  checkIsLiked(likes, userId)
-                    ? "/assets/icons/liked.svg"
-                    : "/assets/icons/like.svg"
-                }`}
-                alt="like"
+                src={checkIsLiked(likes, userId) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
+                alt="Like"
+                className="cursor-pointer"
                 width={20}
                 height={20}
-                onClick={(e) => handleLikePost(e)}
-                className="cursor-pointer"
+                onClick={handleLikePost}
               />
             )}
-            <p className="small-medium lg:base-medium">{likes?.length}</p>
+            <p>{likes.length}</p>
           </div>
-          <div className="flex gap-1">
-            <FaRegComment
-              className="w-[26px] h-[22px] cursor-pointer"
-              onClick={handleCommentsSection}
-            />
-            <p className="small-medium lg:base-medium">{totalComment}</p>
+
+          {/* Comments Section */}
+          <div className="flex items-center gap-1">
+            <FaRegComment className="cursor-pointer w-6 h-6" onClick={handleCommentsSection} />
+            <p>{totalComment}</p>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          {!isSaved ? (
-            <CiBookmark
-              className="w-[26px] h-[24px] cursor-pointer "
-              onClick={(e) => handleSavePost(e)}
-            />
+        {/* Save Section */}
+        <div className="flex items-center">
+          {isSaved ? (
+            <IoBookmark className="cursor-pointer w-6 h-6" onClick={handleSavePost} />
           ) : (
-            <IoBookmark
-              className="w-[26px] h-[24px] cursor-pointer"
-              onClick={(e) => handleSavePost(e)}
-            />
+            <CiBookmark className="cursor-pointer w-6 h-6" onClick={handleSavePost} />
           )}
-
-          {/* <img
-          src={isSaved ? "/assets/icons/saved.svg" : "/assets/icons/save.svg"}
-          alt="share"
-          width={20}
-          height={20}
-          className="cursor-pointer"
-          onClick={(e) => handleSavePost(e)}
-        /> */}
         </div>
       </div>
+
+      {/* Comments Box */}
       {showCommentBox && (
         <div className="comments-section mt-4">
-          {comments.map((comment, index) => {
-            const liked = comment.likedBy.includes(user.id);
-            console.log(comments)
+          {comments.map((comment) => {
+            const liked = comment.likedBy.includes(userId);
             return (
-              <div
-                key={index}
-                className="comment-item flex items-center gap-3 mb-3"
-              >
+              <div key={comment.$id} className="comment-item flex gap-3">
                 <img
-                  src={
-                    comment.userImageUrl ||
-                    "/assets/icons/profile-placeholder.svg"
-                  }
-                  alt={comment.userName}
+                  src={comment.userImageUrl || "/assets/icons/profile-placeholder.svg"}
+                  alt="User"
                   className="h-7 w-7 rounded-full"
                 />
-                <div className="comment-content  p-2 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col justify-center gap-1">
-                      <div className="flex  items-center justify-between">
-                        <p className="text-sm font-semibold">
-                          {comment.userName}:
-                        </p>
-                      </div>
-                      <p className="text-sm">{comment.text}</p>
-                    </div>
-                    <div
-                      onClick={() =>
-                        handleToggleLikeComment(comment.$id, liked)
-                      }
-                      className={`text-${liked ? "red" : "green"}-500 hover:text-${liked ? "red" : "green"}-700 transition duration-150 cursor-pointer`}
-                    >
-                      <img
-                        src={`/assets/icons/${!liked ? "unlike" : "liked"}.svg`}
-                        alt={liked ? "Unlike" : "Like"}
-                        width={16}
-                        height={16}
-                      />
-                    </div>
-                  </div>
-                  <div className="text-[10px] text-gray-500 flex gap-1">
-                    <span>
-                  {multiFormatDateString(comment?.$createdAt)}
-                    </span>
-                    <span>
-                  {moment(comment?.$createdAt).format("h:mm a")}
-                    </span>
-                  </div>
-                  {comment.userId === user.id && (
-                    <div className="flex items-center gap-2 cursor-pointer">
-                      <div
-                        className="text-xs text-gray-800 mt-1"
-                        onClick={() =>
-                          deleteCommentMutation.mutate(comment.$id)
-                        }
-                      >
-                        Edit
-                      </div>
-                      <div
-                        className="text-xs text-red mt-1"
-                        onClick={() =>
-                          deleteCommentMutation.mutate(comment.$id)
-                        }
-                      >
-                        Delete
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <p>
+                    <strong>{comment.userName}</strong>: {comment.text}
+                  </p>
+                  <p className="text-gray-500 text-sm">{multiFormatDateString(comment.$createdAt)}</p>
+                  <button
+                    onClick={() => handleToggleLikeComment(comment.$id, liked)}
+                    className={`text-${liked ? "red" : "green"}-500`}
+                  >
+                    {liked ? "Unlike" : "Like"}
+                  </button>
                 </div>
               </div>
             );
           })}
           <div className="flex items-center gap-3 mt-3">
             <img
-              src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
-              alt={user.name}
+              src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
+              alt={user?.name}
               className="h-7 w-7 rounded-full"
             />
             <input
-              type="text"
               value={inputText}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Write a comment..."
-              className="flex-1 p-2 border border-gray-300 !text-sm rounded-lg"
+              className="w-full border rounded-md p-2"
             />
-            <IoMdSend
-              className="w-[26px] h-[24px] cursor-pointer "
-              onClick={sendbutton}
-            />
+            <IoMdSend className="cursor-pointer w-6 h-6" onClick={handleSendComment} />
           </div>
         </div>
       )}

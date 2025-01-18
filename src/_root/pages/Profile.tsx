@@ -12,6 +12,9 @@ import {
   useSignOutAccount,
   useUnfollowUser,
 } from "@/lib/react-query/queries";
+
+import {createNotification} from "@/lib/appwrite/api";
+
 import { TbLogout2 } from "react-icons/tb";
 import {
   Link,
@@ -55,15 +58,28 @@ const Profile = () => {
   const handleFollow = () => {
     if (!isFollowing) {
       followMutation.mutate(
-        { userId: user?.id, followsUserId: id },
-        {
-          onSuccess: () => {
-            setIsFollowing(true);
+          { userId: user?.id, followsUserId: id },
+          {
+              onSuccess: () => {
+                setIsFollowing(true);
+
+                // Send follow notification
+                createNotification.mutate({
+                  userId: id || "", // Notify the profile owner
+                  senderId: user?.id || "",
+                  type: "follow",
+                  relatedId: id || "", // Related ID is the profile owner
+                  referenceId: user?.id || "", // Reference ID is the follower's ID
+                  content: `${user?.name} started following you.`,
+                  isRead: false,
+                  createdAt: new Date().toISOString(),
+                  senderName: user?.name || "",
+          });
           },
-        }
-      );
-    }
-  };
+          }
+          );
+          }
+ };
 
   const MessageActive = pathname === "/Chat";
 

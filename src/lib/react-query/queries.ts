@@ -33,7 +33,10 @@ import {
   unlikeComment,
   updatePost,
   updateUser,
-  fetchUsersAndMessages,
+  fetchUsersAndMessages, // Added for notifications
+  // createNotification, // Added for notifications
+  updateNotification, // Added for notifications
+
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
@@ -41,10 +44,16 @@ import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import {
   createComment,
   deleteComment,
-  getCommentsByPostId,
+  getCommentsByPostId
 } from "@/lib/appwrite/api";
 
+import { Models, Query } from "appwrite";
+import { appwriteConfig } from "@/lib/appwrite/config"; // Adjust as needed for your config path
+
+
 import * as api from "@/lib/appwrite/api";
+
+
 
 // ============================================================
 // COMMENTS QUERIES
@@ -213,32 +222,39 @@ export const useDeletePost = () => {
   });
 };
 
+// Like a post and create notification for the post owner
 export const useLikePost = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       postId,
       likesArray,
+      userId,
+      postOwnerId,
+      relatedId,
+      referenceId,
     }: {
       postId: string;
       likesArray: string[];
-    }) => likePost(postId, likesArray),
+      userId: string;
+      postOwnerId: string;
+      relatedId: string; // ID of the post being liked
+      referenceId: string; // Additional tracking (e.g., same as postId here)
+    }) =>
+      likePost(postId, likesArray, userId, postOwnerId, relatedId, referenceId),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_POST_BY_ID, data?.$id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_POSTS],
-      });
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-      });
+      queryClient.invalidateQueries([QUERY_KEYS.GET_POST_BY_ID, data?.$id]);
+      queryClient.invalidateQueries([QUERY_KEYS.GET_RECENT_POSTS]);
+      queryClient.invalidateQueries([QUERY_KEYS.GET_POSTS]);
+    },
+    onError: (error) => {
+      console.error("Failed to like post:", error);
     },
   });
 };
+
+
 
 export const useSavePost = () => {
   const queryClient = useQueryClient();
@@ -513,4 +529,159 @@ export const useGetFollowersPosts = (userId: string) => {
   });
 };
 
-// Other queries and mutations...
+// ============================================================
+// NOTIFICATIONS QUERIES
+// ============================================================
+
+// // Fetch notifications for a specific user
+// export const useGetNotifications = (userId: string) => {
+//   return useQuery({
+//     queryKey: [QUERY_KEYS.GET_NOTIFICATIONS, userId],
+//     queryFn: () => notifications(userId), // Fetch notifications from the backend
+//     enabled: !!userId, // Only run if userId is available
+//     refetchInterval: 10000, // Refetch every 10 seconds to update notifications
+//     onError: (error) => {
+//       console.error("Failed to fetch notifications:", error);
+//     },
+//   });
+// };
+
+// // Create a new notification
+// export const useCreateNotification = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: (notification: {
+//       userId: string;
+//       senderId: string;
+//       type: string;
+//       relatedId: string,
+//       referenceId: string;
+//       content: string;
+//       isRead: boolean;
+//       createdAt: string;
+//       senderName: string;
+//       senderImageUrl: string;
+//     }) => createNotification(notification),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries([QUERY_KEYS.GET_NOTIFICATIONS]); // Refetch notifications to include the new one
+//     },
+//     onError: (error) => {
+//       console.error("Failed to create notification:", error);
+//     },
+//   });
+// };
+
+// // Mark a notification as read
+// export const useUpdateNotification = () => {
+//   const queryClient = useQueryClient();
+//   return useMutation({
+//     mutationFn: (notificationId: string) => updateNotification(notificationId),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries([QUERY_KEYS.GET_NOTIFICATIONS]); // Refetch notifications
+//     },
+//     onError: (error) => {
+//       console.error("Failed to update notification:", error);
+//     },
+//   });
+// };
+
+
+
+// ============================================================
+// NOTIFICATIONS QUERIES
+// ============================================================
+
+import { Client, Databases} from "appwrite";
+import { Notification, NotificationResponse } from "@/types/index";
+
+const client = new Client()
+  .setEndpoint(appwriteConfig.url)
+  .setProject(appwriteConfig.projectId);
+
+const databases = new Databases(client);
+
+// Fetch notifications
+export async function fetchNotifications(userId: string): Promise<NotificationResponse> {
+  try {
+    const response: Models.DocumentList<Models.Document> = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      [Query.equal("userId", userId), Query.orderDesc("$createdAt")]
+    );
+
+    const notifications: Notification[] = response.documents.map((doc) => ({
+      $id: doc.$id,
+      userId: doc.userId,
+      senderId: doc.senderId,
+      type: doc.type as "message" | "like" | "follow" | "comment",
+      relatedId: doc.relatedId || "",
+      referenceId: doc.referenceId || "",
+      content: doc.content || "",
+      isRead: doc.isRead ?? false,
+      createdAt: doc.$createdAt,
+      senderName: doc.senderName || "Unknown Sender",
+      ImageUrl: doc.senderImageUrl || "/assets/icons/profile-placeholder.svg",
+    }));
+
+    return { documents: notifications, total: response.total };
+  } catch (error) {
+    console.error("Failed to fetch notifications:", error);
+    throw error;
+  }
+}
+
+// Fetch notifications
+export const useGetNotifications = (userId: string) => {
+  return useQuery<NotificationResponse>({
+    queryKey: ["getNotifications", userId],
+    queryFn: () => fetchNotifications(userId),
+    enabled: !!userId, // Only fetch if userId is available
+    refetchInterval: 10000, // Refetch every 10 seconds
+    onError: (error) => {
+      console.error("Failed to fetch notifications:", error);
+    },
+  });
+};
+
+// Create a new notification
+export const useCreateNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notification: Omit<Notification, "$id">) => createNotification(notification),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getNotifications"]); // Refetch notifications
+    },
+    onError: (error) => {
+      console.error("Failed to create notification:", error);
+    },
+  });
+};
+
+// Create a notification
+export async function createNotification(notification: Omit<Notification, "$id">) {
+  try {
+    return await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      "unique()",
+      notification
+    );
+  } catch (error) {
+    console.error("Failed to create notification:", error);
+    throw error;
+  }
+}
+
+// Mark a notification as read
+export const useUpdateNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getNotifications"]); // Refetch notifications
+    },
+    onError: (error) => {
+      console.error("Failed to update notification:", error);
+    },
+  });
+};

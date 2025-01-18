@@ -1,7 +1,7 @@
-// Import the necessary modules from the Appwrite SDK
+// Import Appwrite modules
 import { Client, Account, Databases, Storage, Avatars, Functions } from "appwrite";
 
-// Environment Variables from Vite
+// Define the structure for Appwrite configurations
 interface Config {
   url: string;
   projectId: string;
@@ -12,37 +12,39 @@ interface Config {
   savesCollectionId: string;
   userRelationshipsCollectionId: string;
   commentsCollectionId: string;
-  messageCollectionId: string;  // Added this line
+  messageCollectionId: string;
+  notificationsCollectionId: string; // Added for notifications
   functionKey: string;
   gptKey: string;
   gptchatbotKey: string;
 }
 
-// Define your Appwrite configuration using environment variables
+// Set Appwrite configuration using environment variables
 export const appwriteConfig: Config = {
-  url: import.meta.env.VITE_APPWRITE_URL, // Your Appwrite endpoint
-  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID, // Your project ID on Appwrite
-  databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID, // The database ID you're using
-  storageId: import.meta.env.VITE_APPWRITE_STORAGE_ID, // The storage ID for file uploads
-  userCollectionId: import.meta.env.VITE_APPWRITE_USER_COLLECTION_ID, // The collection ID for users
-  postCollectionId: import.meta.env.VITE_APPWRITE_POST_COLLECTION_ID, // The collection ID for posts
-  savesCollectionId: import.meta.env.VITE_APPWRITE_SAVES_COLLECTION_ID, // The collection ID for saved items
-  userRelationshipsCollectionId: import.meta.env.VITE_APPWRITE_USER_RELATIONSHIPS_COLLECTION_ID, // The collection ID for user relationships
-  commentsCollectionId: import.meta.env.VITE_APPWRITE_USER_COMMENTS_COLLECTION_ID, // The collection ID for comments
-  messageCollectionId: import.meta.env.VITE_APPWRITE_MESSAGES_COLLECTION_ID, // The collection ID for messages
-  functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY, // Appwrite function key for server-side operations
-  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY, // Key for GPT or other integrations
-  gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY
+  url: import.meta.env.VITE_APPWRITE_URL, // Appwrite endpoint
+  projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID, // Appwrite project ID
+  databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID, // Database ID
+  storageId: import.meta.env.VITE_APPWRITE_STORAGE_ID, // Storage ID
+  userCollectionId: import.meta.env.VITE_APPWRITE_USER_COLLECTION_ID, // Users collection ID
+  postCollectionId: import.meta.env.VITE_APPWRITE_POST_COLLECTION_ID, // Posts collection ID
+  savesCollectionId: import.meta.env.VITE_APPWRITE_SAVES_COLLECTION_ID, // Saves collection ID
+  userRelationshipsCollectionId: import.meta.env.VITE_APPWRITE_USER_RELATIONSHIPS_COLLECTION_ID, // User relationships
+  commentsCollectionId: import.meta.env.VITE_APPWRITE_USER_COMMENTS_COLLECTION_ID, // Comments collection
+  messageCollectionId: import.meta.env.VITE_APPWRITE_MESSAGES_COLLECTION_ID, // Messages collection
+  notificationsCollectionId: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID, // Notifications collection
+  functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY, // Appwrite function key
+  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY, // GPT key
+  gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY, // Chatbot GPT key
 };
 
-// Initialize the Appwrite client
+// Initialize Appwrite client and services
 export const client = new Client()
-  .setEndpoint(appwriteConfig.url) // Set the Appwrite API endpoint
-  .setProject(appwriteConfig.projectId); // Set the project ID
+  .setEndpoint(appwriteConfig.url) // Set API endpoint
+  .setProject(appwriteConfig.projectId); // Set project ID
 
-// Initialize the Appwrite services with the configured client
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 export const avatars = new Avatars(client);
-export const functions = new Functions(client); // Initialize the Functions service
+export const functions = new Functions(client);
+
