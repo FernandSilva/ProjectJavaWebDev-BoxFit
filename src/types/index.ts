@@ -40,7 +40,9 @@ export type IUser = {
   email: string;
   imageUrl: string;
   bio: string;
+  followers?: string[]; // Added followers
 };
+
 
 export type INewUser = {
   name: string;
@@ -85,14 +87,19 @@ export interface IDeleteComment {
 // types/index.ts
 
 export interface User {
-  id: any;
+  id: string;
   $id: string;
   username: string;
   name?: string;
   email?: string;
   imageUrl?: string;
   bio?: string;
+  latestMessage?: {
+    content: string;
+    timestamp: string;
+  }; // Added latestMessage
 }
+
 
 export interface Message {
   text: ReactNode;
@@ -109,7 +116,7 @@ export interface Notification {
   $id: string; // Appwrite-generated document ID
   userId: string; // Recipient's ID
   senderId: string; // Sender's ID
-  type: "message" | "like" | "follow" | "comment";
+  type: "message" | "like" | "follow" | "comment" | "delete"; // Added "delete"
   relatedId: string; // Related resource ID
   referenceId: string; // Additional reference
   content: string; // Notification content

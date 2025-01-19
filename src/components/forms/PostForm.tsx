@@ -91,20 +91,20 @@ const PostForm = ({ post, action }: PostFormProps) => {
         // Notify all followers of the new post
         if (user.followers?.length) {
           for (const followerId of user.followers) {
-            await createNotification({
-              userId: user.id,
-              senderId: sender.id,
+            createNotification({
+              userId: followerId,
+              senderId: user.id,
               type: "like",
-              relatedId: post.id,
+              relatedId: newPost.$id,
               isRead: false,
               createdAt: new Date().toISOString(),
-              referenceId: someReferenceId,
-              senderName: sender.name,
-              senderImageUrl: sender.imageUrl,
+              referenceId: newPost.$id,
+              senderName: user.name,
+              senderImageUrl: user.imageUrl,
             });
-            
           }
         }
+        
 
         toast({
           title: "Post created successfully!",

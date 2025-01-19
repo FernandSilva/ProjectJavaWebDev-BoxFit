@@ -10,7 +10,7 @@ import {
   useGetUserById,
   useGetUserRelationships,
   useSignOutAccount,
-  useUnfollowUser,
+  useUnfollowUser, useCreateNotification
 } from "@/lib/react-query/queries";
 
 import {createNotification} from "@/lib/appwrite/api";
@@ -55,43 +55,36 @@ const Profile = () => {
 
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
-
-
-  import { useMutation } from "lib/react-query/queries"; // Ensure correct import
-
-export const useCreateNotification = () =>
-  useMutation(async (notification: Notification) => {
-    const response = await createNotification(notification);
-    return response;
-  });
-
   
 
   const handleFollow = () => {
     if (!isFollowing) {
       followMutation.mutate(
-          { userId: user?.id, followsUserId: id },
-          {
-              onSuccess: () => {
-                setIsFollowing(true);
-
-                // Send follow notification
-                createNotification.mutate({
-                  userId: id || "", // Notify the profile owner
-                  senderId: user?.id || "",
-                  type: "follow",
-                  relatedId: id || "", // Related ID is the profile owner
-                  referenceId: user?.id || "", // Reference ID is the follower's ID
-                  content: `${user?.name} started following you.`,
-                  isRead: false,
-                  createdAt: new Date().toISOString(),
-                  senderName: user?.name || "",
-          });
+        { userId: user?.id, followsUserId: id },
+        {
+          onSuccess: () => {
+            setIsFollowing(true);
+  
+            // Send follow notification
+            const { mutate: createNotification } = useCreateNotification();
+            createNotification({
+              userId: id || "",
+              senderId: user?.id || "",
+              type: "follow",
+              relatedId: id || "",
+              referenceId: user?.id || "",
+              content: `${user?.name} started following you.`,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+              senderName: user?.name || "",
+              senderImageUrl: user?.imageUrl || "",
+            });
           },
-          }
-          );
-          }
- };
+        }
+      );
+    }
+  };
+  
 
   const MessageActive = pathname === "/Chat";
 
