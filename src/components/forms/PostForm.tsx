@@ -92,14 +92,17 @@ const PostForm = ({ post, action }: PostFormProps) => {
         if (user.followers?.length) {
           for (const followerId of user.followers) {
             await createNotification({
-              userId: followerId,
-              senderId: user.id,
-              type: "like", // Customize this type if necessary
-              content: `${user.name} has created a new post!`,
-              relatedId: newPost.$id,
+              userId: user.id,
+              senderId: sender.id,
+              type: "like",
+              relatedId: post.id,
               isRead: false,
               createdAt: new Date().toISOString(),
+              referenceId: someReferenceId,
+              senderName: sender.name,
+              senderImageUrl: sender.imageUrl,
             });
+            
           }
         }
 

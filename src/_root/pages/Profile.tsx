@@ -15,6 +15,7 @@ import {
 
 import {createNotification} from "@/lib/appwrite/api";
 
+
 import { TbLogout2 } from "react-icons/tb";
 import {
   Link,
@@ -54,6 +55,17 @@ const Profile = () => {
 
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
+
+
+  import { useMutation } from "lib/react-query/queries"; // Ensure correct import
+
+export const useCreateNotification = () =>
+  useMutation(async (notification: Notification) => {
+    const response = await createNotification(notification);
+    return response;
+  });
+
+  
 
   const handleFollow = () => {
     if (!isFollowing) {

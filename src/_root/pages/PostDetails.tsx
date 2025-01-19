@@ -168,21 +168,8 @@ const PostDetails = () => {
     deletePostMutation.mutate(
       { postId: id, imageId: post?.imageId },
       {
-        onSuccess: async () => {
-          navigate(-1);
-          await createNotification({
-            userId: post?.creator.$id,
-            senderId: user?.id,
-            type: "delete",
-            content: `${user?.name} deleted a post.`,
-            relatedId: post?.$id,
-            referenceId: post?.$id,
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            senderName: user?.name,
-            ImageUrl: user?.imageUrl,
-          });
-        },
+        
+        
       }
     );
   };
