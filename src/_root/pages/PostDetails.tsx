@@ -148,7 +148,7 @@ const PostDetails = () => {
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name,
-              ImageUrl: user?.imageUrl,
+              senderImageUrl: user?.imageUrl,
             });
           },
         }
@@ -202,7 +202,7 @@ const PostDetails = () => {
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name,
-              ImageUrl: user?.imageUrl,
+              senderImageUrl: user?.imageUrl,
             });
           },
         }

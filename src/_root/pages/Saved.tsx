@@ -41,7 +41,7 @@ const Saved = () => {
             <GridPostList
               posts={savePosts}
               showStats={true}
-              showcreator={false}
+              showCreator={false}
             />
           )}
         </ul>
