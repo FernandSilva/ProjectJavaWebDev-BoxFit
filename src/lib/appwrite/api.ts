@@ -1369,6 +1369,7 @@ export async function markNotificationAsRead(notificationId: string) {
   }
 }
 
+
 // Ensure the updateNotification function exists and is exported
 export async function updateNotification(notificationId: string) {
   try {

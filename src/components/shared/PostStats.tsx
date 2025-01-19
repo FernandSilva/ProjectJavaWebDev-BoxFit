@@ -84,7 +84,7 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
         content: `liked your post: "${post.caption || ""}"`,
         isRead: false,
         createdAt: new Date().toISOString(),
-        ImageUrl: user.imageUrl || "/assets/icons/profile-placeholder.svg", // Add ImageUrl
+        senderImageUrl: user.imageUrl || "/assets/icons/profile-placeholder.svg", // Add ImageUrl
       });
     }
   

@@ -36,6 +36,7 @@ import {
   fetchUsersAndMessages, // Added for notifications
   // createNotification, // Added for notifications
   updateNotification, // Added for notifications
+  markNotificationAsRead 
 
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -47,7 +48,7 @@ import {
   getCommentsByPostId
 } from "@/lib/appwrite/api";
 
-import { Models, Query } from "appwrite";
+import { ID, Models, Query } from "appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config"; // Adjust as needed for your config path
 
 
@@ -620,7 +621,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationRe
       isRead: doc.isRead ?? false,
       createdAt: doc.$createdAt,
       senderName: doc.senderName || "Unknown Sender",
-      ImageUrl: doc.senderImageUrl || "/assets/icons/profile-placeholder.svg",
+      senderImageUrl: doc.senderImageUrl || "/assets/icons/profile-placeholder.svg",
     }));
 
     return { documents: notifications, total: response.total };
@@ -658,19 +659,20 @@ export const useCreateNotification = () => {
 };
 
 // Create a notification
-export async function createNotification(notification: Omit<Notification, "$id">) {
+export const createNotification = async (notification: Omit<Notification, "$id">) => {
   try {
     return await databases.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.notificationsCollectionId,
-      "unique()",
+      ID.unique(),
       notification
     );
   } catch (error) {
     console.error("Failed to create notification:", error);
     throw error;
   }
-}
+};
+
 
 // Mark a notification as read
 export const useUpdateNotification = () => {

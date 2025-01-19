@@ -99,11 +99,13 @@ const PostForm = ({ post, action }: PostFormProps) => {
               isRead: false,
               createdAt: new Date().toISOString(),
               referenceId: newPost.$id,
+              content: `${user?.name} `,
               senderName: user.name,
-              senderImageUrl: user.imageUrl,
+              senderImageUrl: user.imageUrl, // Now properly typed
             });
           }
         }
+        
         
 
         toast({
