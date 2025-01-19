@@ -3,7 +3,7 @@ import { useUserContext } from "@/context/AuthContext";
 import { useUsersAndMessages } from "@/lib/react-query/queries";
 import { multiFormatDateString } from "@/lib/utils";
 import { User } from "@/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 function UsersList({
   onSelectUser,
@@ -14,41 +14,47 @@ function UsersList({
   selectedUser: User | null;
   setSteps?: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const { user } = useUserContext();
-  
-  // Fetch users and messages based on current user ID
-  const {
-    data: allUsers = [],
-    isLoading,
-    isError,
-  } = useUsersAndMessages(user?.id);
+  const [searchQuery, setSearchQuery] = useState<string>(""); // Controlled input state
+  const { user } = useUserContext(); // Get current user context
 
-  // State to hold users for the search results
+  // Fetch users and messages
+  const { data: fetchedData, isLoading, isError } = useUsersAndMessages(user?.id, searchQuery);
+
+  // Default the data to an empty array to prevent runtime errors
+  const allUsers = fetchedData?.length ? fetchedData : [];
+
+  // Filtered search results state
   const [searchResults, setSearchResults] = useState<User[]>([]);
 
-  // Effect to filter users based on search query
+  // Memoize `allUsers` to ensure stability across renders
+  const stableUsers = useMemo(() => allUsers, [allUsers]);
+
+  // Effect for filtering users based on the search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      // Reset search results when the search query is empty
+      // Reset search results when searchQuery is empty
       setSearchResults([]);
     } else {
-      // Filter users based on search query
-      const filteredUsers = allUsers.filter((user) =>
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const filteredUsers = stableUsers.filter(
+        (user) =>
+          user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setSearchResults(filteredUsers);
     }
-  }, [searchQuery, allUsers]);
+  }, [searchQuery, stableUsers]); // Depend only on `searchQuery` and memoized `stableUsers`
 
-  if (isError) return <div>Error loading users</div>;
+  // Handle error state
+  if (isError) {
+    return <div className="text-red-500">Error loading users. Please try again.</div>;
+  }
 
-  // Only show users with existing chats in the main list
-  const chatUsers = allUsers.filter(user => user.latestMessage !== null);
+  // Prepare list of users with existing chats
+  const chatUsers = useMemo(() => stableUsers.filter((user) => user.latestMessage !== null), [stableUsers]);
 
   return (
-    <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%] ">
+    <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%]">
+      {/* Header */}
       <div className="flex items-center py-4 border-b justify-between">
         <h2 className="font-bold text-2xl">Chats</h2>
         <svg
@@ -90,6 +96,8 @@ function UsersList({
           ></line>
         </svg>
       </div>
+
+      {/* Search Input */}
       <div className="search-section py-4 border-b">
         <Input
           placeholder="Search for users"
@@ -98,99 +106,56 @@ function UsersList({
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
-      {isLoading
-        ? [1, 2, 3, 4, 5].map((val) => (
-            <div key={val} role="status" className="max-w-sm p-2 rounded animate-pulse">
-              <div className="flex items-center mt-4">
-                <svg
-                  className="w-10 h-10 me-3 text-gray-200 dark:text-gray-700"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M10 0a10 10 0 1 0 10 10A10.011 10.011 0 0 0 10 0Zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 13a8.949 8.949 0 0 1-4.951-1.488A3.987 3.987 0 0 1 9 13h2a3.987 3.987 0 0 1 3.951 3.512A8.949 8.949 0 0 1 10 18Z" />
-                </svg>
-                <div>
-                  <div className="h-2.5 bg-gray-200 rounded-full dark:bg-gray-700 w-32 mb-2"></div>
-                  <div className="w-48 h-2 bg-gray-200 rounded-full dark:bg-gray-700"></div>
-                </div>
-              </div>
-            </div>
-          ))
-        : searchQuery ? searchResults.length > 0
-        ? searchResults.map((user) => (
-            <div
-              key={user.$id}
-              onClick={() => {
-                onSelectUser(user);
-                if (setSteps) setSteps(1);
-              }}
-              className={`user-item ${
-                user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
-              } flex items-center gap-4`}
-            >
-              <img
-                src={user.imageUrl}
-                className="w-8 h-8 rounded-full"
-                alt={`Profile of ${user.username}`}
-              />
-              <div className="w-full">
-                <span className="font-semibold">{user.username}</span>
-                {user.latestMessage && (
-                  <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
-                    <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
-                      {user.latestMessage.content}
-                    </span>{" "}
-                    <span className="text-[10px]">
-                      {multiFormatDateString(user.latestMessage.timestamp)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        : (
-          <div className="no-results">No users found</div>
-        )
-        : chatUsers.length > 0
-        ? chatUsers.map((user) => (
-            <div
-              key={user.$id}
-              onClick={() => {
-                onSelectUser(user);
-                if (setSteps) setSteps(1);
-              }}
-              className={`user-item ${
-                user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
-              } flex items-center gap-4`}
-            >
-              <img
-                src={user.imageUrl}
-                className="w-8 h-8 rounded-full"
-                alt={`Profile of ${user.username}`}
-              />
-              <div className="w-full">
-                <span className="font-semibold">{user.username}</span>
-                {user.latestMessage && (
-                  <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
-                    <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
-                      {user.latestMessage.content}
-                    </span>{" "}
-                    <span className="text-[10px]">
-                      {multiFormatDateString(user.latestMessage.timestamp)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        : (
-          <div className="no-results">No chat users found</div>
-        )
-      }
+
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="p-4 text-gray-500">Loading users...</div>
+      ) : searchQuery && searchResults.length === 0 ? (
+        <div className="p-4 text-gray-500">No users found for "{searchQuery}".</div>
+      ) : (
+        <div>
+          {searchQuery
+            ? searchResults.map((user) => renderUserItem(user))
+            : chatUsers.map((user) => renderUserItem(user))}
+        </div>
+      )}
     </div>
   );
+
+  // Helper function to render a user item
+  function renderUserItem(user: User) {
+    return (
+      <div
+        key={user.$id}
+        onClick={() => {
+          onSelectUser(user);
+          if (setSteps) setSteps(1);
+        }}
+        className={`user-item ${
+          user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
+        } flex items-center gap-4 p-2 border-b`}
+      >
+        <img
+          src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+          className="w-8 h-8 rounded-full"
+          alt={`Profile of ${user.username}`}
+        />
+        <div className="w-full">
+          <span className="font-semibold">{user.username}</span>
+          {user.latestMessage && (
+            <div className="text-gray-500 flex justify-between w-full text-xs pt-1 gap-2">
+              <span className="text-ellipsis max-w-[120px] overflow-hidden whitespace-nowrap">
+                {user.latestMessage.content}
+              </span>
+              <span className="text-[10px]">
+                {multiFormatDateString(user.latestMessage.timestamp)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 }
 
 export default UsersList;

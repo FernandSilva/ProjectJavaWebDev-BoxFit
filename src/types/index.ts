@@ -87,18 +87,18 @@ export interface IDeleteComment {
 // types/index.ts
 
 export interface User {
-  id: string;
   $id: string;
+  name: string;
   username: string;
-  name?: string;
-  email?: string;
-  imageUrl?: string;
-  bio?: string;
+  email: string;
+  id: string;
+  imageUrl: string;
+  bio: string;
   latestMessage?: {
     content: string;
     timestamp: string;
-  }; // Added latestMessage
-}
+  } | null; // Allow null for latestMessage
+};
 
 
 export interface Message {
