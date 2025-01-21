@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetNotifications } from "@/lib/react-query/queries";
+import { useGetNotifications, useDeleteNotification } from "@/lib/react-query/queries";
 import { Notification } from "@/types";
 
 const Topbar = () => {
@@ -10,18 +10,27 @@ const Topbar = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [maxVisibleNotifications, setMaxVisibleNotifications] = useState(5);
+  const [hasUnread, setHasUnread] = useState(false); // Track if there are unread notifications
 
   const { data: fetchedNotifications, refetch: refetchNotifications } = useGetNotifications(user?.id);
+  const { mutate: deleteNotification } = useDeleteNotification();
 
   useEffect(() => {
     if (fetchedNotifications) {
       const { documents = [] } = fetchedNotifications;
       setNotifications(documents);
-      setUnreadCount(documents.filter((notification) => !notification.isRead).length);
+      const unread = documents.filter((notification) => !notification.isRead).length;
+      setUnreadCount(unread);
+      setHasUnread(unread > 0); // Update hasUnread based on the count of unread notifications
     }
   }, [fetchedNotifications]);
 
-  const handleNotificationClick = () => setShowDropdown((prev) => !prev);
+  const handleNotificationClick = () => {
+    setShowDropdown((prev) => !prev);
+    if (!showDropdown && unreadCount > 0) {
+      setHasUnread(false); // Mark as viewed when dropdown is opened
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -52,9 +61,25 @@ const Topbar = () => {
     }
   };
 
+  const handleDeleteNotification = (notificationId: string) => {
+    deleteNotification(notificationId, {
+      onSuccess: () => {
+        refetchNotifications(); // Refresh notifications after deletion
+        setNotifications((prev) => prev.filter((n) => n.$id !== notificationId));
+      },
+      onError: (error) => console.error("Failed to delete notification:", error),
+    });
+  };
+
   const clearNotifications = () => {
+    notifications.forEach((notification) => {
+      deleteNotification(notification.$id, {
+        onError: (error) => console.error("Failed to delete notification:", error),
+      });
+    });
     setNotifications([]);
     setUnreadCount(0);
+    setHasUnread(false);
   };
 
   const toggleViewAll = () => {
@@ -75,9 +100,14 @@ const Topbar = () => {
 
           <div className="relative notification-container">
             <button onClick={handleNotificationClick} className="relative flex items-center">
-              <img src="/assets/icons/notify1.svg" alt="Notifications" className="h-6 w-6" />
+              {/* Dynamic notification icon logic */}
+              <img
+                src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
+                alt="Notifications"
+                className="h-6 w-6"
+              />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs rounded-full px-1">
                   {unreadCount}
                 </span>
               )}
@@ -94,7 +124,7 @@ const Topbar = () => {
                     >
                       <Link to={`/profile/${notification.senderId}`} className="flex items-center">
                         <img
-                          src={notification.senderImageUrl || "/assets/icons/profile-placeholder.svg"}
+                          src={notification.senderimageUrl || "/assets/icons/profile-placeholder.svg"}
                           alt={notification.senderName}
                           className="h-10 w-10 rounded-full"
                         />
@@ -105,6 +135,12 @@ const Topbar = () => {
                           {new Date(notification.createdAt).toLocaleString()}
                         </span>
                       </div>
+                      <button
+                        onClick={() => handleDeleteNotification(notification.$id)}
+                        className="text-red-500 text-xs ml-auto"
+                      >
+                        Delete
+                      </button>
                     </li>
                   ))}
                   {notifications.length === 0 && (
@@ -130,7 +166,7 @@ const Topbar = () => {
             <img
               src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
               alt="profile"
-              className="h-6 w-6 rounded-full"
+              className="h-8 w-8 rounded-full"
             />
           </Link>
         </div>

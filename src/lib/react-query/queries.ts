@@ -36,7 +36,8 @@ import {
   fetchUsersAndMessages, // Added for notifications
   // createNotification, // Added for notifications
   updateNotification, // Added for notifications
-  markNotificationAsRead 
+  markNotificationAsRead,
+  deleteNotification
 
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -621,7 +622,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationRe
       isRead: doc.isRead ?? false,
       createdAt: doc.$createdAt,
       senderName: doc.senderName || "Unknown Sender",
-      senderImageUrl: doc.senderImageUrl || "/assets/icons/profile-placeholder.svg",
+      senderimageUrl: doc.senderimageUrl || "/assets/icons/profile-placeholder.svg",
     }));
 
     return { documents: notifications, total: response.total };
@@ -685,5 +686,12 @@ export const useUpdateNotification = () => {
     onError: (error) => {
       console.error("Failed to update notification:", error);
     },
+  });
+};
+
+// Hook to delete a single notification
+export const useDeleteNotification = () => {
+  return useMutation(async (notificationId: string) => {
+    await deleteNotification(notificationId);
   });
 };

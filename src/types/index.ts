@@ -123,7 +123,7 @@ export interface Notification {
   isRead: boolean; // Read status
   createdAt: string; // ISO date string
   senderName: string; // Sender's name
-  senderImageUrl: string; // Sender's profile image URL
+  senderimageUrl: string; // Sender's profile image URL
 }
 
 export interface NotificationResponse {

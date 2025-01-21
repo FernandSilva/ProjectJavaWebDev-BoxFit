@@ -1102,13 +1102,13 @@ export async function createMessage({
   content,
   username,
   recipientId,
-  senderImageUrl,
+  senderimageUrl,
 }: {
   userId: string;
   content: string;
   username: string;
   recipientId: string;
-  senderImageUrl: string; // Ensure the sender's profile picture URL is included
+  senderimageUrl: string; // Ensure the sender's profile picture URL is included
 }) {
   try {
     // Prepare the message payload
@@ -1139,7 +1139,7 @@ export async function createMessage({
       isRead: false,
       createdAt: new Date().toISOString(), // Include `createdAt` for the notification
       senderName: username,
-      senderImageUrl, // Pass the sender's profile picture
+      senderimageUrl, // Pass the sender's profile picture
     };
 
     // Create a notification for the recipient
@@ -1333,6 +1333,10 @@ export async function getFollowersPosts(userId: string) {
 
 // Create a notification
 
+import { databases, appwriteConfig } from "./config";
+import { ID } from "appwrite";
+
+// Create a notification
 export const createNotification = async (notification: {
   userId: string;
   senderId: string;
@@ -1343,16 +1347,21 @@ export const createNotification = async (notification: {
   isRead: boolean;
   createdAt: string;
   senderName: string;
-  senderImageUrl: string,
+  senderimageUrl: string;
 }) => {
-  return await databases.createDocument(
-    "DATABASE_ID", // Replace with your actual database ID
-    "COLLECTION_ID", // Replace with your actual collection ID
-    "unique()", // Generate a unique document ID
-    notification
-  );
+  try {
+    console.log("Creating notification with data:", notification);
+    return await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      ID.unique(),
+      notification
+    );
+  } catch (error) {
+    console.error("Failed to create notification:", error);
+    throw error;
+  }
 };
-
 
 // Mark a notification as read
 export async function markNotificationAsRead(notificationId: string) {
@@ -1368,6 +1377,45 @@ export async function markNotificationAsRead(notificationId: string) {
     throw error;
   }
 }
+
+// Delete a notification
+export const deleteNotification = async (notificationId: string) => {
+  if (!notificationId) throw new Error("Notification ID is required");
+
+  try {
+    return await databases.deleteDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      notificationId
+    );
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    throw error;
+  }
+};
+
+// Clear all notifications (optional)
+export const clearNotifications = async (userId: string) => {
+  try {
+    const notifications = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      [Query.equal("userId", userId)]
+    );
+
+    await Promise.all(
+      notifications.documents.map((notification) =>
+        deleteNotification(notification.$id)
+      )
+    );
+  } catch (error) {
+    console.error("Error clearing notifications:", error);
+    throw error;
+  }
+};
+
+
+
 
 
 // Ensure the updateNotification function exists and is exported

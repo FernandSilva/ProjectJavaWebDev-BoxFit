@@ -35,7 +35,7 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   // Fetch comments for the post
   const { data: commentsData } = useGetCommentsByPost(post.$id);
   const comments = commentsData?.comments || [];
-  const totalComment = commentsData?.totalComments;
+  const totalComment = commentsData?.totalComments || 0;
 
   const likesList = post?.likes?.map((like: Models.Document) => like.$id) || [];
   const [likes, setLikes] = useState<string[]>(likesList);
@@ -54,28 +54,33 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   const createNotification = useCreateNotification();
 
   const { data: currentUser } = useGetCurrentUser();
-  const savedPostRecord = currentUser?.save.find(
+  const savedPostRecord = currentUser?.save?.find(
     (record: Models.Document) => record?.post?.$id === post.$id
   );
 
   useEffect(() => {
     setIsSaved(!!savedPostRecord);
-  }, [currentUser]);
+  }, [currentUser, savedPostRecord]);
 
   const handleLikePost = (e: React.MouseEvent<SVGElement | HTMLImageElement>) => {
     e.stopPropagation();
-  
+
+    if (!user?.id) {
+      console.error("Error: User ID is required to like a post.");
+      return;
+    }
+
     let updatedLikes = [...likes];
     const isLiked = updatedLikes.includes(userId);
-  
+
     if (isLiked) {
       updatedLikes = updatedLikes.filter((id) => id !== userId);
     } else {
       updatedLikes.push(userId);
-  
+
       // Trigger notification when liking a post
       createNotification.mutate({
-        userId: post.creator.$id, // Notify the post creator
+        userId: post.creator?.$id || "", // Notify the post creator
         senderId: user.id, // The current user liking the post
         senderName: user.name, // Current user's name
         type: "like",
@@ -84,32 +89,36 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
         content: `liked your post: "${post.caption || ""}"`,
         isRead: false,
         createdAt: new Date().toISOString(),
-        senderImageUrl: user.imageUrl || "/assets/icons/profile-placeholder.svg", // Add ImageUrl
+        senderimageUrl: user.imageUrl || "/assets/icons/profile-placeholder.svg",
       });
     }
-  
+
     setLikes(updatedLikes);
-  
+
     likePost({
       postId: post.$id,
       likesArray: updatedLikes,
       userId, // The user liking the post
-      postOwnerId: post.creator.$id, // Owner of the post
-      relatedId: post.$id, // Related ID for tracking
-      referenceId: post.$id, // Reference ID for tracking
+      postOwnerId: post.creator?.$id || "", // Owner of the post
+      relatedId: post.$id, // Ensure relatedId is included
+      referenceId: post.$id, // Ensure referenceId is included
     });
   };
-  
 
   const handleSavePost = (e: React.MouseEvent<SVGElement | HTMLImageElement>) => {
     e.stopPropagation();
+
+    if (!user?.id) {
+      console.error("Error: User ID is required to save a post.");
+      return;
+    }
 
     if (savedPostRecord) {
       setIsSaved(false);
       return deleteSavePost(savedPostRecord.$id);
     }
 
-    savePost({ userId, postId: post.$id });
+    savePost({ userId: user.id, postId: post.$id });
     setIsSaved(true);
   };
 
@@ -118,27 +127,32 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
   };
 
   const handleSendComment = () => {
-    if (inputText.trim()) {
+    if (inputText.trim() && user?.id) {
       createCommentMutation.mutate(
         {
           postId: post.$id,
-          userId: user?.id || "",
+          userId: user.id,
           text: inputText,
           userImageUrl: user?.imageUrl || "",
           userName: user?.name || "",
         },
         {
-          onSuccess: () => setInputText(""), // Clear input after successful comment creation
+          onSuccess: () => setInputText(""),
         }
       );
     }
   };
 
   const handleToggleLikeComment = (commentId: string, liked: boolean) => {
+    if (!user?.id) {
+      console.error("Error: User ID is required to like/unlike a comment.");
+      return;
+    }
+
     if (liked) {
-      unlikeCommentMutation.mutate({ commentId, userId });
+      unlikeCommentMutation.mutate({ commentId, userId: user.id });
     } else {
-      likeCommentMutation.mutate({ commentId, userId });
+      likeCommentMutation.mutate({ commentId, userId: user.id });
     }
   };
 
@@ -156,7 +170,11 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
 
   return (
     <>
-      <div className={`flex justify-between items-center ${location.pathname.startsWith("/profile") ? "w-full" : ""}`}>
+      <div
+        className={`flex justify-between items-center ${
+          location.pathname.startsWith("/profile") ? "w-full" : ""
+        }`}
+      >
         <div className="flex gap-6">
           {/* Likes Section */}
           <div className="flex items-center gap-1">
@@ -171,11 +189,18 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
                   onClick={handleLikePost}
                 />
               ) : (
-                <PiFireLight className="cursor-pointer w-6 h-6" onClick={handleLikePost} />
+                <PiFireLight
+                  className="cursor-pointer w-6 h-6"
+                  onClick={handleLikePost}
+                />
               )
             ) : (
               <img
-                src={checkIsLiked(likes, userId) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
+                src={
+                  checkIsLiked(likes, userId)
+                    ? "/assets/icons/liked.svg"
+                    : "/assets/icons/like.svg"
+                }
                 alt="Like"
                 className="cursor-pointer"
                 width={20}
@@ -188,7 +213,10 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
 
           {/* Comments Section */}
           <div className="flex items-center gap-1">
-            <FaRegComment className="cursor-pointer w-6 h-6" onClick={handleCommentsSection} />
+            <FaRegComment
+              className="cursor-pointer w-6 h-6"
+              onClick={handleCommentsSection}
+            />
             <p>{totalComment}</p>
           </div>
         </div>
@@ -196,9 +224,15 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
         {/* Save Section */}
         <div className="flex items-center">
           {isSaved ? (
-            <IoBookmark className="cursor-pointer w-6 h-6" onClick={handleSavePost} />
+            <IoBookmark
+              className="cursor-pointer w-6 h-6"
+              onClick={handleSavePost}
+            />
           ) : (
-            <CiBookmark className="cursor-pointer w-6 h-6" onClick={handleSavePost} />
+            <CiBookmark
+              className="cursor-pointer w-6 h-6"
+              onClick={handleSavePost}
+            />
           )}
         </div>
       </div>
@@ -211,7 +245,10 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
             return (
               <div key={comment.$id} className="comment-item flex gap-3">
                 <img
-                  src={comment.userImageUrl || "/assets/icons/profile-placeholder.svg"}
+                  src={
+                    comment.userImageUrl ||
+                    "/assets/icons/profile-placeholder.svg"
+                  }
                   alt="User"
                   className="h-7 w-7 rounded-full"
                 />
@@ -219,7 +256,9 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
                   <p>
                     <strong>{comment.userName}</strong>: {comment.text}
                   </p>
-                  <p className="text-gray-500 text-sm">{multiFormatDateString(comment.$createdAt)}</p>
+                  <p className="text-gray-500 text-sm">
+                    {multiFormatDateString(comment.$createdAt)}
+                  </p>
                   <button
                     onClick={() => handleToggleLikeComment(comment.$id, liked)}
                     className={`text-${liked ? "red" : "green"}-500`}
@@ -243,7 +282,10 @@ const PostStats = ({ post, userId, isPost, showComments }: PostStatsProps) => {
               placeholder="Write a comment..."
               className="w-full border rounded-md p-2"
             />
-            <IoMdSend className="cursor-pointer w-6 h-6" onClick={handleSendComment} />
+            <IoMdSend
+              className="cursor-pointer w-6 h-6"
+              onClick={handleSendComment}
+            />
           </div>
         </div>
       )}

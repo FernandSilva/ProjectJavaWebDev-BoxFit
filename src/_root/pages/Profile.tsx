@@ -77,7 +77,7 @@ const Profile = () => {
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name || "",
-              senderImageUrl: user?.imageUrl || "",
+              senderimageUrl: user?.imageUrl || "",
             });
           },
         }
