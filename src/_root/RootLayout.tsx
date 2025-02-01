@@ -8,6 +8,7 @@ import { useWindowSize } from "@uidotdev/usehooks";
 const RootLayout = () => {
   const location = useLocation();
   const { width } = useWindowSize();
+  
   return (
     <div className="w-full md:flex">
       <Topbar />
