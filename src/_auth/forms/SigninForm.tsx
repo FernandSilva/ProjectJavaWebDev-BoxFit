@@ -18,15 +18,13 @@ import { Input } from "@/components/ui/input";
 import { useUserContext } from "@/context/AuthContext";
 import { useSignInAccount } from "@/lib/react-query/queries";
 import { SigninValidation } from "@/lib/validation";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SigninForm = () => {
-  // const { toast } = useToast();
   const navigate = useNavigate();
   const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
-  // Query
   const { mutateAsync: signInAccount, isLoading } = useSignInAccount();
 
   const form = useForm<z.infer<typeof SigninValidation>>({
@@ -37,25 +35,23 @@ const SigninForm = () => {
     },
   });
 
-  const handleSignin = async (user: z.infer<typeof SigninValidation>) => {
+  const handleSignin = async (userData: z.infer<typeof SigninValidation>) => {
     try {
-      // Ensure user object contains the required fields
-      if (!user.email || !user.password) {
+      if (!userData.email || !userData.password) {
         throw new Error("Email and password are required");
       }
-  
-      // Sign in the user
+
       const session = await signInAccount({
-        email: user.email,
-        password: user.password,
+        email: userData.email,
+        password: userData.password,
       });
-  
+
       if (!session) {
         throw new Error("Login failed. Please try again.");
       }
-  
+
       const isLoggedIn = await checkAuthUser();
-  
+
       if (isLoggedIn) {
         form.reset();
         navigate("/");
@@ -63,17 +59,15 @@ const SigninForm = () => {
         throw new Error("Login failed. Please try again.");
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.message || error?.message || "An unknown error occurred.";
+      const errorMessage =
+        error?.response?.message || error?.message || "An unknown error occurred.";
       toast.error(errorMessage, {
-        position: "bottom-center"
+        position: "bottom-center",
       });
       console.error("Sign-in error:", error);
     }
   };
-  
-  
-  
-  
+
   return (
     <Form {...form}>
       <div className="sm:w-4200 flex-center flex-col">
@@ -94,16 +88,10 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Email</FormLabel>
                 <FormControl>
-                  <Input
-                    type="text"
-                    className={`shad-input ${error ? "error" : ""}`} // Dynamically add the 'error' class if there's an error
-                    {...field}
-                  />
+                  <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
                 {error && (
-                  <FormMessage className="text-red text-[12px]">
-                    {error.message} // Display the error message conditionally
-                  </FormMessage>
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
                 )}
               </FormItem>
             )}
@@ -116,16 +104,10 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Password</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    className={`shad-input ${error ? "error" : ""}`} // Dynamically add the 'error' class if there's an error
-                    {...field}
-                  />
+                  <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
                 {error && (
-                  <FormMessage className="text-red text-[12px]">
-                    {error.message} // Display the error message conditionally
-                  </FormMessage>
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
                 )}
               </FormItem>
             )}
@@ -140,13 +122,10 @@ const SigninForm = () => {
               "Log in"
             )}
           </Button>
-          
+
           <p className="text-small-regular text-light-3 text-center mt-2">
             Don&apos;t have an account?
-            <Link
-              to="/sign-up"
-              className=" text-black hover:text-green-500 text-small-semibold ml-1"
-            >
+            <Link to="/sign-up" className="text-black hover:text-green-500 text-small-semibold ml-1">
               Sign up
             </Link>
           </p>

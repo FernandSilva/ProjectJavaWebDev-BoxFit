@@ -8,7 +8,7 @@ const Saved = () => {
   if (!currentUser) return <Loader />;
 
   const savePosts = currentUser.save
-    ?.map((savePost: Models.Document) => ({
+    ?.map((savePost: { post: Models.Document }) => ({
       ...savePost.post,
     }))
     .reverse();
@@ -16,16 +16,8 @@ const Saved = () => {
   return (
     <div className="saved-container">
       <div className="flex gap-2 w-full">
-        <img
-          src="/assets/icons/save.svg"
-          width={36}
-          height={36}
-          alt="save"
-          className="invert-white"
-        />
-        <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
-          Saved Posts
-        </h2>
+        <img src="/assets/icons/save.svg" width={36} height={36} alt="save" className="invert-white" />
+        <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">Saved Posts</h2>
       </div>
 
       <ul className="w-full flex justify-center max-w-5xl gap-9">

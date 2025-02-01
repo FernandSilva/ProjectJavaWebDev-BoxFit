@@ -1,4 +1,14 @@
 {
-    "build": { "ignoreBuildErrors": true }
-  }
-  
+    
+    "github": {
+        "silent": true
+    },
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/"
+        }
+    ]
+
+    
+}

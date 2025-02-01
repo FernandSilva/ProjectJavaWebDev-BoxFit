@@ -14,25 +14,16 @@ function UsersList({
   selectedUser: User | null;
   setSteps?: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const [searchQuery, setSearchQuery] = useState<string>(""); // Controlled input state
-  const { user } = useUserContext(); // Get current user context
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const { user } = useUserContext();
 
-  // Fetch users and messages
   const { data: fetchedData, isLoading, isError } = useUsersAndMessages(user?.id, searchQuery);
-
-  // Default the data to an empty array to prevent runtime errors
   const allUsers = fetchedData?.length ? fetchedData : [];
-
-  // Filtered search results state
   const [searchResults, setSearchResults] = useState<User[]>([]);
-
-  // Memoize `allUsers` to ensure stability across renders
   const stableUsers = useMemo(() => allUsers, [allUsers]);
 
-  // Effect for filtering users based on the search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
-      // Reset search results when searchQuery is empty
       setSearchResults([]);
     } else {
       const filteredUsers = stableUsers.filter(
@@ -42,19 +33,16 @@ function UsersList({
       );
       setSearchResults(filteredUsers);
     }
-  }, [searchQuery, stableUsers]); // Depend only on `searchQuery` and memoized `stableUsers`
+  }, [searchQuery, stableUsers]);
 
-  // Handle error state
   if (isError) {
     return <div className="text-red-500">Error loading users. Please try again.</div>;
   }
 
-  // Prepare list of users with existing chats
   const chatUsers = useMemo(() => stableUsers.filter((user) => user.latestMessage !== null), [stableUsers]);
 
   return (
     <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%]">
-      {/* Header */}
       <div className="flex items-center py-4 border-b justify-between">
         <h2 className="font-bold text-2xl">Chats</h2>
         <svg
@@ -97,7 +85,6 @@ function UsersList({
         </svg>
       </div>
 
-      {/* Search Input */}
       <div className="search-section py-4 border-b">
         <Input
           placeholder="Search for users"
@@ -107,7 +94,6 @@ function UsersList({
         />
       </div>
 
-      {/* Loading State */}
       {isLoading ? (
         <div className="p-4 text-gray-500">Loading users...</div>
       ) : searchQuery && searchResults.length === 0 ? (
@@ -122,7 +108,6 @@ function UsersList({
     </div>
   );
 
-  // Helper function to render a user item
   function renderUserItem(user: User) {
     return (
       <div
@@ -131,9 +116,7 @@ function UsersList({
           onSelectUser(user);
           if (setSteps) setSteps(1);
         }}
-        className={`user-item ${
-          user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"
-        } flex items-center gap-4 p-2 border-b`}
+        className={`user-item ${user.$id === selectedUser?.$id ? "!bg-gray-200" : "bg-white"} flex items-center gap-4 p-2 border-b`}
       >
         <img
           src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}

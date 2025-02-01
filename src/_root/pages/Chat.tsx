@@ -1,69 +1,34 @@
 import { Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
-import React, { useEffect, useState } from "react";
- import { appwriteConfig, databases } from "@/lib/appwrite/config";
-import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries"; // Assuming correct path to your useCreateMessage hook
+import React, { useEffect, useState, useRef } from "react";
+import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries";
 import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";
-import { ID } from "appwrite"; // Assuming `Permission` and `Role` are not used directly here
+import { ID } from "appwrite";
 import moment from "moment";
 import { MdArrowBack } from "react-icons/md";
 import UsersList from "./UsersList";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
-  // const [messages, setMessages] = useState<Message[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { user } = useUserContext();
   const [steps, setSteps] = useState<number>(0);
-  // const [loading, setLoading] = useState<boolean>(false);
   const { width } = useWindowSize();
 
-  // Initialize the useCreateMessage hook
   const { mutateAsync: createMessage } = useCreateMessage();
   const { data: recievedMessages, isLoading: loading } = useGetMessages(
     selectedUser?.id,
     user?.id
   );
-  console.log(recievedMessages)
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!selectedUser) return;
-      try {
-        // setLoading(true);
-        // const result = await databases.listDocuments(
-        //   appwriteConfig.databaseId,
-        //   appwriteConfig.messageCollectionId,
-        //   [
-        //     Query.orderDesc("$createdAt"),
-        //     Query.limit(50),
-        //     Query.equal("userId", selectedUser.id),
-        //   ]
-        // );
-        // const typedMessages: Message[] = result.documents.map((doc: any) => ({
-        //   $id: doc.$id,
-        //   userId: doc.userId,
-        //   username: doc.username,
-        //   id: doc.$id,
-        //   content: doc.content,
-        //   text: doc.content,
-        //   createdAt: doc.createdAt,
-        //   recipientId: selectedUser.$id,
-        // }));
-        // setMessages(typedMessages);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-      } finally {
-        // setLoading(false);
-      }
-    };
 
-    fetchMessages();
+  useEffect(() => {
+    // (Optional: additional logic to fetch messages if needed)
   }, [selectedUser, user]);
 
-  const sendMessage = async (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedUser) return;
+    if (!newMessage.trim() || !selectedUser || !user) return;
 
     const messageData: Message = {
       $id: ID.unique(),
@@ -73,28 +38,24 @@ function Chat() {
       content: newMessage,
       text: newMessage,
       createdAt: new Date().toISOString(),
-      recipientId: selectedUser.id, // Add recipient's ID here
+      recipientId: selectedUser.id,
     };
 
     try {
-      // Optimistically update messages state
-      // setMessages((prevMessages) => [...prevMessages, messageData]);
-
-      // Clear input field after sending message
       setNewMessage("");
-
-      // Call the mutation hook to send the message
-      console.log(messageData);
       await createMessage(messageData);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
-  
+
+  // Type the videoRefs as an array of HTMLVideoElement
+  const videoRefs = useRef<HTMLVideoElement[]>([]);
+
   return (
     <div className="chat-container">
       <div className="chat-layout !h-[84vh] sm:!h-full">
-        {width < 1024 && (
+        {(width ?? 0) < 1024 && (
           <>
             {steps === 0 && (
               <UsersList
@@ -107,14 +68,11 @@ function Chat() {
               <div className="chat-messages-section !w-full lg:!w-[70%] !h-[80vh] lg:!h-[100vh]">
                 <div className="py-4 w-[90%] mx-auto border-b flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <MdArrowBack
-                      onClick={() => setSteps(0)}
-                      className="text-black text-lg"
-                    />
+                    <MdArrowBack onClick={() => setSteps(0)} className="text-black text-lg" />
                     <img
                       src={selectedUser?.imageUrl}
                       className="w-8 h-8 rounded-full"
-                      alt=""
+                      alt="User avatar"
                     />
                     <p>{selectedUser?.name}</p>
                   </div>
@@ -164,50 +122,35 @@ function Chat() {
                 </div>
                 <div className="chat-messages">
                   {!loading ? (
-                    recievedMessages.documents.length ? (
-                      recievedMessages.documents.map((message) => {
-                        console.log(message);
-                        return (
+                    (recievedMessages?.documents?.length ?? 0) > 0 ? (
+                      (recievedMessages?.documents ?? []).map((message) => (
+                        <div
+                          key={message.$id}
+                          className={`${
+                            message.userId === user.id ? "flex-row-reverse justify-start" : "flex-row"
+                          } flex items-center w-full gap-2`}
+                        >
                           <div
-                            key={message.$id}
-                            className={`${
-                              message.userId === user.id
-                                ? "flex-row-reverse justify-start"
-                                : " flex-row"
-                            } flex items-center w-full gap-2`}
+                            className={`message ${
+                              message.userId === user.id ? "bg-green-500" : "!bg-gray-500"
+                            }`}
                           >
-                            {/* <img
-                              src={user?.imageUrl}
-                              className="w-6 h-6 rounded-full"
-                            /> */}
-                            <div
-                              className={`message ${
-                                message.userId === user.id
-                                  ? "bg-green-500"
-                                  : "!bg-gray-500"
-                              }`}
-                            >
-                              <span className="text-sm">{message.content}</span>
-                              <sub className="text-[10px] font-medium ml-2">
-                                {moment(message.$createdAt).format("hh:mm")}
-                              </sub>
-                            </div>
+                            <span className="text-sm">{message.content}</span>
+                            <sub className="text-[10px] font-medium ml-2">
+                              {moment(message.$createdAt).format("hh:mm")}
+                            </sub>
                           </div>
-                        );
-                      })
+                        </div>
+                      ))
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full gap-2">
                         <img
                           src={selectedUser?.imageUrl}
                           className="w-20 h-20 rounded-full"
-                          alt=""
+                          alt="User avatar"
                         />
-                        <span className="font-semibold text-lg">
-                          {selectedUser?.name}
-                        </span>
-                        <span className="font-normal text-sm">
-                          Start A new chat
-                        </span>
+                        <span className="font-semibold text-lg">{selectedUser?.name}</span>
+                        <span className="font-normal text-sm">Start A new chat</span>
                       </div>
                     )
                   ) : (
@@ -224,10 +167,7 @@ function Chat() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="message-input"
                   />
-                  <button
-                    type="submit"
-                    className="send-button hover:bg-green-200"
-                  >
+                  <button type="submit" className="send-button hover:bg-green-200">
                     Send
                   </button>
                 </form>
@@ -235,7 +175,7 @@ function Chat() {
             )}
           </>
         )}
-        {width > 1024 && (
+        {(width ?? 0) > 1024 && (
           <>
             <UsersList
               onSelectUser={setSelectedUser}
@@ -248,7 +188,7 @@ function Chat() {
                   <img
                     src={selectedUser?.imageUrl}
                     className="w-8 h-8 rounded-full"
-                    alt=""
+                    alt="User avatar"
                   />
                   <p>{selectedUser?.name}</p>
                 </div>
@@ -298,26 +238,17 @@ function Chat() {
               </div>
               <div className="chat-messages">
                 {!loading ? (
-                  recievedMessages?.documents?.length > 0 ? (
-                    recievedMessages?.documents?.map((message) => (
+                  (recievedMessages?.documents?.length ?? 0) > 0 ? (
+                    (recievedMessages?.documents ?? []).map((message) => (
                       <div
                         key={message.$id}
                         className={`${
-                          message.userId === user.id
-                            ? "flex-row-reverse justify-start"
-                            : " flex-row"
+                          message.userId === user.id ? "flex-row-reverse justify-start" : "flex-row"
                         } flex items-center w-full gap-2`}
                       >
-                        {/* <img
-                          src={user?.imageUrl}
-                          className="w-6 h-6 rounded-full"
-                        /> */}
-
                         <div
                           className={`message ${
-                            message.userId === user.id
-                              ? "bg-green-500"
-                              : "!bg-gray-500"
+                            message.userId === user.id ? "bg-green-500" : "!bg-gray-500"
                           }`}
                         >
                           <span>
@@ -334,14 +265,10 @@ function Chat() {
                       <img
                         src={selectedUser?.imageUrl}
                         className="w-20 h-20 rounded-full"
-                        alt=""
+                        alt="User avatar"
                       />
-                      <span className="font-semibold text-lg">
-                        {selectedUser?.name}
-                      </span>
-                      <span className="font-normal text-sm">
-                        Start A new chat
-                      </span>
+                      <span className="font-semibold text-lg">{selectedUser?.name}</span>
+                      <span className="font-normal text-sm">Start A new chat</span>
                     </div>
                   )
                 ) : (
@@ -358,10 +285,7 @@ function Chat() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="message-input"
                 />
-                <button
-                  type="submit"
-                  className="send-button hover:bg-green-200"
-                >
+                <button type="submit" className="send-button hover:bg-green-200">
                   Send
                 </button>
               </form>

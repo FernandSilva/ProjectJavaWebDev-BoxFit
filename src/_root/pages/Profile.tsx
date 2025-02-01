@@ -1,21 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { LikedPosts } from "@/_root/pages";
-import { BiMessageDetail } from "react-icons/bi";
-import { GridPostList, Loader } from "@/components/shared";
-import { Button } from "@/components/ui";
-import { INITIAL_USER, useUserContext } from "@/context/AuthContext";
+import { GridPostList, Loader, UserCard } from "@/components/shared";
+import { Input } from "@/components/ui";
+import { useWindowSize } from "@uidotdev/usehooks";
+import { useEffect, useState } from "react";
 import {
   useFollowStatus,
   useFollowUser,
   useGetUserById,
   useGetUserRelationships,
   useSignOutAccount,
-  useUnfollowUser, useCreateNotification
+  useUnfollowUser,
+  useCreateNotification,
 } from "@/lib/react-query/queries";
-
-import {createNotification} from "@/lib/appwrite/api";
-
-
+import { createNotification } from "@/lib/appwrite/api";
 import { TbLogout2 } from "react-icons/tb";
 import {
   Link,
@@ -28,34 +24,29 @@ import {
 } from "react-router-dom";
 import Following from "./Following";
 import Follower from "./Follower";
+import LikedPosts from "./LikedPosts";  // <-- Added missing import for LikedPosts
+import { useUserContext, INITIAL_USER } from "@/context/AuthContext";
+import { BiMessageDetail } from "react-icons/bi";
+import { Button } from "@/components/ui";
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { user, setUser, setIsAuthenticated } = useUserContext();
   const { pathname } = useLocation();
   const { data: currentUser } = useGetUserById(id || "");
   const { data: userRelationships } = useGetUserRelationships(id);
-  console.log(userRelationships);
-
   const { mutate: signOut } = useSignOutAccount();
   const isOwnProfile = user?.id === currentUser?.$id;
-
   const { data: followStatusData } = useFollowStatus(user?.id, id);
-
   const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
     setIsFollowing(!!followStatusData);
   }, [followStatusData]);
 
-  useEffect(() => {
-    console.log("Follow Status Data:", followStatusData);
-  }, [followStatusData]);
-
   const followMutation = useFollowUser();
   const unfollowMutation = useUnfollowUser();
-  
 
   const handleFollow = () => {
     if (!isFollowing) {
@@ -64,8 +55,6 @@ const Profile = () => {
         {
           onSuccess: () => {
             setIsFollowing(true);
-  
-            // Send follow notification
             const { mutate: createNotification } = useCreateNotification();
             createNotification({
               userId: id || "",
@@ -84,12 +73,10 @@ const Profile = () => {
       );
     }
   };
-  
 
   const MessageActive = pathname === "/Chat";
 
   const handleUnfollow = () => {
-    console.log({ isFollowing, followStatusData });
     if (isFollowing && followStatusData) {
       unfollowMutation.mutate(followStatusData.$id, {
         onSuccess: () => {
@@ -130,17 +117,13 @@ const Profile = () => {
       <div className="flex flex-col xl:flex-row max-xl:items-center lg:gap-7 lg:justify-between">
         <div className="flex lg:gap-6 gap-2">
           <img
-            src={
-              currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
-            }
+            src={currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"}
             alt="profile"
             className="w-[4rem] h-[4rem] lg:h-[6rem] lg:w-[6rem] rounded-full hidden md:inline"
           />
           <div className="md:hidden flex flex-col gap-1">
             <img
-              src={
-                currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
-              }
+              src={currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"}
               alt="profile"
               className="w-[4rem] h-[4rem] lg:h-[6rem] lg:w-[6rem] rounded-full"
             />
@@ -148,7 +131,7 @@ const Profile = () => {
               <h1 className="lg:text-center xl:text-left !text-[14px] w-full">
                 {currentUser.name}
               </h1>
-              <p className="small-regular md:body-medium !text-[12px] text-light-3 ">
+              <p className="small-regular md:body-medium !text-[12px] text-light-3">
                 @{currentUser.username}
               </p>
             </div>
@@ -162,7 +145,7 @@ const Profile = () => {
                 @{currentUser.username}
               </p>
             </div>
-            <div className="flex flex-row mt-[10px] md:mt-[0px] gap-2 md:gap-8 pt-[10px] lg:pt-[20px] items-center justify-center xl:justify-start z-20">
+            <div className="flex flex-row mt-[10px] md:mt-[0px] gap-2 md:gap-8 pt-[10px] lg:pt-[20px] items-center justify-center xl:justify-start">
               <Link
                 to={`/profile/${id}`}
                 className="flex-center gap-1 md:gap-2 cursor-pointer"
@@ -170,9 +153,7 @@ const Profile = () => {
                 <p className="small-semibold lg:body-bold text-green-500">
                   {currentUser.posts.length}
                 </p>
-                <p className="small-medium lg:base-medium text-light-3">
-                  Posts
-                </p>
+                <p className="small-medium lg:base-medium text-light-3">Posts</p>
               </Link>
               <Link
                 to={`/profile/${id}/followers`}
@@ -181,9 +162,7 @@ const Profile = () => {
                 <p className="small-semibold lg:body-bold text-green-500">
                   {userRelationships?.followers || 0}
                 </p>
-                <p className="small-medium lg:base-medium text-light-3">
-                  Followers
-                </p>
+                <p className="small-medium lg:base-medium text-light-3">Followers</p>
               </Link>
               <Link
                 to={`/profile/${id}/following`}
@@ -192,9 +171,7 @@ const Profile = () => {
                 <p className="small-semibold lg:body-bold text-green-500">
                   {userRelationships?.following || 0}
                 </p>
-                <p className="small-medium lg:base-medium text-light-3">
-                  Following
-                </p>
+                <p className="small-medium lg:base-medium text-light-3">Following</p>
               </Link>
             </div>
             <p className="small-medium md:base-medium text-center hidden md:flex xl:text-left pt-[10px] lg:pt-[20px] max-w-screen-sm">
@@ -213,9 +190,7 @@ const Profile = () => {
                   variant="ghost"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out"
                 >
-                  <span className="md:text-sm text-[14px] font-medium">
-                    Edit Profile
-                  </span>
+                  <span className="md:text-sm text-[14px] font-medium">Edit Profile</span>
                 </Button>
               </Link>
 
@@ -244,7 +219,7 @@ const Profile = () => {
                   variant="ghost"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition duration-150 ease-in-out"
                   onClick={handleUnfollow}
-                  disabled={unfollowMutation.isLoading}
+                  disabled={false}
                 >
                   Unfollow
                 </Button>
@@ -253,14 +228,16 @@ const Profile = () => {
                   variant="ghost"
                   className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition duration-150 ease-in-out"
                   onClick={handleFollow}
-                  disabled={followMutation.isLoading}
+                  disabled={false}
                 >
                   Follow
                 </Button>
               )}
               <Button
-                className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${MessageActive ? "bg-green-500 text-white" : ""}`}
-                onClick={() => navigate('/Chat')}
+                className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${
+                  MessageActive ? "bg-green-500 text-white" : ""
+                }`}
+                onClick={() => navigate("/Chat")}
               >
                 <BiMessageDetail />
                 <p className="text-sm">Message</p>
@@ -280,11 +257,7 @@ const Profile = () => {
                 : "text-gray-600 hover:text-green-500"
             }`}
           >
-            <img
-              src={"/assets/icons/posts.svg"}
-              alt="posts"
-              className="w-5 h-5"
-            />
+            <img src={"/assets/icons/posts.svg"} alt="posts" className="w-5 h-5" />
             <span className="hidden md:inline">Posts</span>
           </Link>
           <Link
@@ -295,11 +268,7 @@ const Profile = () => {
                 : "text-gray-600 hover:text-green-500"
             }`}
           >
-            <img
-              src={"/assets/icons/like.svg"}
-              alt="like"
-              className="w-5 h-5"
-            />
+            <img src={"/assets/icons/like.svg"} alt="like" className="w-5 h-5" />
             <span className="hidden md:inline">Liked Posts</span>
           </Link>
           <Link
@@ -310,21 +279,14 @@ const Profile = () => {
                 : "text-gray-600 hover:text-green-500"
             }`}
           >
-            <img
-              src={"/assets/icons/message.svg"}
-              alt="comments"
-              className="w-5 h-5"
-            />
+            <img src={"/assets/icons/message.svg"} alt="comments" className="w-5 h-5" />
             <span className="hidden md:inline">Messages</span>
           </Link>
         </div>
       )}
 
       <Routes>
-        <Route
-          index
-          element={<GridPostList posts={currentUser.posts} showUser={false} />}
-        />
+        <Route index element={<GridPostList posts={currentUser.posts} showUser={false} />} />
         <Route path="/liked-posts" element={<LikedPosts />} />
         <Route path="/following" element={<Following />} />
         <Route path="/followers" element={<Follower />} />
@@ -335,3 +297,4 @@ const Profile = () => {
 };
 
 export default Profile;
+

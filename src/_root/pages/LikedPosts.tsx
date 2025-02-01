@@ -31,14 +31,9 @@ const LikedPosts = () => {
   return (
     <div className="liked-posts-container">
       <h1 className="text-lg font-semibold mb-4">Liked Posts</h1>
-      <GridPostList
-        posts={currentUser.liked}
-        showStats={true} // Display stats for liked posts
-        showComments={false}// Hide comments section for liked posts
-      />
+      <GridPostList posts={currentUser.liked} showStats={true} showComments={false} />
     </div>
   );
 };
 
 export default LikedPosts;
-

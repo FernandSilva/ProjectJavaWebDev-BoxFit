@@ -1,5 +1,4 @@
 import { Outlet, useLocation } from "react-router-dom";
-
 import Topbar from "@/components/shared/Topbar";
 import Bottombar from "@/components/shared/Bottombar";
 import LeftSidebar from "@/components/shared/LeftSidebar";
@@ -15,7 +14,7 @@ const RootLayout = () => {
       <LeftSidebar />
 
       <section
-        className={` flex-1 ${width < 640 && location.pathname === "/settings" ? "" : "flex"} ${width < 1024 && location.pathname === "/Chat" ? "h-auto" : "h-full"}  text-black`}
+        className={`flex-1 ${width && width < 640 && location.pathname === "/settings" ? "" : "flex"} ${width && width < 1024 && location.pathname === "/Chat" ? "h-auto" : "h-full"} text-black`}
       >
         <Outlet />
       </section>

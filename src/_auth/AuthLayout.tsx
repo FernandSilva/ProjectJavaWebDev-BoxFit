@@ -1,5 +1,4 @@
 import { Outlet, Navigate } from "react-router-dom";
-
 import { useUserContext } from "@/context/AuthContext";
 
 export default function AuthLayout() {
@@ -14,7 +13,6 @@ export default function AuthLayout() {
           <section className="flex flex-1 justify-center items-center flex-col">
             <Outlet />
           </section>
-
           <img
             src="/assets/images/side-img.jpeg"
             alt="logo"
