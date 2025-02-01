@@ -1,18 +1,15 @@
 import { Models } from "appwrite";
-
 import { GridPostList, Loader } from "@/components/shared";
 import { useGetCurrentUser } from "@/lib/react-query/queries";
 
 const Saved = () => {
   const { data: currentUser } = useGetCurrentUser();
-  console.log({ currentUser });
 
-  const savePosts = currentUser?.save
-    .map((savePost: Models.Document) => ({
+  if (!currentUser) return <Loader />;
+
+  const savePosts = currentUser.save
+    ?.map((savePost: Models.Document) => ({
       ...savePost.post,
-      creator: {
-        imageUrl: currentUser.imageUrl,
-      },
     }))
     .reverse();
 
@@ -23,7 +20,7 @@ const Saved = () => {
           src="/assets/icons/save.svg"
           width={36}
           height={36}
-          alt="edit"
+          alt="save"
           className="invert-white"
         />
         <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
@@ -31,21 +28,13 @@ const Saved = () => {
         </h2>
       </div>
 
-      {!currentUser ? (
-        <Loader />
-      ) : (
-        <ul className="w-full flex justify-center max-w-5xl gap-9">
-          {savePosts.length === 0 ? (
-            <p className="text-light-4">No available posts</p>
-          ) : (
-            <GridPostList
-              posts={savePosts}
-              showStats={true}
-              showCreator={false}
-            />
-          )}
-        </ul>
-      )}
+      <ul className="w-full flex justify-center max-w-5xl gap-9">
+        {savePosts?.length > 0 ? (
+          <GridPostList posts={savePosts} showStats={true} showCreator={false} />
+        ) : (
+          <p className="text-light-4">No available posts</p>
+        )}
+      </ul>
     </div>
   );
 };

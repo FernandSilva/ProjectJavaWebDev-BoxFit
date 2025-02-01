@@ -34,7 +34,7 @@ const LikedPosts = () => {
       <GridPostList
         posts={currentUser.liked}
         showStats={true} // Display stats for liked posts
-        showComments={false} // Hide comments section for liked posts
+        showComments={false}// Hide comments section for liked posts
       />
     </div>
   );
