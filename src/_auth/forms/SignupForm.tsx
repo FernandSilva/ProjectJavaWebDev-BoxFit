@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import * as z from "zod";
 
 import Loader from "@/components/shared/Loader";
@@ -18,12 +18,11 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { useUserContext } from "@/context/AuthContext";
-import { useCreateUserAccount, useSignInAccount } from "@/lib/react-query/queries";
+import { useCreateUserAccount } from "@/lib/react-query/queries";
 import { SignupValidation } from "@/lib/validation";
 
 const SignupForm = () => {
-  const navigate = useNavigate();
-  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
+  const { isLoading: isUserLoading } = useUserContext();
 
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
@@ -35,8 +34,8 @@ const SignupForm = () => {
     },
   });
 
-  const { mutateAsync: createUserAccount, isLoading: isCreatingAccount } = useCreateUserAccount();
-  const { mutateAsync: signInAccount, isLoading: isSigningInUser } = useSignInAccount();
+  const { mutateAsync: createUserAccount, isLoading: isCreatingAccount } =
+    useCreateUserAccount();
 
   const handleSignup = async (userData: z.infer<typeof SignupValidation>) => {
     try {
@@ -44,34 +43,22 @@ const SignupForm = () => {
         throw new Error("Email and password are required");
       }
 
+      // Create user account without automatically signing in.
       const newUser = await createUserAccount({
         email: userData.email,
         password: userData.password,
         name: userData.name,
         username: userData.username,
       });
-
       console.log("New user created:", newUser);
 
-      const session = await signInAccount({
-        email: userData.email,
-        password: userData.password,
-      });
-
-      if (!session) {
-        toast.error("Something went wrong. Please log in with your new account", {
-          position: "top-center",
-        });
-        navigate("/sign-in");
-        return;
-      }
-
-      const isLoggedIn = await checkAuthUser();
-
-      if (isLoggedIn) {
-        form.reset();
-        navigate("/");
-      }
+      // Show a toast notification that stays on the screen
+      toast.success(
+        "Account created successfully! Please check your email for the login link.",
+        { position: "top-center", autoClose: false }
+      );
+      form.reset();
+      // User remains on the signup page.
     } catch (error: any) {
       const errorMessage =
         error?.response?.message || error?.message || "An unknown error occurred.";
@@ -84,12 +71,10 @@ const SignupForm = () => {
     <Form {...form}>
       <div className="flex-center flex-col">
         <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
-
         <h2 className="h3-bold md:h2 pt-2 sm:pt-1">Create a new account</h2>
         <p className="text-light-3 small-medium md:base-regular">
           To use GrowBuddy, please enter your details
         </p>
-
         <form onSubmit={form.handleSubmit(handleSignup)} className="flex flex-col w-full mt-2">
           <FormField
             control={form.control}
@@ -153,8 +138,12 @@ const SignupForm = () => {
             )}
           />
 
-          <Button type="submit" className="shad-button_primary">
-            {isCreatingAccount || isSigningInUser || isUserLoading ? (
+          <Button
+            type="submit"
+            className="shad-button_primary"
+            disabled={isCreatingAccount || isUserLoading}
+          >
+            {isCreatingAccount || isUserLoading ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
               </div>
@@ -177,3 +166,6 @@ const SignupForm = () => {
 };
 
 export default SignupForm;
+
+
+
