@@ -52,13 +52,13 @@ const SignupForm = () => {
       });
       console.log("New user created:", newUser);
 
-      // Show a toast notification that stays on the screen
+      // Show a persistent toast notification
       toast.success(
         "Account created successfully! Please check your email for the login link.",
         { position: "top-center", autoClose: false }
       );
       form.reset();
-      // User remains on the signup page.
+      // The user remains on the signup page.
     } catch (error: any) {
       const errorMessage =
         error?.response?.message || error?.message || "An unknown error occurred.";
@@ -138,11 +138,7 @@ const SignupForm = () => {
             )}
           />
 
-          <Button
-            type="submit"
-            className="shad-button_primary"
-            disabled={isCreatingAccount || isUserLoading}
-          >
+          <Button type="submit" className="shad-button_primary" disabled={isCreatingAccount || isUserLoading}>
             {isCreatingAccount || isUserLoading ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
@@ -166,6 +162,5 @@ const SignupForm = () => {
 };
 
 export default SignupForm;
-
 
 
