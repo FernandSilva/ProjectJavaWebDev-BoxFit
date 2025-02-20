@@ -34,6 +34,7 @@ const SignupForm = () => {
     },
   });
 
+  // React Query mutation to create a new user using Appwrite
   const { mutateAsync: createUserAccount, isLoading: isCreatingAccount } =
     useCreateUserAccount();
 
@@ -43,7 +44,7 @@ const SignupForm = () => {
         throw new Error("Email and password are required");
       }
 
-      // Create user account without automatically signing in.
+      // Create the user account without auto-login
       const newUser = await createUserAccount({
         email: userData.email,
         password: userData.password,
@@ -52,13 +53,13 @@ const SignupForm = () => {
       });
       console.log("New user created:", newUser);
 
-      // Show a persistent toast notification
+      // Show a persistent toast message
       toast.success(
         "Account created successfully! Please check your email for the login link.",
         { position: "top-center", autoClose: false }
       );
       form.reset();
-      // The user remains on the signup page.
+      // Note: Do NOT redirect the user; they remain on the signup page.
     } catch (error: any) {
       const errorMessage =
         error?.response?.message || error?.message || "An unknown error occurred.";
@@ -99,9 +100,7 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && (
-                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
-                )}
+                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
@@ -115,9 +114,7 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && (
-                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
-                )}
+                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
@@ -131,14 +128,16 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && (
-                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
-                )}
+                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
 
-          <Button type="submit" className="shad-button_primary" disabled={isCreatingAccount || isUserLoading}>
+          <Button
+            type="submit"
+            className="shad-button_primary"
+            disabled={isCreatingAccount || isUserLoading}
+          >
             {isCreatingAccount || isUserLoading ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
@@ -162,5 +161,3 @@ const SignupForm = () => {
 };
 
 export default SignupForm;
-
-
