@@ -1,40 +1,32 @@
-import { Models } from "appwrite";
 import { Link } from "react-router-dom";
+import { Models } from "appwrite";
+import { useGetUserTotalLikes } from "@/lib/react-query/queries";
+import { PiFireFill } from "react-icons/pi";
 
-import { useUserContext } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
-import { useFollowStatus } from "@/lib/react-query/queries";
-
-type UserCardProps = {
-  user: Models.Document;
-};
-
-const UserCard = ({ user }: UserCardProps) => {
-  const { user: iAm } = useUserContext();
-  const [isFollowing, setIsFollowing] = useState(false);
-  const { data: followStatusData } = useFollowStatus(iAm?.id, user.$id);
-
-  useEffect(() => {
-    setIsFollowing(!!followStatusData);
-  }, [followStatusData]);
-
-  const surname = user.name.split(" ").slice(-1).join(" "); // Assumes the surname is the last part of the full name
+const UserCard = ({ user }: { user: Models.Document }) => {
+  const { data: totalLikes } = useGetUserTotalLikes(user.$id);
 
   return (
-    <Link to={`/profile/${user.$id}`} className="user-card">
-      <img
-        src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
-        alt="creator"
-        className="user-card_image"
-      />
-      <div className="user-card_overlay">
-        <p className="small-regular text-white text-center line-clamp-1">
-          @{user.username}
-        </p>
-      </div>
-    </Link>
+    <div className="bg-white rounded-xl shadow-md overflow-hidden relative">
+      <Link to={`/profile/${user.$id}`} className="flex flex-col">
+        <img
+          src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+          alt={user.name}
+          className="w-full h-[150px] object-cover rounded-t-xl"
+        />
+
+        <div className="p-3 flex justify-between items-center">
+          <span className="text-sm font-semibold">{user.name}</span>
+          <div className="flex items-center gap-1 text-sm">
+            <PiFireFill className="text-red-500" />
+            <span>{totalLikes || 0}</span>
+          </div>
+        </div>
+      </Link>
+    </div>
   );
 };
 
 export default UserCard;
+
 

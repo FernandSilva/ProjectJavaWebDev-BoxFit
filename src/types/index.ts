@@ -116,15 +116,16 @@ export interface Notification {
   $id: string; // Appwrite-generated document ID
   userId: string; // Recipient's ID
   senderId: string; // Sender's ID
-  type: "message" | "like" | "follow" | "comment" | "delete"; // Added "delete"
+  type: "message" | "like" | "follow" | "comment" | "delete"; 
   relatedId: string; // Related resource ID
   referenceId: string; // Additional reference
   content: string; // Notification content
   isRead: boolean; // Read status
   createdAt: string; // ISO date string
   senderName: string; // Sender's name
-  senderimageUrl: string; // Sender's profile image URL
+  senderImageUrl: string; // Sender's profile image URL
 }
+
 
 export interface NotificationResponse {
   documents: Notification[]; // Array of notifications

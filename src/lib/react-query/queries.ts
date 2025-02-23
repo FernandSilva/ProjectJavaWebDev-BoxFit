@@ -139,6 +139,31 @@ export const useSignOutAccount = () => {
 // POST QUERIES
 // ============================================================
 
+// api.ts (short snippet)
+
+// api.ts
+
+export async function getUserPosts(userId?: string) {
+  if (!userId) return;
+
+  try {
+    const posts = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId, // Ensure this matches your existing collection ID
+      [Query.equal("creator", userId), Query.orderDesc("$createdAt")]
+    );
+
+    if (!posts) throw new Error("No posts found.");
+
+    return posts;
+  } catch (error) {
+    console.log("Error fetching user posts:", error);
+  }
+}
+
+
+
+
 export const useGetPosts = () => {
   return useInfiniteQuery({
     queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
@@ -390,6 +415,8 @@ export const useGetUserRelationshipsFollowersList = (userId: string) => {
     }
   );
 };
+
+
 // Hook for following a user
 export const useFollowUser = () => {
   const queryClient = useQueryClient();
@@ -649,9 +676,10 @@ export const useGetNotifications = (userId: string) => {
 export const useCreateNotification = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (notification: Omit<Notification, "$id">) => createNotification(notification),
+    mutationFn: (notification: Omit<Notification, "$id">) =>
+      createNotification(notification),
     onSuccess: () => {
-      queryClient.invalidateQueries(["getNotifications"]); // Refetch notifications
+      queryClient.invalidateQueries(["getNotifications"]);
     },
     onError: (error) => {
       console.error("Failed to create notification:", error);
@@ -659,13 +687,19 @@ export const useCreateNotification = () => {
   });
 };
 
-// Create a notification
-export const createNotification = async (notification: Omit<Notification, "$id">) => {
+/**
+ * Creates a new notification document in Appwrite.
+ * @param notification - Notification payload (without $id)
+ * @returns a promise with the created document
+ */
+export const createNotification = async (
+  notification: Omit<Notification, "$id">
+): Promise<Models.Document> => {
   try {
     return await databases.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.notificationsCollectionId,
-      ID.unique(),
+      ID.unique(), // Ensures unique ID generation
       notification
     );
   } catch (error) {
@@ -693,5 +727,16 @@ export const useUpdateNotification = () => {
 export const useDeleteNotification = () => {
   return useMutation(async (notificationId: string) => {
     await deleteNotification(notificationId);
+  });
+};
+
+
+import { getUserTotalLikes } from "@/lib/appwrite/api";
+
+export const useGetUserTotalLikes = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_USER_TOTAL_LIKES, userId],
+    queryFn: () => getUserTotalLikes(userId),
+    enabled: !!userId,
   });
 };

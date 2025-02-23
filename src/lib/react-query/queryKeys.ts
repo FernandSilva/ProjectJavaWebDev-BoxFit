@@ -36,5 +36,6 @@ export enum QUERY_KEYS {
   // New key for top users
   GET_TOP_USERS = "getTopUsers", // Add this line
   GET_NOTIFICATIONS = "GET_NOTIFICATIONS",
+  GET_USER_TOTAL_LIKES= "getUserTotalLikes",
 }
 

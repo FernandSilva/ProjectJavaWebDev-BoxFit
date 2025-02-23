@@ -516,17 +516,18 @@ export async function getUserPosts(userId?: string) {
   if (!userId) return;
 
   try {
-    const post = await databases.listDocuments(
+    const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       [Query.equal("creator", userId), Query.orderDesc("$createdAt")]
     );
 
-    if (!post) throw Error;
+    if (!posts) throw new Error("No posts found");
 
-    return post;
+    return posts;
   } catch (error) {
-    console.log(error);
+    console.error("Failed to fetch user posts:", error);
+    throw error;
   }
 }
 
@@ -1333,8 +1334,6 @@ export async function getFollowersPosts(userId: string) {
 
 // Create a notification
 
-import { databases, appwriteConfig } from "./config";
-import { ID } from "appwrite";
 
 // Create a notification
 export const createNotification = async (notification: {
@@ -1433,3 +1432,25 @@ export async function updateNotification(notificationId: string) {
     throw error;
   }
 }
+
+
+
+export const getUserTotalLikes = async (userId: string): Promise<number> => {
+  try {
+    const posts = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId, // <-- Ensure this matches your actual posts collection ID
+      [Query.equal("creator", userId)]
+    );
+
+    const totalLikes = posts.documents.reduce((sum, post) => {
+      const likesCount = post.likes?.length || 0;
+      return sum + likesCount;
+    }, 0);
+
+    return totalLikes;
+  } catch (error) {
+    console.error("Error fetching total likes:", error);
+    return 0;
+  }
+};
