@@ -178,17 +178,18 @@ const PostDetails = () => {
         {
           onSuccess: async () => {
             await createNotification({
-              userId: comment?.userId,
-              senderId: user!.id,
+              userId: comment?.userId ?? "",
+              senderId: user?.id ?? "",
               type: "like",
-              content: `${user!.name} liked your comment.`,
-              relatedId: comment?.$id,
-              referenceId: comment?.$id,
+              content: `${user?.name ?? ""} liked your comment.`,
+              relatedId: comment?.$id ?? "",
+              referenceId: comment?.$id ?? "",
               isRead: false,
               createdAt: new Date().toISOString(),
-              senderName: user!.name,
-              senderimageUrl: user!.imageUrl,
+              senderName: user?.name ?? "",
+              senderimageUrl:user?.imageUrl ?? "",
             });
+            
           },
         }
       );
