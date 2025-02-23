@@ -10,7 +10,7 @@ const Topbar = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [maxVisibleNotifications, setMaxVisibleNotifications] = useState(5);
-  const [hasUnread, setHasUnread] = useState(false); // Track if there are unread notifications
+  const [hasUnread, setHasUnread] = useState(false);
 
   const { data: fetchedNotifications, refetch: refetchNotifications } = useGetNotifications(user?.id);
   const { mutate: deleteNotification } = useDeleteNotification();
@@ -21,14 +21,14 @@ const Topbar = () => {
       setNotifications(documents);
       const unread = documents.filter((notification) => !notification.isRead).length;
       setUnreadCount(unread);
-      setHasUnread(unread > 0); // Update hasUnread based on the count of unread notifications
+      setHasUnread(unread > 0);
     }
   }, [fetchedNotifications]);
 
   const handleNotificationClick = () => {
     setShowDropdown((prev) => !prev);
     if (!showDropdown && unreadCount > 0) {
-      setHasUnread(false); // Mark as viewed when dropdown is opened
+      setHasUnread(false);
     }
   };
 
@@ -64,7 +64,7 @@ const Topbar = () => {
   const handleDeleteNotification = (notificationId: string) => {
     deleteNotification(notificationId, {
       onSuccess: () => {
-        refetchNotifications(); // Refresh notifications after deletion
+        refetchNotifications();
         setNotifications((prev) => prev.filter((n) => n.$id !== notificationId));
       },
       onError: (error) => console.error("Failed to delete notification:", error),
@@ -73,9 +73,7 @@ const Topbar = () => {
 
   const clearNotifications = () => {
     notifications.forEach((notification) => {
-      deleteNotification(notification.$id, {
-        onError: (error) => console.error("Failed to delete notification:", error),
-      });
+      deleteNotification(notification.$id);
     });
     setNotifications([]);
     setUnreadCount(0);
@@ -99,8 +97,7 @@ const Topbar = () => {
           </Link>
 
           <div className="relative notification-container">
-            <button onClick={handleNotificationClick} className="relative flex items-center">
-              {/* Dynamic notification icon logic */}
+            <div onClick={handleNotificationClick} className="relative flex items-center outline-none">
               <img
                 src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
                 alt="Notifications"
@@ -111,9 +108,10 @@ const Topbar = () => {
                   {unreadCount}
                 </span>
               )}
-            </button>
+            </div>
+
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-80 bg-white border rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
                 <ul className="flex flex-col gap-2 p-4">
                   {notifications.slice(0, maxVisibleNotifications).map((notification) => (
                     <li
@@ -122,7 +120,7 @@ const Topbar = () => {
                         notification.isRead ? "bg-gray-100" : "bg-green-50 text-black"
                       }`}
                     >
-                      <Link to={`/profile/${notification.senderId}`} className="flex items-center">
+                      <Link to={`/profile/${notification.senderId}`}>
                         <img
                           src={notification.senderimageUrl || "/assets/icons/profile-placeholder.svg"}
                           alt={notification.senderName}
@@ -143,20 +141,14 @@ const Topbar = () => {
                       </button>
                     </li>
                   ))}
-                  {notifications.length === 0 && (
-                    <li className="text-center text-gray-500">No notifications</li>
-                  )}
+                  {notifications.length === 0 && <li className="text-center text-gray-500">No notifications</li>}
                 </ul>
-                <div className="flex justify-between items-center p-2 text-xs bg-gray-50 border-t">
+                <div className="flex justify-between p-2 text-xs bg-gray-50">
                   <button onClick={toggleViewAll} className="text-blue-500">
                     {maxVisibleNotifications === 5 ? "View All" : "Show Less"}
                   </button>
-                  <button onClick={clearNotifications} className="text-red-500">
-                    Clear All
-                  </button>
-                  <button onClick={() => refetchNotifications()} className="text-green-500">
-                    Refresh
-                  </button>
+                  <button onClick={clearNotifications} className="text-red-500">Clear All</button>
+                  <button onClick={refetchNotifications} className="text-green-500">Refresh</button>
                 </div>
               </div>
             )}
