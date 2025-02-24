@@ -6,7 +6,6 @@ import { useInView } from "react-intersection-observer";
 import { A11y } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Select from "react-select";
-
 import { useUserContext } from "@/context/AuthContext";
 import {
   useGetAllPosts,
@@ -27,43 +26,29 @@ type PostType = Models.Document;
 const Explore = () => {
   const size = useWindowSize();
   const { user } = useUserContext();
-  const userId = user?.id;
+  const { ref, inView } = useInView();
 
-  const { inView } = useInView();
   const [searchValue, setSearchValue] = useState<string>("");
   const [filter, setFilter] = useState<string>("all");
 
-  const { data: allPosts, fetchNextPage } = useGetAllPosts(searchValue);
-  const { data: followingPosts } = useGetFollowingPosts(userId ?? "");
-  const { data: followersPosts } = useGetFollowersPosts(userId ?? "");
+  const { data: allPosts, fetchNextPage: fetchNextAllPosts, isFetchingNextPage } = useGetAllPosts(searchValue);
+  const { data: followersPosts } = useGetFollowersPosts(user?.id ?? "");
+  const { data: followingPosts } = useGetFollowingPosts(user?.id ?? "");
   const { data: users, isLoading: isFetchingUsers } = useGetUsers(10);
 
   useEffect(() => {
-    if (inView && !searchValue) {
-      fetchNextPage();
+    if (inView && !searchValue && filter === "all") {
+      fetchNextAllPosts();
     }
-  }, [inView, searchValue, fetchNextPage]);
+  }, [inView, searchValue, filter, fetchNextAllPosts]);
 
   const filteredPosts = (): PostType[] => {
     if (filter === "followers") {
-      return followersPosts?.documents?.map((post: PostType) => ({
-        ...post,
-        key: `followers-${post.$id}`,
-      })) || [];
+      return followersPosts?.documents || [];
     } else if (filter === "following") {
-      return followingPosts?.documents?.map((post: PostType) => ({
-        ...post,
-        key: `following-${post.$id}`,
-      })) || [];
+      return followingPosts?.documents || [];
     } else {
-      return (
-        allPosts?.pages?.flatMap((page: any) =>
-          page.documents.map((post: PostType) => ({
-            ...post,
-            key: `all-${post.$id}`,
-          }))
-        ) || []
-      );
+      return allPosts?.pages.flatMap(page => page.documents) || [];
     }
   };
 
@@ -73,7 +58,7 @@ const Explore = () => {
     <div className="main-content !w-full">
       <div className="explore-container !w-full">
         <div className="explore-inner_container">
-          <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">Top Growers</h2>
+          <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2">Top Growers</h2>
           {isFetchingUsers ? (
             <Loader />
           ) : (
@@ -81,13 +66,7 @@ const Explore = () => {
               <Swiper
                 modules={[A11y]}
                 spaceBetween={16}
-                slidesPerView={
-                  (size.width ?? 0) > 1024
-                    ? 4.5
-                    : (size.width ?? 0) > 640
-                    ? 3.5
-                    : 2.5
-                }
+                slidesPerView={size.width > 1024 ? 4.5 : size.width > 640 ? 3.5 : 2.5}
               >
                 {users?.map((user) => (
                   <SwiperSlide key={user.$id}>
@@ -98,33 +77,39 @@ const Explore = () => {
             </div>
           )}
 
-          <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">Search Posts</h2>
-          <div className="flex gap-1 px-4 w-full rounded-lg bg-white text-black">
-            <Input
-              type="text"
-              placeholder="Search"
-              className="explore-search"
-              value={searchValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchValue(e.target.value)}
-            />
-          </div>
+          <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2">Search Posts</h2>
+          <Input
+            type="text"
+            placeholder="Search"
+            className="explore-search"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
         </div>
 
         <div className="flex-between w-full mt-16 mb-7">
           <h3 className="body-bold md:h3-bold">Popular Today</h3>
-          <div className="rounded-xl cursor-pointer w-[170px]">
+          <div className="rounded-xl w-[170px]">
             <Select
               options={options}
-              defaultValue={options.find((option) => option.value === "all")}
-              className="w-[100%]"
-              onChange={(e: { value: string } | null) => setFilter(e?.value || "all")}
+              defaultValue={options[0]}
+              className="w-full"
+              onChange={(e) => setFilter(e?.value || "all")}
               isSearchable={false}
             />
           </div>
         </div>
 
         <div className="flex flex-wrap gap-9 w-full">
-          {posts.length === 0 ? <Loader /> : <GridPostList posts={posts} />}
+          {posts.length === 0 && isFetchingNextPage ? <Loader /> : <GridPostList posts={posts} />}
+        </div>
+
+        <div ref={ref} className="py-4">
+          {isFetchingNextPage && (
+            <div className="flex-center w-full">
+              <img src="/assets/icons/Loader1.svg" alt="Loading" className="w-8 h-8" />
+            </div>
+          )}
         </div>
       </div>
     </div>

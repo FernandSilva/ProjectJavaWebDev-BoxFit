@@ -525,18 +525,14 @@ export const useDeleteMessage = () => {
 // NEW POST FILTER QUERIES
 // ============================================================
 
+
 // Fetch all posts
-export const useGetAllPosts = (searchQuery) => {
+export const useGetAllPosts = (searchValue: string) => {
   return useInfiniteQuery({
-    queryKey: [QUERY_KEYS.GET_INFINITE_POSTS, { searchQuery }],
-    queryFn: ({ pageParam = "" }) => getAllPosts(pageParam, searchQuery),
-    getNextPageParam: (lastPage) => {
-      if (lastPage.documents.length === 0) {
-        return null;
-      }
-      const lastId = lastPage.documents[lastPage.documents.length - 1].$id;
-      return lastId;
-    },
+    queryKey: ["getAllPosts", searchValue],
+    queryFn: ({ pageParam }) => getAllPosts(searchValue, pageParam),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor || null,
   });
 };
 

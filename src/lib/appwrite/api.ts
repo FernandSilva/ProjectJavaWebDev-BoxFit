@@ -1245,30 +1245,37 @@ export const getAllUsers = async () => {
 // ============================================================
 
 // Function to get all posts
-export async function getAllPosts(key, searchQuery = "") {
+export async function getAllPosts(searchQuery = "", pageParam = null) {
   try {
-    let query = [Query.orderDesc("$createdAt")];
+    const queries = [Query.orderDesc("$createdAt"), Query.limit(10)];
 
     if (searchQuery) {
-      query.push(Query.search("tags", searchQuery));
-      
+      queries.push(Query.search("tags", searchQuery));
+    }
+
+    if (pageParam) {
+      queries.push(Query.cursorAfter(pageParam));
     }
 
     const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
-      query
+      queries
     );
+
+    const lastDocument = posts.documents[posts.documents.length - 1];
 
     return {
       documents: posts.documents,
-      total: posts.total,
+      nextCursor: lastDocument ? lastDocument.$id : null,
     };
   } catch (error) {
     console.error("Error fetching posts:", error);
     throw new Error(error.message);
   }
 }
+
+
 // Function to get posts from followed users
 export async function getFollowingPosts(userId: string) {
   try {
