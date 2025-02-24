@@ -649,7 +649,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationRe
       isRead: doc.isRead ?? false,
       createdAt: doc.$createdAt,
       senderName: doc.senderName || "Unknown Sender",
-      senderimageUrl: doc.senderimageUrl || "/assets/icons/profile-placeholder.svg",
+      senderImageUrl: doc.senderImageUrl || "/assets/icons/profile-placeholder.svg",
     }));
 
     return { documents: notifications, total: response.total };
@@ -738,5 +738,23 @@ export const useGetUserTotalLikes = (userId: string) => {
     queryKey: [QUERY_KEYS.GET_USER_TOTAL_LIKES, userId],
     queryFn: () => getUserTotalLikes(userId),
     enabled: !!userId,
+  });
+};
+
+
+export const useMarkMessagesAsRead = () => {
+  return useMutation(({ senderId, recipientId }: { senderId: string; recipientId: string }) => 
+    api.markMessagesAsRead(senderId, recipientId)
+  );
+};
+
+export const useMarkNotificationAsRead = () => {
+  return useMutation({
+    mutationFn: (notificationId: string) => databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      notificationId,
+      { isRead: true }
+    ),
   });
 };

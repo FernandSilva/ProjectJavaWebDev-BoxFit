@@ -1103,13 +1103,13 @@ export async function createMessage({
   content,
   username,
   recipientId,
-  senderimageUrl,
+  senderImageUrl,
 }: {
   userId: string;
   content: string;
   username: string;
   recipientId: string;
-  senderimageUrl: string; // Ensure the sender's profile picture URL is included
+  senderImageUrl: string; // Ensure the sender's profile picture URL is included
 }) {
   try {
     // Prepare the message payload
@@ -1140,7 +1140,7 @@ export async function createMessage({
       isRead: false,
       createdAt: new Date().toISOString(), // Include `createdAt` for the notification
       senderName: username,
-      senderimageUrl, // Pass the sender's profile picture
+      senderImageUrl, // Pass the sender's profile picture
     };
 
     // Create a notification for the recipient
@@ -1346,7 +1346,7 @@ export const createNotification = async (notification: {
   isRead: boolean;
   createdAt: string;
   senderName: string;
-  senderimageUrl: string;
+  senderImageUrl: string;
 }) => {
   try {
     console.log("Creating notification with data:", notification);
@@ -1453,4 +1453,27 @@ export const getUserTotalLikes = async (userId: string): Promise<number> => {
     console.error("Error fetching total likes:", error);
     return 0;
   }
+};
+
+export const markMessagesAsRead = async (senderId: string, recipientId: string) => {
+  const messages = await databases.listDocuments(
+    appwriteConfig.databaseId,
+    appwriteConfig.messageCollectionId,
+    [
+      Query.equal("userId", senderId),
+      Query.equal("recipientId", recipientId),
+      Query.equal("isRead", false)
+    ]
+  );
+
+  const updatePromises = messages.documents.map((message) =>
+    databases.updateDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.messageCollectionId,
+      message.$id,
+      { isRead: true }
+    )
+  );
+
+  return Promise.all(updatePromises);
 };

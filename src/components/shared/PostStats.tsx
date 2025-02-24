@@ -62,7 +62,7 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
         content: `liked your post: "${post.caption || ""}"`,
         isRead: false,
         createdAt: new Date().toISOString(),
-        senderimageUrl: user.imageUrl,
+        senderImageUrl: user.imageUrl,
       });
     }
 
@@ -89,7 +89,7 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
               content: `${user.name} liked your comment.`,
               isRead: false,
               createdAt: new Date().toISOString(),
-              senderimageUrl: user.imageUrl,
+              senderImageUrl: user.imageUrl,
             });
           }
         },

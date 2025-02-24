@@ -90,7 +90,7 @@ const Topbar = () => {
                     >
                       <Link to={`/profile/${notification.senderId}`}>
                         <img
-                          src={notification.senderimageUrl || "/assets/icons/profile-placeholder.svg"}
+                          src={notification.senderImageUrl || "/assets/icons/profile-placeholder.svg"}
                           alt={notification.senderName}
                           className="h-10 w-10 rounded-full"
                         />

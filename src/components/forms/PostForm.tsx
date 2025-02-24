@@ -84,7 +84,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
               referenceId: newPost.$id,
               content: `${user.name} `,
               senderName: user.name,
-              senderimageUrl: user.imageUrl,
+              senderImageUrl: user.imageUrl,
             });
           }
         }

@@ -66,7 +66,7 @@ const Profile = () => {
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name || "",
-              senderimageUrl: user?.imageUrl || "",
+              senderImageUrl: user?.imageUrl || "",
             });
           },
         }
@@ -285,12 +285,22 @@ const Profile = () => {
         </div>
       )}
 
-      <Routes>
-        <Route index element={<GridPostList posts={currentUser.posts} showUser={false} />} />
-        <Route path="/liked-posts" element={<LikedPosts />} />
-        <Route path="/following" element={<Following />} />
-        <Route path="/followers" element={<Follower />} />
-      </Routes>
+
+        <Routes>
+          <Route
+            index
+            element={
+              <GridPostList
+                posts={[...(currentUser.posts || [])].reverse()}
+                showUser={false}
+              />
+            }
+          />
+          <Route path="/liked-posts" element={<LikedPosts />} />
+          <Route path="/following" element={<Following />} />
+          <Route path="/followers" element={<Follower />} />
+        </Routes>
+
       <Outlet />
     </div>
   );
