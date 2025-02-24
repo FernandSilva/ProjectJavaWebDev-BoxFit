@@ -13,7 +13,8 @@ import {
   Saved,
   Settings // Correct import here
   ,
-  UpdateProfile
+  UpdateProfile,
+  Notification,
 } from "@/_root/pages";
 import { Toaster } from "@/components/ui/toaster";
 import { Route, Routes } from "react-router-dom";
@@ -46,6 +47,7 @@ const App = () => {
           <Route path="/update-profile/:id" element={<UpdateProfile />} />
           <Route path="/Chat" element={<Chat />} />
           <Route path="/settings" element={<Settings />} /> {/* Correct route here */}
+          <Route path="/notifications" element={<Notification />} />
         </Route>
       </Routes>
 

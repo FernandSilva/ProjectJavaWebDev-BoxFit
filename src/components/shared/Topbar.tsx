@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import { useGetNotifications, useDeleteNotification } from "@/lib/react-query/queries";
 import { Notification } from "@/types";
 
 const Topbar = () => {
   const { user } = useUserContext();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -17,49 +18,15 @@ const Topbar = () => {
 
   useEffect(() => {
     if (fetchedNotifications) {
-      const { documents = [] } = fetchedNotifications;
-      setNotifications(documents);
-      const unread = documents.filter((notification) => !notification.isRead).length;
+      const docs = fetchedNotifications.documents || [];
+      setNotifications(docs);
+      const unread = docs.filter((notification) => !notification.isRead).length;
       setUnreadCount(unread);
       setHasUnread(unread > 0);
     }
   }, [fetchedNotifications]);
 
-  const handleNotificationClick = () => {
-    setShowDropdown((prev) => !prev);
-    if (!showDropdown && unreadCount > 0) {
-      setHasUnread(false);
-    }
-  };
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".notification-container")) {
-        setShowDropdown(false);
-      }
-    };
-    if (showDropdown) {
-      document.addEventListener("mousedown", handleOutsideClick);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, [showDropdown]);
-
-  const generateNotificationMessage = (notification: Notification) => {
-    const senderName = notification.senderName || "Unknown Sender";
-    switch (notification.type) {
-      case "message":
-        return `${notification.content}`;
-      case "like":
-      case "follow":
-      case "comment":
-        return `${senderName} ${notification.content}`;
-      default:
-        return notification.content;
-    }
-  };
+  const handleNotificationClick = () => setShowDropdown((prev) => !prev);
 
   const handleDeleteNotification = (notificationId: string) => {
     deleteNotification(notificationId, {
@@ -67,21 +34,22 @@ const Topbar = () => {
         refetchNotifications();
         setNotifications((prev) => prev.filter((n) => n.$id !== notificationId));
       },
-      onError: (error) => console.error("Failed to delete notification:", error),
     });
   };
 
   const clearNotifications = () => {
-    notifications.forEach((notification) => {
-      deleteNotification(notification.$id);
-    });
+    notifications.forEach((notification) => deleteNotification(notification.$id));
     setNotifications([]);
     setUnreadCount(0);
     setHasUnread(false);
   };
 
-  const toggleViewAll = () => {
+  const toggleViewAll = () =>
     setMaxVisibleNotifications(maxVisibleNotifications === 5 ? notifications.length : 5);
+
+  const redirectToNotificationsPage = () => {
+    setShowDropdown(false);
+    navigate("/notifications");
   };
 
   return (
@@ -97,18 +65,18 @@ const Topbar = () => {
           </Link>
 
           <div className="relative notification-container">
-            <div onClick={handleNotificationClick} className="relative flex items-center outline-none">
-              <img
-                src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
-                alt="Notifications"
-                className="h-6 w-6"
-              />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs rounded-full px-1">
-                  {unreadCount}
-                </span>
-              )}
-            </div>
+            <img
+              onClick={handleNotificationClick}
+              src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
+              alt="Notifications"
+              className="h-6 w-6 cursor-pointer"
+            />
+
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs rounded-full px-1">
+                {unreadCount}
+              </span>
+            )}
 
             {showDropdown && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
@@ -128,7 +96,7 @@ const Topbar = () => {
                         />
                       </Link>
                       <div>
-                        <p className="font-medium">{generateNotificationMessage(notification)}</p>
+                        <p className="font-medium">{notification.content}</p>
                         <span className="text-xs text-gray-500">
                           {new Date(notification.createdAt).toLocaleString()}
                         </span>
@@ -143,12 +111,23 @@ const Topbar = () => {
                   ))}
                   {notifications.length === 0 && <li className="text-center text-gray-500">No notifications</li>}
                 </ul>
-                <div className="flex justify-between p-2 text-xs bg-gray-50">
+                <div className="flex justify-between items-center p-2 text-xs bg-gray-50">
                   <button onClick={toggleViewAll} className="text-blue-500">
                     {maxVisibleNotifications === 5 ? "View All" : "Show Less"}
                   </button>
-                  <button onClick={clearNotifications} className="text-red-500">Clear All</button>
-                  <button onClick={refetchNotifications} className="text-green-500">Refresh</button>
+                  <button onClick={clearNotifications} className="text-red-500">
+                    Clear All
+                  </button>
+                  <button
+                    onClick={redirectToNotificationsPage}
+                    className="p-1"
+                  >
+                    <img
+                      src="/assets/icons/notify.svg"
+                      alt="Notifications"
+                      className="h-5 w-5"
+                    />
+                  </button>
                 </div>
               </div>
             )}

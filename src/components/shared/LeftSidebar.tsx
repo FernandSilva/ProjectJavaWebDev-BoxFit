@@ -1,14 +1,23 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
-
 import { Loader } from "@/components/shared";
 import { sidebarLinks } from "@/constants";
 import { useUserContext } from "@/context/AuthContext";
 import { INavLink } from "@/types";
 import { CiBookmark } from "react-icons/ci";
+import { useGetNotifications } from "@/lib/react-query/queries";
+import { useEffect, useState } from "react";
 
 const LeftSidebar = () => {
   const { pathname } = useLocation();
   const { user, isLoading } = useUserContext();
+  const { data: notifications } = useGetNotifications(user?.id);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    if (notifications?.documents) {
+      setHasUnread(notifications.documents.some((n) => !n.isRead));
+    }
+  }, [notifications]);
 
   return (
     <nav className="leftsidebar">
@@ -44,27 +53,40 @@ const LeftSidebar = () => {
             const isActive = pathname === link.route;
 
             return (
-              <li key={link.label} className={`leftsidebar-link group `}>
+              <li key={link.label} className="leftsidebar-link group">
                 <NavLink
                   to={link.route}
-                  className={`flex gap-4 items-center py-2 px-4  rounded-md ${isActive ? "text-green-500 !font-bold" : "text-black !font-normal "}`}
+                  className={`flex gap-4 items-center py-2 px-4 rounded-md ${
+                    isActive ? "text-green-500 !font-bold" : "text-black !font-normal"
+                  }`}
                 >
                   {link.label === "Saved" ? (
-                    <CiBookmark
-                      className={`h-6 w-6 filter ${isActive ? "text-black" : "text-black"}`}
-                    />
+                    <CiBookmark className="h-6 w-6 text-black" />
                   ) : (
-                    <img
-                      src={link.imgURL}
-                      alt={link.label}
-                      className={`h-6 w-6 filter ${isActive ? "" : ""}`}
-                    />
+                    <img src={link.imgURL} alt={link.label} className="h-6 w-6" />
                   )}
                   {link.label}
                 </NavLink>
               </li>
             );
           })}
+
+          {/* New Notifications Tab */}
+          <li className="leftsidebar-link group">
+            <NavLink
+              to="/notifications"
+              className={`flex gap-4 items-center py-2 px-4 rounded-md ${
+                pathname === "/notifications" ? "text-green-500 !font-bold" : "text-black !font-normal"
+              }`}
+            >
+              <img
+                src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
+                alt="Notifications"
+                className="h-6 w-6"
+              />
+              Notifications
+            </NavLink>
+          </li>
         </ul>
       </div>
     </nav>

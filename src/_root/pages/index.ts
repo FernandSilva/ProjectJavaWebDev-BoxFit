@@ -10,3 +10,4 @@ export { default as LikedPosts } from "./LikedPosts";
 export { default as AllUsers } from "./AllUsers";
 export { default as Chat } from "./Chat";
 export { default as Settings } from "./settings";
+export { default as Notification } from "./Notification.tsx";
