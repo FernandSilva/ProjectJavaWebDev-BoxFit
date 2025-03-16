@@ -1484,3 +1484,36 @@ export const markMessagesAsRead = async (senderId: string, recipientId: string) 
 
   return Promise.all(updatePromises);
 };
+
+
+
+
+export async function searchPostsApi(searchQuery: string): Promise<Models.Document[]> {
+  try {
+    // Base query: order by creation time descending
+    const queries = [Query.orderDesc("$createdAt")];
+
+    if (searchQuery.trim() !== "") {
+      // Use a type-cast to bypass the missing 'or' definition in the type definitions.
+      queries.push(
+        (Query as any).or([
+          Query.search("username", searchQuery),
+          Query.search("name", searchQuery),
+          Query.search("description", searchQuery), // or use "caption" if that's your field
+          Query.search("tags", searchQuery),
+        ])
+      );
+    }
+
+    const postsResponse = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId,
+      queries
+    );
+
+    return postsResponse.documents;
+  } catch (error: any) {
+    console.error("Error fetching posts:", error);
+    throw new Error(error.message);
+  }
+}

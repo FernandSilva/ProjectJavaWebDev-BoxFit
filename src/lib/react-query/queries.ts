@@ -37,7 +37,8 @@ import {
   // createNotification, // Added for notifications
   updateNotification, // Added for notifications
   markNotificationAsRead,
-  deleteNotification
+  deleteNotification,
+  searchPostsApi
 
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -49,7 +50,7 @@ import {
   getCommentsByPostId
 } from "@/lib/appwrite/api";
 
-import { ID, Models, Query } from "appwrite";
+import { ID, Models, Query, Databases, Client } from "appwrite";
 import { appwriteConfig } from "@/lib/appwrite/config"; // Adjust as needed for your config path
 
 
@@ -180,12 +181,11 @@ export const useGetPosts = () => {
     },
   });
 };
-
 export const useSearchPosts = (searchTerm: string) => {
   return useQuery({
     queryKey: [QUERY_KEYS.SEARCH_POSTS, searchTerm],
-    queryFn: () => searchPosts(searchTerm),
-    enabled: !!searchTerm,
+    queryFn: () => searchPostsApi(searchTerm),
+    enabled: !!searchTerm, // Only run if searchTerm is non‑empty
   });
 };
 
@@ -616,7 +616,6 @@ export const useGetFollowersPosts = (userId: string) => {
 // NOTIFICATIONS QUERIES
 // ============================================================
 
-import { Client, Databases} from "appwrite";
 import { Notification, NotificationResponse } from "@/types/index";
 
 const client = new Client()
@@ -754,3 +753,7 @@ export const useMarkNotificationAsRead = () => {
     ),
   });
 };
+
+
+
+
