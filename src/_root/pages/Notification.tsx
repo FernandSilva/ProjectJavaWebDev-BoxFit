@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetNotifications, useDeleteNotification } from "@/lib/react-query/queries";
+import { useGetNotifications, useDeleteNotification, useGetUserById } from "@/lib/react-query/queries";
 import { Notification } from "@/types";
 
-const NotificationPage = () => {
+interface SenderProfilePictureProps {
+  senderId: string;
+  senderImageUrl: string;
+}
+
+const SenderProfilePicture: React.FC<SenderProfilePictureProps> = ({ senderId, senderImageUrl }) => {
+  const { data: sender } = useGetUserById(senderId);
+  // Use senderImageUrl if provided; otherwise use the fetched sender image or a placeholder.
+  const ImageUrl =
+    senderImageUrl && senderImageUrl.trim() !== ""
+      ? senderImageUrl
+      : (sender && sender.imageUrl) || "/assets/icons/profile-placeholder.svg";
+  return <img src={ImageUrl} alt="Sender Profile" className="h-10 w-10 rounded-full" />;
+};
+
+const NotificationPage: React.FC = () => {
   const { user } = useUserContext();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [maxVisibleNotifications, setMaxVisibleNotifications] = useState(5);
@@ -79,10 +94,9 @@ const NotificationPage = () => {
                 }`}
               >
                 <Link to={`/profile/${notification.senderId}`} className="flex gap-3 items-center">
-                  <img
-                    src={notification.senderImageUrl || "/assets/icons/profile-placeholder.svg"}
-                    alt={notification.senderName}
-                    className="h-10 w-10 rounded-full"
+                  <SenderProfilePicture
+                    senderId={notification.senderId}
+                    senderImageUrl={notification.senderImageUrl}
                   />
                   <div>
                     <p className="text-sm font-medium text-gray-900">

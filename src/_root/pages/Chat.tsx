@@ -19,8 +19,8 @@ function Chat() {
 
   const { mutateAsync: createMessage } = useCreateMessage();
   const { data: receivedMessages, isLoading: loading } = useGetMessages(
-    selectedUser?.id,
-    user?.id
+    selectedUser?.id || "",
+    user?.id || ""
   );
 
   const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,6 +36,7 @@ function Chat() {
       text: newMessage,
       createdAt: new Date().toISOString(),
       recipientId: selectedUser.id,
+      senderImageUrl: user.imageUrl, // <-- Added required attribute
     };
 
     try {
