@@ -48,6 +48,7 @@ export async function createUserAccount(user: {
 
 
 
+
 // ============================== SAVE USER TO DB
 export async function saveUserToDB(user: {
   accountId: string;
@@ -151,15 +152,23 @@ export async function getCurrentUser() {
 
 
 // ============================== SIGN OUT
-export async function signOutAccount() {
-  try {
-    const session = await account.deleteSession("current");
 
-    return session;
+/**
+ * Signs out the current user by deleting the current session.
+ * @returns A promise that resolves when the session is deleted.
+ */
+export const signOutAccount = async (): Promise<any> => {
+  try {
+    // Delete the current session (you may also use the session ID "current")
+    return await account.deleteSession("current");
   } catch (error) {
-    console.log(error);
+    console.error("Error signing out:", error);
+    throw error;
   }
-}
+};
+
+
+
 
 // ============================================================
 // POSTS

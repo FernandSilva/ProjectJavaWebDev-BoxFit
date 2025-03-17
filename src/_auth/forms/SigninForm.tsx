@@ -1,8 +1,8 @@
+// src/components/SigninForm.tsx
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
-
 import Loader from "@/components/shared/Loader";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,14 +14,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
 import { useUserContext } from "@/context/AuthContext";
 import { useSignInAccount } from "@/lib/react-query/queries";
 import { SigninValidation } from "@/lib/validation";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-import { account } from "@/lib/appwrite/config"; // Ensure account is exported
 
 const SigninForm = () => {
   const navigate = useNavigate();
@@ -42,14 +39,9 @@ const SigninForm = () => {
         throw new Error("Email and password are required");
       }
 
-      // Clear any stale session first
-      try {
-        await account.deleteSession("current");
-      } catch (e) {
-        console.warn("No existing session to delete");
-      }
+      // Optionally, clear any stale session before logging in
+      // await account.deleteSession("current");
 
-      // Create a new session
       const session = await signInAccount({
         email: userData.email,
         password: userData.password,
@@ -97,16 +89,10 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Email</FormLabel>
                 <FormControl>
-                  <Input
-                    type="text"
-                    className={`shad-input ${error ? "error" : ""}`}
-                    {...field}
-                  />
+                  <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
                 {error && (
-                  <FormMessage className="text-red text-[12px]">
-                    {error.message}
-                  </FormMessage>
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
                 )}
               </FormItem>
             )}
@@ -119,16 +105,10 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Password</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    className={`shad-input ${error ? "error" : ""}`}
-                    {...field}
-                  />
+                  <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
                 {error && (
-                  <FormMessage className="text-red text-[12px]">
-                    {error.message}
-                  </FormMessage>
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
                 )}
               </FormItem>
             )}
@@ -146,10 +126,7 @@ const SigninForm = () => {
 
           <p className="text-small-regular text-light-3 text-center mt-2">
             Don&apos;t have an account?
-            <Link
-              to="/sign-up"
-              className="text-black hover:text-green-500 text-small-semibold ml-1"
-            >
+            <Link to="/sign-up" className="text-black hover:text-green-500 text-small-semibold ml-1">
               Sign up
             </Link>
           </p>

@@ -130,9 +130,22 @@ export const useSignInAccount = () => {
   });
 };
 
+/**
+ * Custom hook to sign out a user.
+ * It uses the Appwrite API function `signOutAccount` to delete the current session,
+ * and then invalidates queries related to the current user so that the app state is updated.
+ */
 export const useSignOutAccount = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: signOutAccount,
+    onSuccess: () => {
+      // Invalidate queries that depend on the current user's authentication state.
+      queryClient.invalidateQueries(["currentUser"]);
+    },
+    onError: (error) => {
+      console.error("Error signing out:", error);
+    },
   });
 };
 
@@ -769,3 +782,5 @@ export const refreshSession = async () => {
     window.location.href = "/login"; // Redirect to login page
   }
 };
+
+

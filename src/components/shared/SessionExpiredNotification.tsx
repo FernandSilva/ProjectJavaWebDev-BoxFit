@@ -1,19 +1,60 @@
-import React from "react";
+// src/components/SessionExpiredNotification.tsx
+import React, { useState, useEffect } from "react";
+import { useSignOutAccount } from "@/lib/react-query/queries";
+import { useUserContext } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 
-// You can replace the Unicode star below with an actual icon if you prefer.
-const SessionExpiredNotification = () => {
+type SessionExpiredNotificationProps = {
+  title: string;
+  message: string;
+  duration?: number; // in milliseconds
+};
+
+const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
+  title,
+  message,
+  duration = 5000,
+}) => {
+  const [visible, setVisible] = useState(true);
+  const { setIsAuthenticated, setUser } = useUserContext();
+  const { mutate: signOut } = useSignOutAccount();
+
+  useEffect(() => {
+    // Auto-hide notification after the specified duration
+    const timer = setTimeout(() => {
+      setVisible(false);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [duration]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      setIsAuthenticated(false);
+      // Optionally, you might redirect to the login page here.
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  if (!visible) return null;
+
   return (
-    <div className="fixed top-0 left-0 right-0 bg-yellow-100 border border-yellow-300 text-yellow-800 px-4 py-3 z-50 shadow-md">
-      <div className="flex items-center justify-center">
-        {/* You could use an icon library here; for example, a yellow star */}
-        <span className="text-2xl mr-2">⭐</span>
-        <div>
-          <strong className="font-bold">Session Expired!</strong>
-          <span className="ml-2">
-            Your session is no longer valid. Please log in again from the home page.
-            If you continue to experience issues, try clearing your site cookies.
-          </span>
-        </div>
+    <div className="w-full max-w-md mx-auto my-4">
+      <div className="bg-red-500 text-white py-2 px-4 rounded flex items-center justify-between shadow-md">
+        <span>{title}</span>
+        <Button onClick={handleLogout} className="bg-red-600 text-white">
+          Logout
+        </Button>
+      </div>
+      <div className="bg-red-100 text-red-800 p-4 rounded-b shadow-sm">
+        <p className="font-bold mb-2">System Login Error</p>
+        <p>
+          {message} <br />
+          Please try refreshing the page or clearing your site cookies if the
+          problem persists.
+        </p>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+// src/types/index.ts
 import { ReactNode } from "react";
 
 export type INavLink = {
@@ -40,9 +41,8 @@ export type IUser = {
   email: string;
   imageUrl: string;
   bio: string;
-  followers?: string[]; // Added followers
+  followers?: string[];
 };
-
 
 export type INewUser = {
   name: string;
@@ -51,21 +51,16 @@ export type INewUser = {
   password: string;
 };
 
-
-// For general use in following and unfollowing
 export type IUserRelationship = {
   userId: string;       // The ID of the user who is performing the action
-  followsUserId: string; // The ID of the user who is being followed or unfollowed
+  followsUserId: string; // The ID of the user who is being followed/unfollowed
 };
 
-// If needed, you could also define types for actions that require more information
 export type IFollowUser = IUserRelationship;
 
 export type IUnfollowUser = {
-  documentId: string; // Assuming unfollowing requires a document ID that represents the relationship
+  documentId: string; // Document ID representing the follow relationship
 };
-
-
 
 export interface IComment {
   postId: string;
@@ -83,9 +78,7 @@ export interface IDeleteComment {
   commentId: string;
 }
 
-
-// types/index.ts
-
+// For general use in the app
 export interface User {
   $id: string;
   name: string;
@@ -97,19 +90,18 @@ export interface User {
   latestMessage?: {
     content: string;
     timestamp: string;
-  } | null; // Allow null for latestMessage
-};
-
+  } | null;
+}
 
 export interface Message {
   text: ReactNode;
-  id:string,
+  id: string;
   $id: string;
   userId: string;
   username: string;
   content: string;
   createdAt: string;
-  recipientId: string
+  recipientId: string;
 }
 
 export interface Notification {
@@ -126,13 +118,17 @@ export interface Notification {
   senderImageUrl: string; // Sender's profile image URL
 }
 
-
 export interface NotificationResponse {
   documents: Notification[]; // Array of notifications
   total: number; // Total count
 }
 
-
-
-
-// Continue with existing types...
+// Updated context type to include sessionExpired.
+export interface IContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  sessionExpired: boolean; // Added new property
+  setIsAuthenticated: (value: boolean) => void;
+  setUser: (user: User | null) => void;
+  checkAuthUser: () => Promise<boolean>;
+}
