@@ -1,4 +1,3 @@
-// src/layouts/AuthLayout.tsx
 import React from "react";
 import { Outlet, Navigate, useLocation } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
@@ -8,18 +7,25 @@ export default function AuthLayout() {
   const { isAuthenticated, sessionExpired } = useUserContext();
   const location = useLocation();
 
-  // Only show the notification if the session is expired and we are not on sign‑in/sign‑up pages.
-  const isAuthPage = location.pathname.startsWith("/sign-in") || location.pathname.startsWith("/sign-up");
-  const showNotification = sessionExpired && !isAuthPage;
+  // Detect if user is on sign-in/sign-up pages
+  const isAuthPage =
+    location.pathname.startsWith("/sign-in") ||
+    location.pathname.startsWith("/sign-up");
+
+  // Redirect unauthenticated users trying to access a protected route
+  if (!isAuthenticated && !isAuthPage) {
+    return <Navigate to="/sign-in" replace />;
+  }
 
   return (
     <>
       {isAuthenticated ? (
         <>
-          {showNotification && (
-            <SessionExpiredNotification 
-              title="Session Expired"
-              message="Your session has expired. Please log in again or clear your cookies if you continue to experience issues."
+          {/* ✅ Show session expired notification ONLY for authenticated users */}
+          {sessionExpired && !isAuthPage && (
+            <SessionExpiredNotification
+              title="⚠️ Session Expired"
+              message="Your login session has expired, or you are not logged in correctly. Please log in again. If the issue persists, try clearing your browser cookies."
             />
           )}
           <Outlet />

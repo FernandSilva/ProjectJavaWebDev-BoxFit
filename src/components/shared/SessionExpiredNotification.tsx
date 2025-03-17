@@ -1,38 +1,27 @@
-// src/components/SessionExpiredNotification.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSignOutAccount } from "@/lib/react-query/queries";
 import { useUserContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 
 type SessionExpiredNotificationProps = {
-  title: string;
+  title?: string;
   message: string;
-  duration?: number; // in milliseconds
 };
 
 const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
-  title,
+  title = "⚠️ Session Expired",
   message,
-  duration = 5000,
 }) => {
   const [visible, setVisible] = useState(true);
   const { setIsAuthenticated, setUser } = useUserContext();
   const { mutate: signOut } = useSignOutAccount();
-
-  useEffect(() => {
-    // Auto-hide notification after the specified duration
-    const timer = setTimeout(() => {
-      setVisible(false);
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [duration]);
 
   const handleLogout = async () => {
     try {
       await signOut();
       setUser(null);
       setIsAuthenticated(false);
-      // Optionally, you might redirect to the login page here.
+      window.location.href = "/sign-in"; // Redirect to login page
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -42,19 +31,28 @@ const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto my-4">
-      <div className="bg-red-500 text-white py-2 px-4 rounded flex items-center justify-between shadow-md">
-        <span>{title}</span>
-        <Button onClick={handleLogout} className="bg-red-600 text-white">
-          Logout
-        </Button>
+      <div className="bg-yellow-500 text-white py-3 px-4 rounded flex items-center justify-between shadow-md">
+        <span className="font-semibold">{title}</span>
+        <button
+          onClick={() => setVisible(false)}
+          className="text-white text-lg font-bold cursor-pointer"
+        >
+          ✖
+        </button>
       </div>
-      <div className="bg-red-100 text-red-800 p-4 rounded-b shadow-sm">
+      <div className="bg-yellow-100 text-yellow-900 p-4 rounded-b shadow-sm">
         <p className="font-bold mb-2">System Login Error</p>
-        <p>
-          {message} <br />
-          Please try refreshing the page or clearing your site cookies if the
-          problem persists.
-        </p>
+        <p>{message}</p>
+        <ul className="mt-2 list-disc list-inside">
+          <li>Ensure you are logged in correctly.</li>
+          <li>If the issue persists, try clearing your browser cookies.</li>
+          <li>Click the button below to log out and sign back in.</li>
+        </ul>
+        <div className="mt-3 text-right">
+          <Button onClick={handleLogout} className="bg-yellow-600 text-white">
+            Logout & Re-login
+          </Button>
+        </div>
       </div>
     </div>
   );

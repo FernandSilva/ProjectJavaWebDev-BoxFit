@@ -1,4 +1,3 @@
-// src/components/SigninForm.tsx
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,16 +13,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { useUserContext } from "@/context/AuthContext";
 import { useSignInAccount } from "@/lib/react-query/queries";
 import { SigninValidation } from "@/lib/validation";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import SessionExpiredNotification from "@/components/shared/SessionExpiredNotification";
 
 const SigninForm = () => {
   const navigate = useNavigate();
-  const { checkAuthUser } = useUserContext();
+  const { checkAuthUser, sessionExpired } = useUserContext();
   const { mutateAsync: signInAccount, isLoading } = useSignInAccount();
+  const [loginError, setLoginError] = useState("");
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
@@ -39,9 +41,6 @@ const SigninForm = () => {
         throw new Error("Email and password are required");
       }
 
-      // Optionally, clear any stale session before logging in
-      // await account.deleteSession("current");
-
       const session = await signInAccount({
         email: userData.email,
         password: userData.password,
@@ -52,7 +51,6 @@ const SigninForm = () => {
       }
 
       const isLoggedIn = await checkAuthUser();
-
       if (isLoggedIn) {
         form.reset();
         navigate("/");
@@ -60,9 +58,9 @@ const SigninForm = () => {
         throw new Error("Login failed. Please try again.");
       }
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.message || error?.message || "An unknown error occurred.";
-      toast.error(errorMessage, {
+      const errMsg = error?.response?.message || error?.message || "An unknown error occurred.";
+      setLoginError(errMsg);
+      toast.error(errMsg, {
         position: "bottom-center",
       });
       console.error("Sign-in error:", error);
@@ -71,13 +69,30 @@ const SigninForm = () => {
 
   return (
     <Form {...form}>
-      <div className="sm:w-4200 flex-center flex-col">
+      <div className="sm:w-420 flex-center flex-col">
         <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
 
         <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Log in to your account</h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
           Welcome back! Please enter your details.
         </p>
+
+        {/* Show session expiration message if applicable */}
+        {sessionExpired && (
+          <SessionExpiredNotification 
+            title="Session Expired"
+            message="Your session has expired. Please log in again. If the issue persists, clear your site cookies."
+          />
+        )}
+
+        {/* Show login error message */}
+        {loginError && (
+          <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded relative mt-4">
+            <strong>⚠️ Login Error</strong>
+            <p className="mt-1">{loginError}</p>
+          </div>
+        )}
+
         <form
           onSubmit={form.handleSubmit(handleSignin)}
           className="flex flex-col gap-2 w-full mt-4"
@@ -91,9 +106,7 @@ const SigninForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && (
-                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
-                )}
+                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
@@ -107,9 +120,7 @@ const SigninForm = () => {
                 <FormControl>
                   <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && (
-                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
-                )}
+                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
@@ -125,7 +136,7 @@ const SigninForm = () => {
           </Button>
 
           <p className="text-small-regular text-light-3 text-center mt-2">
-            Don&apos;t have an account?
+            Don't have an account?
             <Link to="/sign-up" className="text-black hover:text-green-500 text-small-semibold ml-1">
               Sign up
             </Link>
