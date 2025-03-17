@@ -1517,3 +1517,20 @@ export async function searchPostsApi(searchQuery: string): Promise<Models.Docume
     throw new Error(error.message);
   }
 }
+
+
+
+import { refreshSession } from "@/lib/react-query/queries";
+
+export const fetchWithAuth = async (url: string, options: RequestInit) => {
+  try {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+      await refreshSession();
+    }
+    return response.json();
+  } catch (error) {
+    console.error("API error:", error);
+    throw error;
+  }
+};

@@ -51,7 +51,7 @@ import {
 } from "@/lib/appwrite/api";
 
 import { ID, Models, Query, Databases, Client } from "appwrite";
-import { appwriteConfig } from "@/lib/appwrite/config"; // Adjust as needed for your config path
+import { appwriteConfig ,account } from "@/lib/appwrite/config"; // Adjust as needed for your config path
 
 
 import * as api from "@/lib/appwrite/api";
@@ -756,4 +756,16 @@ export const useMarkNotificationAsRead = () => {
 
 
 
-
+export const refreshSession = async () => {
+  try {
+    await account.get(); // This fetches current user data; if the session is expired, it will throw
+  } catch (error) {
+    console.error("Session expired. Logging out...", error);
+    try {
+      await account.deleteSession("current");
+    } catch (delError) {
+      console.error("Error deleting session:", delError);
+    }
+    window.location.href = "/login"; // Redirect to login page
+  }
+};
