@@ -783,4 +783,16 @@ export const refreshSession = async () => {
   }
 };
 
+import { searchUsersAndPosts } from "@/lib/appwrite/api";
+
+// Facebook-style: Combined search hook for users and posts
+export const useSearchUsersAndPosts = (searchTerm: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.SEARCH_USERS_AND_POSTS, searchTerm],
+    queryFn: () => searchUsersAndPosts(searchTerm),
+    enabled: !!searchTerm,
+    staleTime: 10000,
+    refetchOnWindowFocus: false,
+  });
+};
 

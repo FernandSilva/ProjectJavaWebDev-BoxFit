@@ -107,13 +107,15 @@ async function getActiveSession() {
 // ============================== GET ACCOUNT
 export async function getAccount() {
   try {
-    const currentAccount = await account.get();
+    const currentAccount = await account.get(); // Appwrite SDK call
     return currentAccount;
-  } catch (error) {
-    console.log("Error fetching account:", error);
-    return null; // Explicitly return null on error
+  } catch (error: any) {
+    console.warn("Error fetching account:", error?.message || error);
+    return null; // return null instead of throwing
   }
 }
+
+
 
 
 // ============================== GET USER
@@ -121,27 +123,24 @@ export async function getCurrentUser() {
   try {
     const currentAccount = await getAccount();
     if (!currentAccount) {
-      throw new Error("No current account found");
+      console.warn("No active session found.");
+      return null;
     }
 
-    console.log("Current account ID:", currentAccount.$id);
-
-    const currentUser = await databases.listDocuments(
+    const userDocs = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
       [Query.equal("accountId", currentAccount.$id)]
     );
 
-    console.log("Current user documents:", currentUser);
-
-    if (currentUser.total === 0) {
-      console.warn("No user document found for account ID:", currentAccount.$id);
+    if (!userDocs || userDocs.total === 0) {
+      console.warn("User not found in DB for account ID:", currentAccount.$id);
       return null;
     }
 
-    return currentUser.documents[0];
-  } catch (error) {
-    console.error("Error fetching current user:", error);
+    return userDocs.documents[0];
+  } catch (error: any) {
+    console.error("Error fetching current user:", error.message || error);
     return null;
   }
 }
@@ -1540,6 +1539,58 @@ export const fetchWithAuth = async (url: string, options: RequestInit) => {
     return response.json();
   } catch (error) {
     console.error("API error:", error);
+    throw error;
+  }
+};
+
+
+
+// Combined search: Users and Posts
+export const searchUsersAndPosts = async (searchQuery: string) => {
+  try {
+    const q = searchQuery.trim().toLowerCase();
+
+    // Search users (must have full-text index enabled on "name" and "username")
+    const userSearchResults = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [Query.search("name", q)]
+    );
+
+    const userNameResults = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      [Query.search("username", q)]
+    );
+
+    const usersMap = new Map();
+    [...userSearchResults.documents, ...userNameResults.documents].forEach((doc) => {
+      usersMap.set(doc.$id, doc);
+    });
+    const users = Array.from(usersMap.values());
+
+    // Search posts (must have full-text index enabled on "caption" and "tags")
+    const captionResults = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId,
+      [Query.search("caption", q)]
+    );
+
+    const tagResults = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId,
+      [Query.search("tags", q)]
+    );
+
+    const postsMap = new Map();
+    [...captionResults.documents, ...tagResults.documents].forEach((doc) => {
+      postsMap.set(doc.$id, doc);
+    });
+    const posts = Array.from(postsMap.values());
+
+    return { users, posts };
+  } catch (error) {
+    console.error("❌ Search error:", error);
     throw error;
   }
 };

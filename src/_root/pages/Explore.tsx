@@ -1,3 +1,5 @@
+// src/pages/Explore.tsx
+
 import { GridPostList, Loader, UserCard } from "@/components/shared";
 import { Input } from "@/components/ui";
 import { useWindowSize } from "@uidotdev/usehooks";
@@ -12,7 +14,7 @@ import {
   useGetFollowersPosts,
   useGetFollowingPosts,
   useGetUsers,
-  useSearchPosts,
+  useSearchUsersAndPosts,
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
 
@@ -32,17 +34,13 @@ const Explore = () => {
   const [searchValue, setSearchValue] = useState<string>("");
   const [filter, setFilter] = useState<string>("all");
 
-  // Default posts (using infinite query)
   const { data: allPosts, fetchNextPage: fetchNextAllPosts, isFetchingNextPage } =
     useGetAllPosts(searchValue);
   const { data: followersPosts } = useGetFollowersPosts(user?.id ?? "");
   const { data: followingPosts } = useGetFollowingPosts(user?.id ?? "");
   const { data: users, isLoading: isFetchingUsers } = useGetUsers(10);
+  const { data: searchData, isLoading: isSearchLoading } = useSearchUsersAndPosts(searchValue);
 
-  // Search posts hook (fetches only if searchValue is non-empty)
-  const { data: searchResults, isLoading: searchLoading } = useSearchPosts(searchValue);
-
-  // Sort users descending by their like count (assuming user.liked is an array)
   const sortedUsers = useMemo(() => {
     return users ? [...users].sort((a, b) => ((b.liked?.length || 0) - (a.liked?.length || 0))) : [];
   }, [users]);
@@ -85,7 +83,6 @@ const Explore = () => {
               >
                 {sortedUsers.map((user, index) => (
                   <SwiperSlide key={user.$id}>
-                    {/* Only the top 10 users receive a ranking number */}
                     <UserCard user={user} rank={index < 10 ? index + 1 : undefined} />
                   </SwiperSlide>
                 ))}
@@ -93,12 +90,12 @@ const Explore = () => {
             </div>
           )}
 
-          <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2">
-            Search Posts
+          <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2 mt-10">
+            Search Growers & Posts
           </h2>
           <Input
             type="text"
-            placeholder="Search for posts"
+            placeholder="Search for growers or posts"
             className="explore-search"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
@@ -106,27 +103,23 @@ const Explore = () => {
         </div>
 
         {searchValue.trim() !== "" ? (
-          <div className="search-results mt-4">
-            {searchLoading ? (
+          <div className="search-results mt-6">
+            {isSearchLoading ? (
               <Loader />
-            ) : searchResults && searchResults.length > 0 ? (
-              searchResults.map((post: any) => (
-                <div key={post.$id} className="post-item p-4 border-b">
-                  <h3 className="font-bold">
-                    {post.description || post.caption}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    By: {post.username || post.name}
-                  </p>
-                  {post.tags && (
-                    <p className="text-xs text-gray-500">
-                      Tags: {Array.isArray(post.tags) ? post.tags.join(", ") : post.tags}
-                    </p>
-                  )}
+            ) : searchData && (searchData.users.length > 0 || searchData.posts.length > 0) ? (
+              <>
+                <h3 className="h4-bold mt-4 mb-2">Matching Users</h3>
+                <div className="flex flex-wrap gap-4">
+                  {searchData.users.map((user) => (
+                    <UserCard key={user.$id} user={user} />
+                  ))}
                 </div>
-              ))
+
+                <h3 className="h4-bold mt-8 mb-2">Matching Posts</h3>
+                <GridPostList posts={searchData.posts} />
+              </>
             ) : (
-              <p>No search results found.</p>
+              <p className="text-gray-500">No matching users or posts found.</p>
             )}
           </div>
         ) : (

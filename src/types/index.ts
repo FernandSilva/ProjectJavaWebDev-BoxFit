@@ -132,3 +132,24 @@ export interface IContextType {
   setUser: (user: User | null) => void;
   checkAuthUser: () => Promise<boolean>;
 }
+
+export const QUERY_KEYS = {
+  GET_POSTS: "getPosts",
+  GET_RECENT_POSTS: "getRecentPosts",
+  GET_POST_BY_ID: "getPostById",
+  GET_USER_POSTS: "getUserPosts",
+  GET_USERS: "getUsers",
+  GET_USER_BY_ID: "getUserById",
+  GET_USER_RELATIONSHIPS: "getUserRelationships",
+  GET_USER_RELATIONSHIPS_LIST: "getUserRelationshipsList",
+  GET_USER_RELATIONSHIPS_FOLLOWERSLIST: "getUserRelationshipsFollowersList",
+  GET_INFINITE_POSTS: "getInfinitePosts",
+  GET_MESSAGES: "getMessages",
+  GET_CURRENT_USER: "getCurrentUser",
+  GET_NOTIFICATIONS: "getNotifications",
+  GET_USER_TOTAL_LIKES: "getUserTotalLikes",
+  SEARCH_POSTS: "searchPosts",
+
+  // ✅ Add this line to fix the error
+  SEARCH_USERS_AND_POSTS: "searchUsersAndPosts",
+};
