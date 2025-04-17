@@ -1,16 +1,18 @@
 import { Loader, PostCard, UserCard } from "@/components/shared";
-import { useGetRecentPosts, useGetUsers } from "@/lib/react-query/queries";
+import { useGetFollowingPosts, useGetUsers } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
 import { useState } from "react";
+import { useUserContext } from "@/context/AuthContext";
 
 const Home = () => {
   const [showChatbot, setShowChatbot] = useState(false);
+  const { user } = useUserContext();
 
   const {
     data: posts,
     isLoading: isPostLoading,
     isError: isErrorPosts,
-  } = useGetRecentPosts();
+  } = useGetFollowingPosts(user?.id);
   const {
     data: creators,
     isLoading: isUserLoading,
@@ -52,7 +54,7 @@ const Home = () => {
       </div>
 
       <div className="chatbot-container !right-[5%] sm:!right-[3%] !bottom-[85px] sm:!bottom-5">
-        {/* Chatbot trigger icon (currently commented out) */}
+        {/* Chatbot trigger icon (optional) */}
       </div>
 
       <div className="home-creators !overflow-x-hidden">

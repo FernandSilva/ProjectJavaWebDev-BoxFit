@@ -22,6 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 const SignupForm = () => {
   const { mutateAsync: signUpAccount, isLoading } = useCreateUserAccount();
   const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
@@ -50,7 +51,6 @@ const SignupForm = () => {
         throw new Error("Signup failed. Please try again.");
       }
 
-      // Show email confirmation pop-up
       setShowEmailPopup(true);
     } catch (error: any) {
       const errMsg = error?.response?.message || error?.message || "An unknown error occurred.";
@@ -63,14 +63,13 @@ const SignupForm = () => {
 
   return (
     <Form {...form}>
-      <div className="sm:w-420 flex-center flex-col">
+      <div className="w-full max-w-md mx-auto flex flex-col items-center px-4 py-8">
         <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
         <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Create your GrowBuddy account</h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
           Join the community and start growing together!
         </p>
 
-        {/* Email Confirmation Pop-up */}
         {showEmailPopup && (
           <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded relative mt-4">
             <strong>✅ Account Successfully Created!</strong>
@@ -94,7 +93,9 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
+                {error && (
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -108,7 +109,9 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
+                {error && (
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -122,7 +125,9 @@ const SignupForm = () => {
                 <FormControl>
                   <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
                 </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
+                {error && (
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -134,9 +139,35 @@ const SignupForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Password</FormLabel>
                 <FormControl>
-                  <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      className={`shad-input pr-10 ${error ? "error" : ""}`}
+                      {...field}
+                    />
+                    <span
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <img
+                          src="/assets/icons/dot.svg"
+                          alt="hide"
+                          className="w-5 h-5 opacity-60"
+                        />
+                      ) : (
+                        <img
+                          src="/assets/icons/dot-single.svg"
+                          alt="show"
+                          className="w-5 h-5 opacity-60"
+                        />
+                      )}
+                    </span>
+                  </div>
                 </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
+                {error && (
+                  <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>
+                )}
               </FormItem>
             )}
           />
@@ -153,7 +184,10 @@ const SignupForm = () => {
 
           <p className="text-small-regular text-light-3 text-center mt-2">
             Already have an account?
-            <Link to="/sign-in" className="text-black hover:text-green-500 text-small-semibold ml-1">
+            <Link
+              to="/sign-in"
+              className="text-black hover:text-green-500 text-small-semibold ml-1"
+            >
               Log in
             </Link>
           </p>

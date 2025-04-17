@@ -136,7 +136,7 @@
 
   /* Home */
   .home-container {
-    @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:px-8 lg:p-14 custom-scrollbar;
+    @apply flex flex-col flex-1 items-center gap-10 overflow-scroll py-10 px-5 md:px-8 lg:p-14 custom-scrollbar ;
   }
   .home-container::-webkit-scrollbar {
     display: none;
@@ -318,8 +318,9 @@
   }
 
   .shad-input {
-    @apply h-8 border-gray-300 placeholder:text-black focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3 !important;
+    @apply min-h-[44px] px-3 py-2 border border-gray-300 rounded-md text-black placeholder:text-black focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3;
   }
+  
 
   .shad-textarea {
     @apply h-36 bg-white border !border-gray-300 rounded-xl focus-visible:ring-1 focus-visible:ring-offset-1 ring-offset-light-3 !important;

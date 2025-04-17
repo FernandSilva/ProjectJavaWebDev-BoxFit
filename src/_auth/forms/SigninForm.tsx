@@ -26,6 +26,7 @@ const SigninForm = () => {
   const { checkAuthUser, sessionExpired } = useUserContext();
   const { mutateAsync: signInAccount, isLoading } = useSignInAccount();
   const [loginError, setLoginError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
@@ -69,7 +70,7 @@ const SigninForm = () => {
 
   return (
     <Form {...form}>
-      <div className="sm:w-420 flex-center flex-col">
+      <div className="w-full max-w-md mx-auto flex flex-col items-center px-4 py-10">
         <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
 
         <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Log in to your account</h2>
@@ -77,7 +78,6 @@ const SigninForm = () => {
           Welcome back! Please enter your details.
         </p>
 
-        {/* Show session expiration message if applicable */}
         {sessionExpired && (
           <SessionExpiredNotification 
             title="Session Expired"
@@ -85,9 +85,8 @@ const SigninForm = () => {
           />
         )}
 
-        {/* Show login error message */}
         {loginError && (
-          <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded relative mt-4">
+          <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded relative mt-4 w-full">
             <strong>⚠️ Login Error</strong>
             <p className="mt-1">{loginError}</p>
           </div>
@@ -95,7 +94,7 @@ const SigninForm = () => {
 
         <form
           onSubmit={form.handleSubmit(handleSignin)}
-          className="flex flex-col gap-2 w-full mt-4"
+          className="flex flex-col gap-4 w-full mt-6"
         >
           <FormField
             control={form.control}
@@ -104,7 +103,11 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Email</FormLabel>
                 <FormControl>
-                  <Input type="text" className={`shad-input ${error ? "error" : ""}`} {...field} />
+                  <Input
+                    type="text"
+                    className={`shad-input px-4 py-3 ${error ? "error" : ""}`}
+                    {...field}
+                  />
                 </FormControl>
                 {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
@@ -118,14 +121,30 @@ const SigninForm = () => {
               <FormItem className="form-item">
                 <FormLabel className="shad-form_label">Password</FormLabel>
                 <FormControl>
-                  <Input type="password" className={`shad-input ${error ? "error" : ""}`} {...field} />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      className={`shad-input px-4 py-3 pr-10 ${error ? "error" : ""}`}
+                      {...field}
+                    />
+                    <span
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <img src="/assets/icons/dot.svg" alt="hide" className="w-5 h-5 opacity-60" />
+                      ) : (
+                        <img src="/assets/icons/dot-single.svg" alt="show" className="w-5 h-5 opacity-60" />
+                      )}
+                    </span>
+                  </div>
                 </FormControl>
                 {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
               </FormItem>
             )}
           />
 
-          <Button type="submit" className="shad-button_primary">
+          <Button type="submit" className="shad-button_primary mt-4">
             {isLoading ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...

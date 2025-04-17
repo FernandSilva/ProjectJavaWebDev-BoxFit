@@ -123,15 +123,17 @@ export interface NotificationResponse {
   total: number; // Total count
 }
 
-// Updated context type to include sessionExpired.
+// Updated context type to include sessionExpired
 export interface IContextType {
   isAuthenticated: boolean;
   user: User | null;
-  sessionExpired: boolean; // Added new property
+  sessionExpired: boolean; // ✅ Added this property
   setIsAuthenticated: (value: boolean) => void;
   setUser: (user: User | null) => void;
   checkAuthUser: () => Promise<boolean>;
+  setSessionExpired: (value: boolean) => void; // ✅ Add this setter as well
 }
+
 
 export const QUERY_KEYS = {
   GET_POSTS: "getPosts",
