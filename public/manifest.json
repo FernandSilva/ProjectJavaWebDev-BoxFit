@@ -2,16 +2,21 @@
     "name": "GrowBuddy",
     "short_name": "GrowBuddy",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#2E8B57",
     "orientation": "portrait",
     "icons": [
       {
-        "src": "/GrowB1.jpeg",
-        "sizes": "48x48 72x72 96x96 128x128 256x256 512x512",
-        "type": "image/x-icon",
-        "purpose": "any"
+        "src": "/GrowB1-192x192.jpeg",
+        "sizes": "192x192",
+        "type": "image/jpeg"
+      },
+      {
+        "src": "/GrowB1-512x512.jpeg",
+        "sizes": "512x512",
+        "type": "image/jpeg"
       }
     ]
   }
