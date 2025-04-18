@@ -82,22 +82,23 @@ const Home = () => {
         {/* Chatbot trigger icon (optional) */}
       </div>
 
-      <div className="home-creators !overflow-x-hidden">
-        <h3 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
-          Top Growers
-        </h3>
-        {isUserLoading && !creators ? (
-          <Loader />
-        ) : (
-          <ul className="grid 2xl:grid-cols-2 gap-4">
-            {creators?.slice(0, 10).map((creator) => (
-              <li key={creator.$id}>
-                <UserCard user={creator} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <div className="home-creators !overflow-y-auto max-h-[calc(100vh-100px)] pr-2">
+              <h3 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
+                Community
+              </h3>
+              {isUserLoading && !creators ? (
+                <Loader />
+              ) : (
+                <ul className="flex flex-col gap-4">
+                  {creators?.map((creator) => (
+                    <li key={creator.$id}>
+                      <UserCard user={creator} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+        </div>
+
     </div>
   );
 };

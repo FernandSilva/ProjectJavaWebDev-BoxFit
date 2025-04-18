@@ -24,23 +24,24 @@ import { useUserContext } from "@/context/AuthContext";
 const PostDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  if (!id) {
-    return (
-      <div className="flex-center w-full h-full">
-        <p>Invalid Post ID</p>
-      </div>
-    );
-  }
   const { user } = useUserContext();
+  const videoRefs = useRef<HTMLVideoElement[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [fileTypes, setFileTypes] = useState<string[]>([]);
+  const [cleanUrls, setCleanUrls] = useState<string[]>([]);
+  const [inputText, setInputText] = useState("");
+  const [showCommentBox, setShowCommentBox] = useState(false);
 
   const { data: post, isLoading: postLoading } = useGetPostById(id);
   const { data: userPosts, isLoading: isUserPostLoading } = useGetUserPosts(post?.creator.$id || "");
-  const videoRefs = useRef<HTMLVideoElement[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
   const { data: commentsData } = useGetCommentsByPost(id);
   const comments = commentsData?.comments || [];
-  const [fileTypes, setFileTypes] = useState<string[]>([]);
-  const [cleanUrls, setCleanUrls] = useState<string[]>([]);
+
+  const deletePostMutation = useDeletePost();
+  const createCommentMutation = useCreateComment();
+  const deleteCommentMutation = useDeleteComment();
+  const likeCommentMutation = useLikeComment();
+  const unlikeCommentMutation = useUnlikeComment();
 
   useEffect(() => {
     const types: string[] = [];
@@ -55,7 +56,6 @@ const PostDetails = () => {
           typeEndIndex !== -1 ? url.substring(typeStartIndex + 6, typeEndIndex) : url.substring(typeStartIndex + 6);
       }
       types.push(typeMatch.split("/")[0]);
-
       const cleanUrl = url.replace(/\?type=[^&]*(&|$)/, "").replace(/\?$/, "");
       urls.push(cleanUrl);
     });
@@ -65,56 +65,24 @@ const PostDetails = () => {
   }, [post?.imageUrl]);
 
   useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: "0px",
-      threshold: 0.5,
-    };
-
-    const handleIntersection: IntersectionObserverCallback = (entries) => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        const { target, isIntersecting } = entry;
-        const index = parseInt(target.getAttribute("data-index") || "0", 10);
-
-        if (isIntersecting) {
-          if (videoRefs.current[index]) {
-            videoRefs.current[index].play().catch((error) => {
-              console.error("Error playing video:", error);
-            });
-          }
+        const index = parseInt(entry.target.getAttribute("data-index") || "0", 10);
+        if (entry.isIntersecting) {
+          videoRefs.current[index]?.play().catch(() => {});
         } else {
-          if (videoRefs.current[index]) {
-            videoRefs.current[index].pause();
-          }
+          videoRefs.current[index]?.pause();
         }
       });
-    };
-
-    const observer = new IntersectionObserver(handleIntersection, observerOptions);
+    });
 
     cleanUrls.forEach((_, index) => {
       const element = videoRefs.current[index];
-      if (element) {
-        observer.observe(element);
-      }
+      if (element) observer.observe(element);
     });
 
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, [cleanUrls]);
-
-  const deletePostMutation = useDeletePost();
-  const createCommentMutation = useCreateComment();
-  const deleteCommentMutation = useDeleteComment();
-  const likeCommentMutation = useLikeComment();
-  const unlikeCommentMutation = useUnlikeComment();
-
-  const [inputText, setInputText] = useState("");
-  const [showCommentBox, setShowCommentBox] = useState(false);
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setInputText(event.target.value);
 
   const handleSend = async () => {
     if (inputText.trim() && user) {
@@ -131,44 +99,37 @@ const PostDetails = () => {
           onSuccess: async (comment) => {
             setInputText("");
             await createNotification({
-              userId: post?.creator.$id,
+              userId: post?.creator?.$id ?? "",
               senderId: user.id,
               type: "comment",
-              content: `${user.name} commented: "${currentInput}"`,
-              relatedId: post?.$id,
-              referenceId: comment?.$id,
+              content: ` ${currentInput}`,
+              relatedId: post?.$id ?? "",  // Fix: ensure it's always a string
+              referenceId: comment?.$id ?? "",
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user.name,
               senderImageUrl: user.imageUrl,
             });
+            
           },
         }
       );
     }
   };
 
-  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      handleSend();
-    }
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSend();
   };
 
-  const handleDeletePost = async () => {
-    deletePostMutation.mutate(
-      { postId: id, imageId: post?.imageId },
-      {
-        // Optional: callbacks can be added here
-      }
-    );
-  };
-
-  const relatedPosts = userPosts?.documents.filter((p) => p.$id !== id);
   const handleEditPost = () => {
     navigate(`/update-post/${post?.$id}`);
   };
 
-  const handleToggleLikeComment = async (commentId: string, liked: boolean) => {
+  const handleDeletePost = () => {
+    deletePostMutation.mutate({ postId: id, imageId: post?.imageId });
+  };
+
+  const handleToggleLikeComment = (commentId: string, liked: boolean) => {
     const comment = comments.find((c) => c.$id === commentId);
     if (liked) {
       unlikeCommentMutation.mutate({ commentId, userId: user!.id });
@@ -181,20 +142,21 @@ const PostDetails = () => {
               userId: comment?.userId ?? "",
               senderId: user?.id ?? "",
               type: "like",
-              content: `${user?.name ?? ""} liked your comment.`,
+              content: `liked your comment.`,
               relatedId: comment?.$id ?? "",
               referenceId: comment?.$id ?? "",
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name ?? "",
-              senderImageUrl:user?.imageUrl ?? "",
+              senderImageUrl: user?.imageUrl ?? "",
             });
-            
           },
         }
       );
     }
   };
+
+  const relatedPosts = userPosts?.documents.filter((p) => p.$id !== id);
 
   if (postLoading || !post) {
     return (
@@ -224,74 +186,58 @@ const PostDetails = () => {
           onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
         >
           {cleanUrls.map((url, index) => (
-            <SwiperSlide key={index} style={{ width: "100%" }}>
-              {fileTypes[index] === "video" && (
-                <video
-                  className="post-card_img"
-                  loop
-                  ref={(el) => {
-                    if (el) videoRefs.current[index] = el;
-                  }}
-                  data-index={index}
-                >
+            <SwiperSlide key={index}>
+              {fileTypes[index] === "video" ? (
+                <video className="post-card_img" loop ref={(el) => (videoRefs.current[index] = el!)} data-index={index}>
                   <source src={url} />
                 </video>
-              )}
-              {fileTypes[index] === "image" && (
+              ) : fileTypes[index] === "image" ? (
                 <img className="post-card_img" src={url} alt="File preview" />
+              ) : (
+                <p>Unknown file type</p>
               )}
-              {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
             </SwiperSlide>
           ))}
         </Swiper>
+
         <div className="post_details-info md:w-[45%]">
-          <div className="flex flex-col gap-1 md:gap-0 sm:flex-row md:items-start sm:justify-between w-full">
-            <div className="post-details-header">
-              <Link to={`/profile/${post?.creator.$id}`} className="profile-link">
-                <img
-                  src={post?.creator.imageUrl || "/assets/icons/profile-placeholder.svg"}
-                  alt="creator"
-                  className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
-                />
-                <div className="flex flex-col">
-                  <p className="base-medium lg:body-bold text-black">{post?.creator.name}</p>
-                  <div className="flex-center gap-2 text-light-3">
-                    <p className="subtle-semibold lg:small-regular !text-xs">
-                      {multiFormatDateString(post?.$createdAt)}
-                      {moment(post?.$createdAt).format("h:m a")}
-                    </p>
-                    • <br />
-                    <p className="subtle-semibold lg:small-regular !text-xs">{post?.location}</p>
-                  </div>
+          <div className="flex flex-col sm:flex-row justify-between w-full">
+            <Link to={`/profile/${post?.creator.$id}`} className="profile-link">
+              <img
+                src={post?.creator.imageUrl || "/assets/icons/profile-placeholder.svg"}
+                alt="creator"
+                className="w-8 h-8 lg:w-12 lg:h-12 rounded-full"
+              />
+              <div className="flex flex-col">
+                <p className="base-medium lg:body-bold text-black">{post?.creator.name}</p>
+                <div className="text-xs text-gray-500">
+                  {multiFormatDateString(post?.$createdAt)} • {post?.location}
                 </div>
-              </Link>
-            </div>
-            <div className="Buttonsflex flex py-[5px] md:py-[0px] gap-4">
-              <div
-                onClick={handleEditPost}
-                className={`${user?.id !== post?.creator.$id ? "hidden" : ""} cursor-pointer flex items-center gap-2`}
-              >
-                <MdEdit className="text-xs" />
-                <span className="text-xs">Edit</span>
               </div>
-              <div
-                onClick={handleDeletePost}
-                className={`cursor-pointer flex items-center gap-1 ${user?.id !== post?.creator.$id ? "hidden" : ""}`}
-              >
-                <img src={"/assets/icons/delete.svg"} alt="delete" width={12} height={12} />
-                <span className="text-red text-xs">Delete</span>
+            </Link>
+
+            {user?.id === post?.creator.$id && (
+              <div className="flex gap-4 mt-2 sm:mt-0">
+                <div onClick={handleEditPost} className="cursor-pointer flex items-center gap-2">
+                  <MdEdit className="text-xs" />
+                  <span className="text-xs">Edit</span>
+                </div>
+                <div onClick={handleDeletePost} className="cursor-pointer flex items-center gap-1">
+                  <img src={"/assets/icons/delete.svg"} alt="delete" width={12} height={12} />
+                  <span className="text-red text-xs">Delete</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <hr className="border w-full" />
 
-          <div className="flex flex-col flex-1 w-full small-medium lg:base-regular">
+          <div className="flex flex-col w-full small-medium lg:base-regular">
             <p>{post?.caption}</p>
-            <ul className="flex gap-1 mt-2">
-              {post?.tags?.map((tag, index) => (
-                <li key={`${tag}${index}`} className="text-light-3 small-regular">
-                  {tag}
+            <ul className="flex gap-1 mt-2 flex-wrap">
+              {(Array.isArray(post.tags) ? post.tags : post.tags?.split(",")).map((tag: string, index: number) => (
+                <li key={index} className="text-light-3 small-regular">
+                  #{tag.trim()}
                 </li>
               ))}
             </ul>
@@ -299,69 +245,54 @@ const PostDetails = () => {
             <div
               onClick={() => setShowCommentBox(!showCommentBox)}
               className="p-4 hover:bg-gray-200 w-fit cursor-pointer mx-auto"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "8px",
-                borderRadius: "50%",
-                transition: "background-color 0.3s",
-              }}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "8px", borderRadius: "50%" }}
             >
               <MdAdd />
             </div>
 
             {showCommentBox && (
               <div className="comments-section mt-4">
-                {comments.map((comment) => {
-                  const liked = comment.likedBy.includes(user!.id);
-                  return (
-                    <div key={comment.$id} className="comment-item flex items-center gap-3 mb-3">
-                      <img
-                        src={comment.userImageUrl || "/assets/icons/profile-placeholder.svg"}
-                        alt={comment.userName}
-                        className="h-7 w-7 rounded-full"
-                      />
-                      <div className="comment-content p-2 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold">{comment.userName}:</p>
-                            </div>
-                            <p className="text-sm">{comment.text}</p>
-                          </div>
-                          <div
-                            onClick={() => handleToggleLikeComment(comment.$id, liked)}
-                            className={`text-${liked ? "red" : "green"}-500 hover:text-${liked ? "red" : "green"}-700 transition duration-150 cursor-pointer`}
-                          >
-                            <img
-                              src={`/assets/icons/${liked ? "unlike" : "liked"}.svg`}
-                              alt={liked ? "Unlike" : "Like"}
-                              width={16}
-                              height={16}
-                            />
-                          </div>
-                        </div>
-                        {comment.userId === user!.id && (
-                          <div className="flex items-center gap-2 cursor-pointer">
-                            <div
-                              className="text-xs text-gray-800 mt-1"
-                              onClick={() => deleteCommentMutation.mutate(comment.$id)}
-                            >
-                              Edit
-                            </div>
-                            <div
-                              className="text-xs text-red mt-1"
-                              onClick={() => deleteCommentMutation.mutate(comment.$id)}
-                            >
-                              Delete
-                            </div>
-                          </div>
-                        )}
+        {comments.map((comment) => {
+              const liked = comment.likedBy.includes(user!.id);
+              return (
+                <div key={comment.$id} className="comment-item flex gap-3 mb-4 items-start">
+                  <img
+                    src={comment.userImageUrl || "/assets/icons/profile-placeholder.svg"}
+                    alt={comment.userName}
+                    className="h-7 w-7 rounded-full"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col w-full">
+                        <p className="text-sm font-semibold">{comment.userName}</p>
+                        <p className="text-sm break-words w-full">{comment.text}</p>
+                      </div>
+                      <div
+                        onClick={() => handleToggleLikeComment(comment.$id, liked)}
+                        className="ml-2 cursor-pointer flex-shrink-0"
+                      >
+                        <img
+                          src={`/assets/icons/${liked ? "liked" : "unlike"}.svg`}
+                          alt={liked ? "Unlike" : "Like"}
+                          className="w-[16px] h-[16px] min-w-[16px]"
+                        />
                       </div>
                     </div>
-                  );
-                })}
+                    {comment.userId === user!.id && (
+                      <div className="flex items-center gap-2 text-xs mt-1">
+                        <span className="cursor-pointer" onClick={() => deleteCommentMutation.mutate(comment.$id)}>
+                          Edit
+                        </span>
+                        <span className="text-red cursor-pointer" onClick={() => deleteCommentMutation.mutate(comment.$id)}>
+                          Delete
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
                 <div className="flex items-center gap-3 mt-3">
                   <img
                     src={user?.imageUrl || "/assets/icons/profile-placeholder.svg"}
@@ -371,10 +302,10 @@ const PostDetails = () => {
                   <input
                     type="text"
                     value={inputText}
-                    onChange={handleInputChange}
+                    onChange={(e) => setInputText(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Write a comment..."
-                    className="flex-1 p-2 border border-gray-300 !text-sm rounded-lg"
+                    className="flex-1 p-2 border border-gray-300 text-sm rounded-lg"
                   />
                 </div>
               </div>
