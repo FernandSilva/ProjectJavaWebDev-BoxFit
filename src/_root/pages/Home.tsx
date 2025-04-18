@@ -1,23 +1,48 @@
+// src/_root/pages/Home.tsx
 import { Loader, PostCard, UserCard } from "@/components/shared";
-import { useGetFollowingPosts, useGetUsers } from "@/lib/react-query/queries";
+import {
+  useGetFollowersPosts,
+  useGetFollowingPosts,
+  useGetUserPosts,
+  useGetUsers,
+} from "@/lib/react-query/queries";
 import { Models } from "appwrite";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useUserContext } from "@/context/AuthContext";
 
 const Home = () => {
   const [showChatbot, setShowChatbot] = useState(false);
   const { user } = useUserContext();
 
+  const { data: userPosts } = useGetUserPosts(user?.id);
+  const { data: followersPosts } = useGetFollowersPosts(user?.id ?? "");
   const {
-    data: posts,
+    data: followingPosts,
     isLoading: isPostLoading,
     isError: isErrorPosts,
-  } = useGetFollowingPosts(user?.id);
+  } = useGetFollowingPosts(user?.id ?? "");
+
   const {
     data: creators,
     isLoading: isUserLoading,
     isError: isErrorCreators,
   } = useGetUsers(10);
+
+  const combinedPosts = useMemo(() => {
+    const combined = [
+      ...(userPosts?.documents || []),
+      ...(followersPosts?.documents || []),
+      ...(followingPosts?.documents || []),
+    ];
+    const unique = combined.filter(
+      (post, index, self) =>
+        index === self.findIndex((p) => p.$id === post.$id)
+    );
+    return unique.sort(
+      (a, b) =>
+        new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime()
+    );
+  }, [userPosts, followersPosts, followingPosts]);
 
   if (isErrorPosts || isErrorCreators) {
     return (
@@ -39,11 +64,11 @@ const Home = () => {
           <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2 overflow-x-hidden">
             Feed
           </h2>
-          {isPostLoading && !posts ? (
+          {isPostLoading && combinedPosts.length === 0 ? (
             <Loader />
           ) : (
             <ul className="flex flex-col gap-8 w-full">
-              {posts?.documents?.map((post: Models.Document) => (
+              {combinedPosts.map((post: Models.Document) => (
                 <li key={post.$id} className="flex justify-center w-full">
                   <PostCard post={post} />
                 </li>

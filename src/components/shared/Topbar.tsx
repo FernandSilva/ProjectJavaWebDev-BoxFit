@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetNotifications, useDeleteNotification } from "@/lib/react-query/queries";
+import {
+  useGetNotifications,
+  useDeleteNotification,
+  useMarkNotificationAsRead,
+} from "@/lib/react-query/queries";
 import { Notification } from "@/types";
 
 const Topbar = () => {
@@ -15,6 +19,7 @@ const Topbar = () => {
 
   const { data: fetchedNotifications, refetch: refetchNotifications } = useGetNotifications(user?.id);
   const { mutate: deleteNotification } = useDeleteNotification();
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
 
   useEffect(() => {
     if (fetchedNotifications) {
@@ -26,7 +31,28 @@ const Topbar = () => {
     }
   }, [fetchedNotifications]);
 
-  const handleNotificationClick = () => setShowDropdown((prev) => !prev);
+  const handleNotificationClick = () => {
+    setShowDropdown((prev) => {
+      const opening = !prev;
+
+      // Mark all as read on opening the dropdown
+      if (opening && notifications.length > 0) {
+        notifications.forEach((n) => {
+          if (!n.isRead) {
+            markAsRead(n.$id); // use your mutation to update isRead in Appwrite
+          }
+        });
+
+        // Immediately update local UI state
+        const updated = notifications.map((n) => ({ ...n, isRead: true }));
+        setNotifications(updated);
+        setUnreadCount(0);
+        setHasUnread(false);
+      }
+
+      return opening;
+    });
+  };
 
   const handleDeleteNotification = (notificationId: string) => {
     deleteNotification(notificationId, {
@@ -109,7 +135,9 @@ const Topbar = () => {
                       </button>
                     </li>
                   ))}
-                  {notifications.length === 0 && <li className="text-center text-gray-500">No notifications</li>}
+                  {notifications.length === 0 && (
+                    <li className="text-center text-gray-500">No notifications</li>
+                  )}
                 </ul>
                 <div className="flex justify-between items-center p-2 text-xs bg-gray-50">
                   <button onClick={toggleViewAll} className="text-blue-500">
@@ -118,15 +146,8 @@ const Topbar = () => {
                   <button onClick={clearNotifications} className="text-red-500">
                     Clear All
                   </button>
-                  <button
-                    onClick={redirectToNotificationsPage}
-                    className="p-1"
-                  >
-                    <img
-                      src="/assets/icons/notify.svg"
-                      alt="Notifications"
-                      className="h-5 w-5"
-                    />
+                  <button onClick={redirectToNotificationsPage} className="p-1">
+                    <img src="/assets/icons/notify.svg" alt="Notifications" className="h-5 w-5" />
                   </button>
                 </div>
               </div>

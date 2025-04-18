@@ -4,20 +4,43 @@ import { sidebarLinks } from "@/constants";
 import { useUserContext } from "@/context/AuthContext";
 import { INavLink } from "@/types";
 import { CiBookmark } from "react-icons/ci";
-import { useGetNotifications } from "@/lib/react-query/queries";
-import { useEffect, useState } from "react";
+import { useGetNotifications, useMarkNotificationAsRead } from "@/lib/react-query/queries";
+import { useEffect, useState, useRef } from "react";
 
 const LeftSidebar = () => {
   const { pathname } = useLocation();
   const { user, isLoading } = useUserContext();
-  const { data: notifications } = useGetNotifications(user?.id);
+  const { data: notificationsData, refetch } = useGetNotifications(user?.id);
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+
   const [hasUnread, setHasUnread] = useState(false);
+  const hasMarkedRead = useRef(false); // Prevents double marking
+
+  // Only run once when user visits notifications
+  const handleNotificationView = () => {
+    if (notificationsData?.documents && !hasMarkedRead.current) {
+      const unread = notificationsData.documents.filter(n => !n.isRead);
+      if (unread.length > 0) {
+        unread.forEach((n) => markAsRead(n.$id));
+        hasMarkedRead.current = true;
+        setHasUnread(false);
+        refetch();
+      }
+    }
+  };
 
   useEffect(() => {
-    if (notifications?.documents) {
-      setHasUnread(notifications.documents.some((n) => !n.isRead));
+    if (notificationsData?.documents) {
+      const unread = notificationsData.documents.some((n) => !n.isRead);
+      if (!hasMarkedRead.current) setHasUnread(unread);
     }
-  }, [notifications]);
+  }, [notificationsData]);
+
+  useEffect(() => {
+    if (pathname === "/notifications") {
+      handleNotificationView();
+    }
+  }, [pathname]);
 
   return (
     <nav className="leftsidebar">
@@ -71,10 +94,11 @@ const LeftSidebar = () => {
             );
           })}
 
-          {/* New Notifications Tab */}
+          {/* Notifications Tab */}
           <li className="leftsidebar-link group">
             <NavLink
               to="/notifications"
+              onClick={handleNotificationView}
               className={`flex gap-4 items-center py-2 px-4 rounded-md ${
                 pathname === "/notifications" ? "text-green-500 !font-bold" : "text-black !font-normal"
               }`}
