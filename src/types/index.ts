@@ -102,6 +102,7 @@ export interface Message {
   content: string;
   createdAt: string;
   recipientId: string;
+  senderImageUrl: string;
 }
 
 export interface Notification {

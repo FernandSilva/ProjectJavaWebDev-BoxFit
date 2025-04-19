@@ -1,6 +1,7 @@
+// src/_root/pages/Chat.tsx
 import { Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
-import { useCreateMessage, useGetMessages } from "@/lib/react-query/queries";
+import { useCreateMessage, useGetMessages, useGetUserById } from "@/lib/react-query/queries";
 import { Message, User } from "@/types";
 import { useWindowSize } from "@uidotdev/usehooks";
 import { ID } from "appwrite";
@@ -8,6 +9,7 @@ import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { MdArrowBack } from "react-icons/md";
 import UsersList from "./UsersList";
+import { useSearchParams } from "react-router-dom";
 
 function Chat() {
   const [newMessage, setNewMessage] = useState("");
@@ -15,13 +17,17 @@ function Chat() {
   const { user } = useUserContext();
   const [steps, setSteps] = useState<number>(0);
   const { width } = useWindowSize();
-  const messagesEndRef = useRef<HTMLDivElement>(null); // Add this ref
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [searchParams] = useSearchParams();
+  const userIdFromQuery = searchParams.get("userId");
+
+  const { data: userFromQuery } = useGetUserById(userIdFromQuery || "");
+  const {
+    data: receivedMessages,
+    isLoading: loading,
+  } = useGetMessages(selectedUser?.id || "", user?.id || "");
 
   const { mutateAsync: createMessage } = useCreateMessage();
-  const { data: receivedMessages, isLoading: loading } = useGetMessages(
-    selectedUser?.id || "",
-    user?.id || ""
-  );
 
   const sendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,8 +42,9 @@ function Chat() {
       text: newMessage,
       createdAt: new Date().toISOString(),
       recipientId: selectedUser.id,
-      senderImageUrl: user.imageUrl, // <-- Added required attribute
+      senderImageUrl: user.imageUrl,
     };
+    
 
     try {
       setNewMessage("");
@@ -51,7 +58,23 @@ function Chat() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [receivedMessages]); // Scrolls whenever messages update
+  }, [receivedMessages]);
+
+  useEffect(() => {
+    if (userIdFromQuery && userFromQuery) {
+      const mappedUser: User = {
+        id: userFromQuery.$id,
+        name: userFromQuery.name,
+        username: userFromQuery.username,
+        email: userFromQuery.email,
+        imageUrl: userFromQuery.imageUrl,
+        bio: userFromQuery.bio,
+      };
+      setSelectedUser(mappedUser); // ✅ Correct structure
+      setSteps(1);
+    }
+  }, [userIdFromQuery, userFromQuery]);
+  
 
   return (
     <div className="chat-container">
@@ -108,7 +131,7 @@ function Chat() {
                   ) : (
                     <Loader />
                   )}
-                  <div ref={messagesEndRef} /> {/* Add this empty div at the end */}
+                  <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={sendMessage} className="message-form">
                   <input
@@ -174,7 +197,7 @@ function Chat() {
                   ) : (
                     <Loader />
                   )}
-                  <div ref={messagesEndRef} /> {/* Add this empty div at the end */}
+                  <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={sendMessage} className="message-form">
                   <input

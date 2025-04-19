@@ -1,5 +1,6 @@
+// src/_root/pages/Notification.tsx
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import {
   useGetNotifications,
@@ -27,12 +28,11 @@ const SenderProfilePicture: React.FC<SenderProfilePictureProps> = ({
 
 const NotificationPage: React.FC = () => {
   const { user } = useUserContext();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [maxVisibleNotifications, setMaxVisibleNotifications] = useState(5);
 
-  const { data: fetchedNotifications, refetch: refetchNotifications } = useGetNotifications(
-    user?.id
-  );
+  const { data: fetchedNotifications, refetch: refetchNotifications } = useGetNotifications(user?.id);
   const { mutate: deleteNotification } = useDeleteNotification();
 
   useEffect(() => {
@@ -61,14 +61,38 @@ const NotificationPage: React.FC = () => {
     );
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    switch (notification.type) {
+      case "comment":
+      case "like":
+        // Only navigate if relatedId looks like a valid post ID
+        if (notification.relatedId?.length === 28) {
+          navigate(`/posts/${notification.relatedId}`);
+        } else {
+          console.warn("Invalid post ID in notification:", notification.relatedId);
+        }
+        break;
+      case "message":
+        navigate(`/chat?user=${notification.senderId}`);
+        break;
+      case "follow":
+        navigate(`/profile/${notification.senderId}`);
+        break;
+      default:
+        console.warn("Unhandled notification type:", notification.type);
+    }
+  };
+  
+
   const generateNotificationMessage = (notification: Notification) => {
     const senderName = notification.senderName || "Unknown Sender";
     switch (notification.type) {
       case "message":
         return notification.content;
       case "like":
+        return `${senderName} liked your comment.`;
       case "follow":
-        return `${senderName} ${notification.content}`;
+        return `${senderName} followed you.`;
       case "comment":
         return `${senderName} commented on your post: ${notification.content}`;
       default:
@@ -90,14 +114,12 @@ const NotificationPage: React.FC = () => {
               .map((notification) => (
                 <li
                   key={notification.$id}
-                  className={`flex items-center justify-between p-3 rounded-md border ${
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`flex items-center justify-between p-3 rounded-md border cursor-pointer ${
                     notification.isRead ? "bg-gray-50" : "bg-green-50"
                   }`}
                 >
-                  <Link
-                    to={`/profile/${notification.senderId}`}
-                    className="flex gap-3 items-center"
-                  >
+                  <div className="flex gap-3 items-center">
                     <SenderProfilePicture
                       senderId={notification.senderId}
                       senderImageUrl={notification.senderImageUrl}
@@ -110,9 +132,12 @@ const NotificationPage: React.FC = () => {
                         {new Date(notification.createdAt).toLocaleString()}
                       </span>
                     </div>
-                  </Link>
+                  </div>
                   <button
-                    onClick={() => handleDeleteNotification(notification.$id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteNotification(notification.$id);
+                    }}
                     className="text-red-500 hover:text-red-700 text-xs"
                   >
                     Delete
@@ -131,7 +156,6 @@ const NotificationPage: React.FC = () => {
           <button onClick={clearNotifications} className="text-red-500 hover:text-red-700">
             Clear All
           </button>
-      
         </div>
       )}
     </div>

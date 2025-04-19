@@ -143,13 +143,15 @@ const PostDetails = () => {
               senderId: user?.id ?? "",
               type: "like",
               content: `liked your comment.`,
-              relatedId: comment?.$id ?? "",
-              referenceId: comment?.$id ?? "",
+              relatedId: post?.$id ?? "", // ✅ Correct: Use post ID for redirection
+              referenceId: `comment_${comment?.$id ?? ""}`, // ✅ Clearly mark this as a comment reference
               isRead: false,
               createdAt: new Date().toISOString(),
               senderName: user?.name ?? "",
               senderImageUrl: user?.imageUrl ?? "",
             });
+            
+            
           },
         }
       );
