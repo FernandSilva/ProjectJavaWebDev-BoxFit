@@ -1,6 +1,7 @@
 // src/App.tsx
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
+
 import SigninForm from "@/_auth/forms/SigninForm";
 import SignupForm from "@/_auth/forms/SignupForm";
 import AuthLayout from "./_auth/AuthLayout";
@@ -29,11 +30,11 @@ import "swiper/css/bundle";
 const App = () => {
   const [loading, setLoading] = useState(true);
 
-  // Show splash loader on initial app mount
+  // Splash loader on app mount
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 1000); // adjust timing if needed
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -50,7 +51,18 @@ const App = () => {
   }
 
   return (
-    <main className="flex h-screen">
+    <main className="flex flex-col min-h-screen">
+      {/* Install Prompt Button (hidden initially, shown via beforeinstallprompt) */}
+      <div className="pwa-install-container text-center my-2">
+        <button
+          id="installGrowBuddy"
+          style={{ display: "none" }}
+          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+        >
+          📲 Install GrowBuddy
+        </button>
+      </div>
+
       <Routes>
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
