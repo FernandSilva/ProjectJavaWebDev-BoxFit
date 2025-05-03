@@ -1,11 +1,11 @@
-import { useNavigate } from "react-router-dom";
-import { createContext, useContext, useEffect, useState } from "react";
-
-import { IUser } from "@/types";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "@/lib/appwrite/api";
+import { User } from "@/types";
 
-// Default user structure
-export const INITIAL_USER: IUser = {
+// Move this to @types/index.ts if you'd prefer
+export const INITIAL_USER: User = {
+  $id: "",
   id: "",
   name: "",
   username: "",
@@ -14,54 +14,45 @@ export const INITIAL_USER: IUser = {
   bio: "",
 };
 
-// Initial context state
-const INITIAL_STATE = {
-  user: INITIAL_USER,
-  isLoading: false,
-  isAuthenticated: false,
-  sessionExpired: false,
-  setUser: () => {},
-  setIsAuthenticated: () => {},
-  setSessionExpired: () => {},
-  checkAuthUser: async () => false as boolean,
-};
-
-// Updated context type
-type IContextType = {
-  user: IUser;
+interface IContextType {
+  user: User | null;
+  setUser: (user: User | null) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
+  setIsAuthenticated: (auth: boolean) => void;
   sessionExpired: boolean;
-  setUser: React.Dispatch<React.SetStateAction<IUser>>;
-  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
-  setSessionExpired: React.Dispatch<React.SetStateAction<boolean>>;
+  setSessionExpired: (expired: boolean) => void;
   checkAuthUser: () => Promise<boolean>;
-};
+}
 
-// Create context
-const AuthContext = createContext<IContextType>(INITIAL_STATE);
+const AuthContext = createContext<IContextType>({} as IContextType);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<IUser>(INITIAL_USER);
+  const location = useLocation();
+
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
 
-  // Check if a session is active
-  const checkAuthUser = async () => {
+  const checkAuthUser = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
       const currentAccount = await getCurrentUser();
+
       if (currentAccount) {
-        setUser({
+        const hydratedUser: User = {
+          $id: currentAccount.$id,
           id: currentAccount.$id,
           name: currentAccount.name,
           username: currentAccount.username,
           email: currentAccount.email,
           imageUrl: currentAccount.imageUrl,
           bio: currentAccount.bio,
-        });
+        };
+
+        setUser(hydratedUser);
         setIsAuthenticated(true);
         setSessionExpired(false);
         return true;
@@ -69,9 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return false;
     } catch (error: any) {
-      console.error("checkAuthUser error:", error.message);
-      setSessionExpired(true);
+      console.error("[AuthContext] ❌ Error in checkAuthUser:", error?.message || error);
+
+      setUser(null);
       setIsAuthenticated(false);
+      setSessionExpired(true);
+
+      // Prevent loop if already on sign-in page
+      if (location.pathname !== "/sign-in") {
+        navigate("/sign-in", { replace: true });
+      }
+
       return false;
     } finally {
       setIsLoading(false);
@@ -80,15 +79,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const cookieFallback = localStorage.getItem("cookieFallback");
-    if (
-      cookieFallback === "[]" ||
-      cookieFallback === null ||
-      cookieFallback === undefined
-    ) {
-      navigate("/sign-in");
-    }
 
-    checkAuthUser();
+    // Appwrite sometimes stores "[]" or undefined when no session exists
+    const isInvalidSession =
+      cookieFallback === null ||
+      cookieFallback === undefined ||
+      cookieFallback === "[]";
+
+    if (isInvalidSession) {
+      navigate("/sign-in", { replace: true });
+    } else {
+      checkAuthUser();
+    }
   }, []);
 
   const value: IContextType = {
@@ -103,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+};
 
-// Hook for accessing the AuthContext
 export const useUserContext = () => useContext(AuthContext);

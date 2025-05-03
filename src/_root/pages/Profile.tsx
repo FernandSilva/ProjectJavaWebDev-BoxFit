@@ -25,9 +25,10 @@ import {
 import Following from "./Following";
 import Follower from "./Follower";
 import LikedPosts from "./LikedPosts";  // <-- Added missing import for LikedPosts
-import { useUserContext, INITIAL_USER } from "@/context/AuthContext";
+import { useUserContext } from "@/context/AuthContext";
 import { BiMessageDetail } from "react-icons/bi";
 import { Button } from "@/components/ui";
+import {INITIAL_USER } from "@/types";
 
 const Profile = () => {
   const navigate = useNavigate();

@@ -156,3 +156,13 @@ export const QUERY_KEYS = {
   // ✅ Add this line to fix the error
   SEARCH_USERS_AND_POSTS: "searchUsersAndPosts",
 };
+
+export const INITIAL_USER: User = {
+  $id: "",
+  id: "",
+  name: "",
+  username: "",
+  email: "",
+  imageUrl: "",
+  bio: "",
+};

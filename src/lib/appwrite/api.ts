@@ -119,14 +119,25 @@ export async function getAccount() {
 
 
 // ============================== GET USER
-export async function getCurrentUser() {
+
+/**
+ * Get the current authenticated user document from Appwrite DB.
+ * Step 1: Ensure session is valid (via account.get())
+ * Step 2: Lookup matching user document by accountId
+ *
+ * @returns {Promise<Models.Document | null>} Full user document or null if not authenticated or not found
+ */
+export async function getCurrentUser(): Promise<Models.Document | null> {
   try {
-    const currentAccount = await getAccount();
-    if (!currentAccount) {
-      console.warn("No active session found.");
+    // Step 1: Verify session by getting the Appwrite account
+    const currentAccount = await account.get();
+
+    if (!currentAccount || !currentAccount.$id) {
+      console.warn("[GrowBuddy] ⚠️ No active session found.");
       return null;
     }
 
+    // Step 2: Query the users collection for matching user document
     const userDocs = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
@@ -134,13 +145,15 @@ export async function getCurrentUser() {
     );
 
     if (!userDocs || userDocs.total === 0) {
-      console.warn("User not found in DB for account ID:", currentAccount.$id);
+      console.warn("[GrowBuddy] ⚠️ No user found in DB for account ID:", currentAccount.$id);
       return null;
     }
 
+    console.info("[GrowBuddy] ✅ Logged in user fetched:", userDocs.documents[0].$id);
     return userDocs.documents[0];
   } catch (error: any) {
-    console.error("Error fetching current user:", error.message || error);
+    const msg = error?.message || error?.response?.message || "Unknown error";
+    console.error("[GrowBuddy] ❌ Error fetching current user:", msg);
     return null;
   }
 }

@@ -1,7 +1,6 @@
 // src/App.tsx
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
-
+import { Route, Routes, useLocation } from "react-router-dom";
 import SigninForm from "@/_auth/forms/SigninForm";
 import SignupForm from "@/_auth/forms/SignupForm";
 import AuthLayout from "./_auth/AuthLayout";
@@ -29,14 +28,35 @@ import "swiper/css/bundle";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const location = useLocation();
 
-  // Splash loader on app mount
+  // Show splash loader on initial app mount
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      console.log("[GrowBuddy] beforeinstallprompt event captured");
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const showInstallPrompt =
+    deferredPrompt &&
+    ["/", "/sign-in", "/sign-up"].includes(location.pathname);
 
   if (loading) {
     return (
@@ -51,18 +71,7 @@ const App = () => {
   }
 
   return (
-    <main className="flex flex-col min-h-screen">
-      {/* Install Prompt Button (hidden initially, shown via beforeinstallprompt) */}
-      <div className="pwa-install-container text-center my-2">
-        <button
-          id="installGrowBuddy"
-          style={{ display: "none" }}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
-        >
-          📲 Install GrowBuddy
-        </button>
-      </div>
-
+    <main className="flex h-screen">
       <Routes>
         {/* Public Routes */}
         <Route element={<AuthLayout />}>
@@ -86,6 +95,21 @@ const App = () => {
           <Route path="/notifications" element={<Notification />} />
         </Route>
       </Routes>
+
+      {/* Install Prompt */}
+      {showInstallPrompt && (
+        <button
+          className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50"
+          onClick={async () => {
+            deferredPrompt.prompt();
+            const result = await deferredPrompt.userChoice;
+            console.log("[GrowBuddy] User install choice:", result.outcome);
+            setDeferredPrompt(null);
+          }}
+        >
+          Add GrowBuddy to Home Screen
+        </button>
+      )}
 
       <Toaster />
     </main>
