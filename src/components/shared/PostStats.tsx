@@ -17,11 +17,23 @@ import {
 import { checkIsLiked, multiFormatDateString } from "@/lib/utils";
 import { CiBookmark } from "react-icons/ci";
 import { FaRegComment } from "react-icons/fa";
-import { IoMdSend } from "react-icons/io";
 import { IoBookmark } from "react-icons/io5";
-import { PiFireLight } from "react-icons/pi";
 
-const PostStats = ({ post, userId, isPost, showComments }: any) => {
+interface PostStatsProps {
+  post: Models.Document;
+  userId: string;
+  isPost?: boolean;
+  showComments?: boolean;
+  disableCommentClick?: boolean; // ✅ NEW PROP
+}
+
+const PostStats = ({
+  post,
+  userId,
+  isPost,
+  showComments,
+  disableCommentClick = false,
+}: PostStatsProps) => {
   const location = useLocation();
   const { user } = useUserContext();
 
@@ -101,6 +113,7 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
     <>
       <div className="flex justify-between items-center w-full">
         <div className="flex gap-6">
+          {/* Like Button */}
           <div className="flex items-center gap-1">
             <img
               src={checkIsLiked(likes, userId) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
@@ -110,12 +123,21 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
             <p>{likes.length}</p>
           </div>
 
-          <div className="flex items-center gap-1" onClick={() => setShowCommentBox(!showCommentBox)}>
-            <FaRegComment className="cursor-pointer w-6 h-6" />
+          {/* Comment Button - Clickable only if not disabled */}
+          <div
+            className={`flex items-center gap-1 ${
+              disableCommentClick ? "cursor-default" : "cursor-pointer"
+            }`}
+            onClick={() => {
+              if (!disableCommentClick) setShowCommentBox(!showCommentBox);
+            }}
+          >
+            <FaRegComment className="w-6 h-6" />
             <p>{totalComment}</p>
           </div>
         </div>
 
+        {/* Save Button */}
         <div>
           {isSaved ? (
             <IoBookmark className="cursor-pointer w-6 h-6" onClick={() => deleteSavePost(savedPostRecord.$id)} />
@@ -125,7 +147,8 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
         </div>
       </div>
 
-      {showCommentBox && (
+      {/* Comments Section */}
+      {showCommentBox && !disableCommentClick && (
         <div className="comments-section mt-4">
           {comments.map((comment: any) => (
             <div key={comment.$id} className="flex justify-between items-center mb-2">
@@ -133,7 +156,9 @@ const PostStats = ({ post, userId, isPost, showComments }: any) => {
                 <img src={comment.userImageUrl} className="h-7 w-7 rounded-full" />
                 <div>
                   <strong>{comment.userName}</strong>: {comment.text}
-                  <div className="text-xs text-gray-500">{multiFormatDateString(comment.$createdAt)}</div>
+                  <div className="text-xs text-gray-500">
+                    {multiFormatDateString(comment.$createdAt)}
+                  </div>
                 </div>
               </div>
               <img

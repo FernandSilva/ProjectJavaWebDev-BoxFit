@@ -7,6 +7,7 @@ type GridPostListProps = {
   showStats?: boolean; // Controls visibility of post stats (likes/comments)
   showCreator?: boolean; // Controls visibility of post creator details
   showComments?: boolean; // Controls visibility of post comments
+  disableCommentClick?: boolean; // <-- Add this line
 };
 
 const GridPostList = ({
