@@ -49,9 +49,9 @@ const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
           <li>Click the button below to log out and sign back in.</li>
         </ul>
         <div className="mt-3 text-right">
-          <Button onClick={handleLogout} className="bg-yellow-600 text-white">
+          {/* <Button onClick={handleLogout} className="bg-yellow-600 text-white">
             Logout & Re-login
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>

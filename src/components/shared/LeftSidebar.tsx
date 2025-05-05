@@ -10,16 +10,16 @@ import { useEffect, useState, useRef } from "react";
 const LeftSidebar = () => {
   const { pathname } = useLocation();
   const { user, isLoading } = useUserContext();
+
   const { data: notificationsData, refetch } = useGetNotifications(user?.id);
   const { mutate: markAsRead } = useMarkNotificationAsRead();
 
   const [hasUnread, setHasUnread] = useState(false);
-  const hasMarkedRead = useRef(false); // Prevents double marking
+  const hasMarkedRead = useRef(false); // Prevents multiple marking
 
-  // Only run once when user visits notifications
   const handleNotificationView = () => {
     if (notificationsData?.documents && !hasMarkedRead.current) {
-      const unread = notificationsData.documents.filter(n => !n.isRead);
+      const unread = notificationsData.documents.filter((n) => !n.isRead);
       if (unread.length > 0) {
         unread.forEach((n) => markAsRead(n.$id));
         hasMarkedRead.current = true;
@@ -53,7 +53,7 @@ const LeftSidebar = () => {
           />
         </Link>
 
-        {isLoading || !user.email ? (
+        {isLoading || !user ? (
           <div className="h-14">
             <Loader />
           </div>

@@ -5,10 +5,11 @@ import { useGetNotifications, useMarkNotificationAsRead } from "@/lib/react-quer
 import { Notification } from "@/types";
 
 const Topbar = () => {
-  const { user } = useUserContext();
+  const { user, isLoading } = useUserContext();
   const navigate = useNavigate();
 
   const [hasUnread, setHasUnread] = useState(false);
+
   const { data: fetchedNotifications, refetch } = useGetNotifications(user?.id);
   const { mutate: markAsRead } = useMarkNotificationAsRead();
 
@@ -20,14 +21,20 @@ const Topbar = () => {
   }, [fetchedNotifications]);
 
   const handleNotificationsClick = () => {
-    // Mark all unread as read
+    if (!user) return;
+
+    // Mark all unread notifications as read
     fetchedNotifications?.documents?.forEach((n) => {
-      if (!n.isRead) markAsRead(n.$id);
+      if (!n.isRead) {
+        markAsRead(n.$id);
+      }
     });
 
     setHasUnread(false);
     navigate("/notifications");
   };
+
+  if (isLoading || !user) return null;
 
   return (
     <section className="topbar">

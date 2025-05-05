@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { getCurrentUser } from "@/lib/appwrite/api";
 import { User } from "@/types";
 
-// Move this to @types/index.ts if you'd prefer
 export const INITIAL_USER: User = {
   $id: "",
   id: "",
@@ -33,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const checkAuthUser = async (): Promise<boolean> => {
@@ -58,7 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return true;
       }
 
-      return false;
+      throw new Error("No current user found");
     } catch (error: any) {
       console.error("[AuthContext] ❌ Error in checkAuthUser:", error?.message || error);
 
@@ -66,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsAuthenticated(false);
       setSessionExpired(true);
 
-      // Prevent loop if already on sign-in page
+      // Only redirect if not already on sign-in
       if (location.pathname !== "/sign-in") {
         navigate("/sign-in", { replace: true });
       }
@@ -78,19 +77,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const cookieFallback = localStorage.getItem("cookieFallback");
-
-    // Appwrite sometimes stores "[]" or undefined when no session exists
-    const isInvalidSession =
-      cookieFallback === null ||
-      cookieFallback === undefined ||
-      cookieFallback === "[]";
-
-    if (isInvalidSession) {
-      navigate("/sign-in", { replace: true });
-    } else {
-      checkAuthUser();
-    }
+    checkAuthUser();
   }, []);
 
   const value: IContextType = {
