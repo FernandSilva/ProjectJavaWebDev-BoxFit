@@ -9,6 +9,7 @@ type SavedGridPostListProps = {
   showStats: boolean;
   showCreator: boolean;
   showComments: boolean;
+  disableCommentClick?: boolean; // ✅ Add this prop
 };
 
 const SavedGridPostList = ({
@@ -17,6 +18,7 @@ const SavedGridPostList = ({
   showStats,
   showCreator,
   showComments,
+  disableCommentClick = false, // ✅ Default to false
 }: SavedGridPostListProps) => {
   const { user } = useUserContext();
   const [fileTypes, setFileTypes] = useState<string[]>([]);
@@ -68,21 +70,19 @@ const SavedGridPostList = ({
       </Link>
 
       <div className="grid-post_user mt-2">
-        {/* Only Show User Info When Needed */}
         {showUser && showCreator && (
           <div className="flex items-center gap-2">
-            <p className="line-clamp-1 font-medium text-gray-700">
-            </p>
+            <p className="line-clamp-1 font-medium text-gray-700"></p>
           </div>
         )}
 
-        {/* Post Stats */}
         {showStats && (
           <PostStats
             isPost={true}
             post={post}
             userId={user?.id || ""}
             showComments={showComments}
+            disableCommentClick={disableCommentClick} // ✅ Pass to PostStats
           />
         )}
       </div>

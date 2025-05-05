@@ -1,10 +1,7 @@
-// PostStats.tsx
 import { Models } from "appwrite";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import {
-  useCreateComment,
   useDeleteSavedPost,
   useGetCommentsByPost,
   useGetCurrentUser,
@@ -24,17 +21,16 @@ interface PostStatsProps {
   userId: string;
   isPost?: boolean;
   showComments?: boolean;
-  disableCommentClick?: boolean; // ✅ NEW PROP
+  disableCommentClick?: boolean; // ✅ Add this line to fix the type error
 }
+
 
 const PostStats = ({
   post,
   userId,
   isPost,
-  showComments,
-  disableCommentClick = false,
+  showComments = true,
 }: PostStatsProps) => {
-  const location = useLocation();
   const { user } = useUserContext();
 
   const { data: commentsData } = useGetCommentsByPost(post.$id);
@@ -123,18 +119,16 @@ const PostStats = ({
             <p>{likes.length}</p>
           </div>
 
-          {/* Comment Button - Clickable only if not disabled */}
-          <div
-            className={`flex items-center gap-1 ${
-              disableCommentClick ? "cursor-default" : "cursor-pointer"
-            }`}
-            onClick={() => {
-              if (!disableCommentClick) setShowCommentBox(!showCommentBox);
-            }}
-          >
-            <FaRegComment className="w-6 h-6" />
-            <p>{totalComment}</p>
-          </div>
+          {/* Comment Button — only shown if enabled */}
+          {showComments && (
+            <div
+              className="flex items-center gap-1 cursor-pointer"
+              onClick={() => setShowCommentBox(!showCommentBox)}
+            >
+              <FaRegComment className="w-6 h-6" />
+              <p>{totalComment}</p>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}
@@ -148,7 +142,7 @@ const PostStats = ({
       </div>
 
       {/* Comments Section */}
-      {showCommentBox && !disableCommentClick && (
+      {showComments && showCommentBox && (
         <div className="comments-section mt-4">
           {comments.map((comment: any) => (
             <div key={comment.$id} className="flex justify-between items-center mb-2">

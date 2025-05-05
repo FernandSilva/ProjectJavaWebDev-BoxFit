@@ -116,7 +116,7 @@ const Explore = () => {
                 </div>
 
                 <h3 className="h4-bold mt-8 mb-2">Matching Posts</h3>
-                <GridPostList posts={searchData.posts} disableCommentClick={true} />
+                <GridPostList posts={searchData.posts} showComments={false} />
               </>
             ) : (
               <p className="text-gray-500">No matching users or posts found.</p>
@@ -140,7 +140,7 @@ const Explore = () => {
               {posts.length === 0 && isFetchingNextPage ? (
                 <Loader />
               ) : (
-                <GridPostList posts={posts} disableCommentClick={true} />
+                <GridPostList posts={posts} showComments={false} />
               )}
             </div>
             <div ref={ref} className="py-4">

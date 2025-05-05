@@ -1,4 +1,3 @@
-// src/_root/pages/Notification.tsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
@@ -65,11 +64,8 @@ const NotificationPage: React.FC = () => {
     switch (notification.type) {
       case "comment":
       case "like":
-        // Only navigate if relatedId looks like a valid post ID
         if (notification.relatedId?.length === 28) {
           navigate(`/posts/${notification.relatedId}`);
-        } else {
-          console.warn("Invalid post ID in notification:", notification.relatedId);
         }
         break;
       case "message":
@@ -78,11 +74,8 @@ const NotificationPage: React.FC = () => {
       case "follow":
         navigate(`/profile/${notification.senderId}`);
         break;
-      default:
-        console.warn("Unhandled notification type:", notification.type);
     }
   };
-  
 
   const generateNotificationMessage = (notification: Notification) => {
     const senderName = notification.senderName || "Unknown Sender";
@@ -101,14 +94,14 @@ const NotificationPage: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col p-4 md:p-8">
+    <div className="w-full h-[calc(100vh-4rem)] flex flex-col p-4 md:p-8">
       <h2 className="h3-bold md:h2-bold border-b pb-3 mb-4">Notifications</h2>
 
-      <div className="w-full">
+      <div className="flex-1 overflow-y-auto pr-1">
         {notifications.length === 0 ? (
           <p className="text-gray-500 text-center">No notifications</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2 pb-20">
             {notifications
               .slice(0, maxVisibleNotifications)
               .map((notification) => (
@@ -149,7 +142,7 @@ const NotificationPage: React.FC = () => {
       </div>
 
       {notifications.length > 0 && (
-        <div className="flex justify-between items-center mt-8 text-sm">
+        <div className="bg-white sticky bottom-0 left-0 w-full py-3 border-t flex justify-between items-center px-4 text-sm z-10">
           <button onClick={toggleViewAll} className="text-blue-500 hover:text-blue-700">
             {maxVisibleNotifications === 5 ? "View All" : "Show Less"}
           </button>
