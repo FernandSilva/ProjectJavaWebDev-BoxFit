@@ -44,8 +44,8 @@ const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
         <p className="font-bold mb-2">System Login Error</p>
         <p>{message}</p>
         <ul className="mt-2 list-disc list-inside">
-          <li>Ensure you are logged in correctly.</li>
-          <li>If the issue persists, try clearing your browser cookies.</li>
+          {/* <li>Ensure you are logged in correctly.</li>
+          <li>If the issue persists, try clearing your browser cookies.</li> */}
           {/* <li>Click the button below to log out and sign back in.</li> */}
         </ul>
         <div className="mt-3 text-right">
