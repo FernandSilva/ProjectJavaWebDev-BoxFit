@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Input, Textarea, Button } from "@/components/ui";
 import { BiSupport } from "react-icons/bi";
 import { submitContactRequest } from "@/lib/appwrite/api";
+import { appwriteConfig } from "@/lib/appwrite/config"; // ✅ Add this import to check env mapping
 
 const ContactUs = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
@@ -16,15 +17,17 @@ const ContactUs = () => {
     e.preventDefault();
     setLoading(true);
     setStatus("");
+
     console.log("📤 Submitting contact form with data:", form);
+    console.log("⚙️ Appwrite Config:", appwriteConfig);
 
     try {
       const result = await submitContactRequest(form);
-      console.log("✅ Document created:", result);
+      console.log("✅ Document created in Appwrite:", result);
       setStatus("Message sent successfully!");
       setForm({ name: "", email: "", message: "" });
-    } catch (err) {
-      console.error("❌ Submission failed:", err);
+    } catch (err: any) {
+      console.error("❌ Submission failed:", err?.message || err);
       setStatus("Failed to send message. Please try again later.");
     } finally {
       setLoading(false);
@@ -60,7 +63,11 @@ const ContactUs = () => {
           onChange={handleChange}
           required
         />
-        <Button type="submit" disabled={loading} className="bg-green-600 text-white py-2 px-4 rounded">
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-green-600 text-white py-2 px-4 rounded"
+        >
           {loading ? "Sending..." : "Send Message"}
         </Button>
         {status && <p className="text-sm mt-2">{status}</p>}
