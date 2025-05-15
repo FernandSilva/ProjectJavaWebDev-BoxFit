@@ -1,5 +1,5 @@
 // Import Appwrite modules
-import { Client, Account, Databases, Storage, Avatars, Functions } from "appwrite";
+import { Client, Account, Databases, Storage, Avatars, Functions, ID } from "appwrite";
 
 // Define the structure for Appwrite configurations
 interface Config {
@@ -13,7 +13,7 @@ interface Config {
   userRelationshipsCollectionId: string;
   commentsCollectionId: string;
   messageCollectionId: string;
-  notificationsCollectionId: string; // Added for notifications
+  notificationsCollectionId: string;
   functionKey: string;
   gptKey: string;
   gptchatbotKey: string;
@@ -42,7 +42,6 @@ export const appwriteConfig: Config = {
   gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY, // Chatbot GPT key
 };
 
-
 // Initialize Appwrite client and services
 export const client = new Client()
   .setEndpoint(appwriteConfig.url) // Set API endpoint
@@ -54,3 +53,5 @@ export const storage = new Storage(client);
 export const avatars = new Avatars(client);
 export const functions = new Functions(client);
 
+// ✅ Export ID for document creation (used in api.ts)
+export { ID };
