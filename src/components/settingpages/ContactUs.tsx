@@ -1,20 +1,34 @@
 import { useState } from "react";
 import { Input, Textarea, Button } from "@/components/ui";
 import { BiSupport } from "react-icons/bi";
+import { submitContactRequest } from "@/lib/appwrite/api";
 
 const ContactUs = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add Appwrite email or database logic here
-    setStatus("Message sent. Thank you!");
-    setForm({ name: "", email: "", message: "" });
+    setLoading(true);
+    setStatus("");
+    console.log("📤 Submitting contact form with data:", form);
+
+    try {
+      const result = await submitContactRequest(form);
+      console.log("✅ Document created:", result);
+      setStatus("Message sent successfully!");
+      setForm({ name: "", email: "", message: "" });
+    } catch (err) {
+      console.error("❌ Submission failed:", err);
+      setStatus("Failed to send message. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,10 +60,10 @@ const ContactUs = () => {
           onChange={handleChange}
           required
         />
-        <Button type="submit" className="bg-green-600 text-white py-2 px-4 rounded">
-          Send Message
+        <Button type="submit" disabled={loading} className="bg-green-600 text-white py-2 px-4 rounded">
+          {loading ? "Sending..." : "Send Message"}
         </Button>
-        {status && <p className="text-green-600 text-sm mt-2">{status}</p>}
+        {status && <p className="text-sm mt-2">{status}</p>}
       </form>
     </div>
   );

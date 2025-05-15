@@ -17,6 +17,7 @@ interface Config {
   functionKey: string;
   gptKey: string;
   gptchatbotKey: string;
+  contactRequestsCollectionId: string;
 }
 
 // Set Appwrite configuration using environment variables
@@ -25,6 +26,7 @@ export const appwriteConfig: Config = {
   projectId: import.meta.env.VITE_APPWRITE_PROJECT_ID, // Appwrite project ID
   databaseId: import.meta.env.VITE_APPWRITE_DATABASE_ID, // Database ID
   storageId: import.meta.env.VITE_APPWRITE_STORAGE_ID, // Storage ID
+
   userCollectionId: import.meta.env.VITE_APPWRITE_USER_COLLECTION_ID, // Users collection ID
   postCollectionId: import.meta.env.VITE_APPWRITE_POST_COLLECTION_ID, // Posts collection ID
   savesCollectionId: import.meta.env.VITE_APPWRITE_SAVES_COLLECTION_ID, // Saves collection ID
@@ -32,10 +34,14 @@ export const appwriteConfig: Config = {
   commentsCollectionId: import.meta.env.VITE_APPWRITE_USER_COMMENTS_COLLECTION_ID, // Comments collection
   messageCollectionId: import.meta.env.VITE_APPWRITE_MESSAGES_COLLECTION_ID, // Messages collection
   notificationsCollectionId: import.meta.env.VITE_APPWRITE_NOTIFICATIONS_COLLECTION_ID, // Notifications collection
+
+  contactRequestsCollectionId: import.meta.env.VITE_APPWRITE_CONTACT_REQUESTS_COLLECTION_ID, // Contact Us messages
+
   functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY, // Appwrite function key
   gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY, // GPT key
   gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY, // Chatbot GPT key
 };
+
 
 // Initialize Appwrite client and services
 export const client = new Client()

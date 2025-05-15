@@ -34,20 +34,16 @@ function UsersList({
   }, [notifications]);
 
   const allUsers: User[] = fetchedData || [];
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setSearchResults([]);
-    } else {
-      const filteredUsers = allUsers.filter(
-        (user) =>
-          user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(filteredUsers);
-    }
+  
+  const searchResults = useMemo(() => {
+    if (searchQuery.trim() === '') return [];
+    return allUsers.filter(
+      (user) =>
+        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [searchQuery, allUsers]);
+  
 
   const chatUsers = useMemo(() => {
     return allUsers.filter((user) => user.latestMessage !== null);

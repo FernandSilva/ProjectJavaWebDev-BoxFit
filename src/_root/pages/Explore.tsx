@@ -26,6 +26,7 @@ const options = [
 
 type PostType = Models.Document;
 
+
 const Explore = () => {
   const size = useWindowSize();
   const { user } = useUserContext();

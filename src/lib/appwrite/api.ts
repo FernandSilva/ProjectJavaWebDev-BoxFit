@@ -1607,3 +1607,38 @@ export const searchUsersAndPosts = async (searchQuery: string) => {
     throw error;
   }
 };
+
+// requesting support 
+import { databases, ID } from "./config";
+import { appwriteConfig } from "./config";
+
+// This function sends the contact form data to Appwrite
+export async function submitContactRequest({
+  name,
+  email,
+  message,
+}: {
+  name: string;
+  email: string;
+  message: string;
+}) {
+  console.log("🧾 Creating contact document...");
+
+  if (!appwriteConfig.databaseId || !appwriteConfig.contactRequestsCollectionId) {
+    throw new Error("Missing Appwrite database or collection ID in config.");
+  }
+
+  return await databases.createDocument(
+    appwriteConfig.databaseId,
+    appwriteConfig.contactRequestsCollectionId,
+    ID.unique(),
+    {
+      name,
+      email,
+      message,
+      createdAt: new Date().toISOString(),
+    }
+  );
+}
+
+
