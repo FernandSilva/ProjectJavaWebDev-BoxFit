@@ -1,6 +1,6 @@
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
-import { ID, Query } from "appwrite";
-import { account, appwriteConfig, avatars, databases, storage } from "./config";
+import { Query } from "appwrite";
+import { account, appwriteConfig, avatars, databases, storage, ID } from "./config";
 import { NotificationResponse, Notification } from "@/types/index";
 
 import { Models } from "appwrite";
@@ -1609,8 +1609,6 @@ export const searchUsersAndPosts = async (searchQuery: string) => {
 };
 
 // requesting support 
-import { databases, ID } from "./config";
-import { appwriteConfig } from "./config";
 
 // This function sends the contact form data to Appwrite
 export async function submitContactRequest({
