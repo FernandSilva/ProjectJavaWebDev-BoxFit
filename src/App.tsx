@@ -28,7 +28,7 @@ import "swiper/css/bundle";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const location = useLocation();
 
   // Show splash loader on initial app mount
@@ -39,7 +39,7 @@ const App = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle beforeinstallprompt event
+  // Handle beforeinstallprompt event for PWA
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
       console.log("[GrowBuddy] beforeinstallprompt event captured");
@@ -48,12 +48,12 @@ const App = () => {
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     };
   }, []);
 
+  // Only show the install button on public routes
   const showInstallPrompt =
     deferredPrompt &&
     ["/", "/sign-in", "/sign-up"].includes(location.pathname);
@@ -96,18 +96,19 @@ const App = () => {
         </Route>
       </Routes>
 
-      {/* Install Prompt */}
+      {/* PWA Install Prompt */}
       {showInstallPrompt && (
         <button
           className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50"
           onClick={async () => {
-            deferredPrompt.prompt();
-            const result = await deferredPrompt.userChoice;
+            const prompt = deferredPrompt as any;
+            prompt.prompt();
+            const result = await prompt.userChoice;
             console.log("[GrowBuddy] User install choice:", result.outcome);
             setDeferredPrompt(null);
           }}
         >
-          Add GrowBuddy to Home Screen
+          📲 Add GrowBuddy to Home Screen
         </button>
       )}
 

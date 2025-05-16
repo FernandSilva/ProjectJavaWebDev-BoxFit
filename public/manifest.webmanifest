@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/GrowB1-192x192.jpeg",
+      "src": "/icons/GrowB-192x192.jpeg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/GrowB1-512x512.jpeg",
+      "src": "/icons/GrowB-512x512.jpeg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
