@@ -34,7 +34,7 @@ function UsersList({
   }, [notifications]);
 
   const allUsers: User[] = fetchedData || [];
-  
+
   const searchResults = useMemo(() => {
     if (searchQuery.trim() === '') return [];
     return allUsers.filter(
@@ -43,7 +43,6 @@ function UsersList({
         user.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery, allUsers]);
-  
 
   const chatUsers = useMemo(() => {
     return allUsers.filter((user) => user.latestMessage !== null);
@@ -66,7 +65,7 @@ function UsersList({
 
   function renderUserItem(user: User) {
     const hasUnreadMessage = unreadUserIds.has(user.$id);
-  
+
     return (
       <div
         key={user.$id}
@@ -84,7 +83,7 @@ function UsersList({
           <span className={`font-semibold ${hasUnreadMessage ? "text-black" : "text-gray-800"}`}>
             {user.username}
           </span>
-  
+
           <div
             className={`flex justify-between w-full text-xs pt-1 gap-2 ${
               hasUnreadMessage ? "font-bold" : "font-normal"
@@ -108,7 +107,6 @@ function UsersList({
       </div>
     );
   }
-  
 
   return (
     <div className="users-list h-[84vh] sm:h-auto !w-[100%] lg:!w-[30%]">
@@ -129,6 +127,8 @@ function UsersList({
         <div className="p-4 text-gray-500">Loading users...</div>
       ) : searchQuery && searchResults.length === 0 ? (
         <div className="p-4 text-gray-500">No users found for "{searchQuery}".</div>
+      ) : (searchQuery ? searchResults : chatUsers).length === 0 ? (
+        <div className="p-4 text-gray-500">No open chats yet.</div>
       ) : (
         <div>{(searchQuery ? searchResults : chatUsers).map(renderUserItem)}</div>
       )}
