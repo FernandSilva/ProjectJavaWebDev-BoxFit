@@ -82,6 +82,20 @@ const Profile = () => {
       unfollowMutation.mutate(followStatusData.$id, {
         onSuccess: () => {
           setIsFollowing(false);
+  
+          const { mutate: createNotification } = useCreateNotification();
+          createNotification({
+            userId: id || "",
+            senderId: user?.id || "",
+            type: "unfollow",
+            relatedId: id || "",
+            referenceId: user?.id || "",
+            content: `${user?.name} unfollowed you.`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            senderName: user?.name || "",
+            senderImageUrl: user?.imageUrl || "",
+          });
         },
         onError: (error) => {
           console.error("Failed to unfollow user:", error);
@@ -89,6 +103,7 @@ const Profile = () => {
       });
     }
   };
+  
 
   const handleSignOut = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

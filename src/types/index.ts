@@ -52,14 +52,14 @@ export type INewUser = {
 };
 
 export type IUserRelationship = {
-  userId: string;       // The ID of the user who is performing the action
-  followsUserId: string; // The ID of the user who is being followed/unfollowed
+  userId: string;
+  followsUserId: string;
 };
 
 export type IFollowUser = IUserRelationship;
 
 export type IUnfollowUser = {
-  documentId: string; // Document ID representing the follow relationship
+  documentId: string;
 };
 
 export interface IComment {
@@ -78,7 +78,6 @@ export interface IDeleteComment {
   commentId: string;
 }
 
-// For general use in the app
 export interface User {
   $id: string;
   name: string;
@@ -105,36 +104,36 @@ export interface Message {
   senderImageUrl: string;
 }
 
+// ✅ Updated to include all six notification types
 export interface Notification {
-  $id: string; // Appwrite-generated document ID
-  userId: string; // Recipient's ID
-  senderId: string; // Sender's ID
-  type: "message" | "like" | "follow" | "comment" | "delete"; 
-  relatedId: string; // Related resource ID
-  referenceId: string; // Additional reference
-  content: string; // Notification content
-  isRead: boolean; // Read status
-  createdAt: string; // ISO date string
-  senderName: string; // Sender's name
-  senderImageUrl: string; // Sender's profile image URL
+  $id: string;
+  userId: string;
+  senderId: string;
+  type: "message" | "follow" | "comment" | "unfollow" | "postLike" | "comment-like"; // ✅ ADD postLike and comment-like here
+  relatedId: string;
+  referenceId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  senderName: string;
+  senderImageUrl: string;
 }
+
 
 export interface NotificationResponse {
-  documents: Notification[]; // Array of notifications
-  total: number; // Total count
+  documents: Notification[];
+  total: number;
 }
 
-// Updated context type to include sessionExpired
 export interface IContextType {
   isAuthenticated: boolean;
   user: User | null;
-  sessionExpired: boolean; // ✅ Added this property
+  sessionExpired: boolean;
   setIsAuthenticated: (value: boolean) => void;
   setUser: (user: User | null) => void;
   checkAuthUser: () => Promise<boolean>;
-  setSessionExpired: (value: boolean) => void; // ✅ Add this setter as well
+  setSessionExpired: (value: boolean) => void;
 }
-
 
 export const QUERY_KEYS = {
   GET_POSTS: "getPosts",
@@ -152,8 +151,6 @@ export const QUERY_KEYS = {
   GET_NOTIFICATIONS: "getNotifications",
   GET_USER_TOTAL_LIKES: "getUserTotalLikes",
   SEARCH_POSTS: "searchPosts",
-
-  // ✅ Add this line to fix the error
   SEARCH_USERS_AND_POSTS: "searchUsersAndPosts",
 };
 

@@ -47,9 +47,22 @@ const Home = () => {
   if (isErrorPosts || isErrorCreators) {
     return (
       <div className="flex flex-1">
-        <div className="home-container">
-          <p className="body-medium text-black">Something bad happened</p>
-        </div>
+        {combinedPosts.length === 0 && !isPostLoading && (
+  <div className="bg-white rounded-xl shadow p-5 mt-6 flex flex-col items-center text-center border">
+     <p className="text-lg text-gray-700">
+      Your feed is waiting to grow 🌿 <br />
+      Follow other members or share your first post to start building your home page.
+    </p>
+    <p></p>
+    <img
+      src="/assets/images/side-img.jpeg"
+      alt="Welcome"
+      className="w-full max-w-md rounded-lg object-cover mb-4"
+    />
+   
+  </div>
+)}
+
         <div className="home-creators">
           <p className="body-medium text-black">Something bad happened</p>
         </div>

@@ -1640,3 +1640,96 @@ export async function submitContactRequest({
 }
 
 
+
+// ============================== NOTIFICATIONS HELPERS
+
+export async function notifyMessage(sender, recipient, messageId, messageContent) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "message",
+    relatedId: recipient.$id,
+    referenceId: messageId,
+    content: `${sender.name} sent you a message: "${messageContent}"`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+
+export async function notifyPostLike(sender, recipient, postId, caption) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "post-like",
+    relatedId: postId,
+    referenceId: postId,
+    content: `${sender.name} liked your post: "${caption}"`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+
+export async function notifyComment(sender, recipient, postId, commentText) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "comment",
+    relatedId: postId,
+    referenceId: postId,
+    content: `${sender.name} commented: "${commentText}"`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+
+export async function notifyCommentLike(sender, recipient, commentId) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "comment-like",
+    relatedId: commentId,
+    referenceId: commentId,
+    content: `${sender.name} liked your comment.`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+
+export async function notifyFollow(sender, recipient) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "follow",
+    relatedId: recipient.$id,
+    referenceId: recipient.$id,
+    content: `${sender.name} followed you.`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+
+export async function notifyUnfollow(sender, recipient) {
+  return createNotification({
+    userId: recipient.$id,
+    senderId: sender.$id,
+    type: "unfollow",
+    relatedId: recipient.$id,
+    referenceId: recipient.$id,
+    content: `${sender.name} unfollowed you.`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
+    senderName: sender.name,
+    senderImageUrl: sender.imageUrl,
+  });
+}
+

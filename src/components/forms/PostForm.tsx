@@ -77,7 +77,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
             createNotification({
               userId: followerId,
               senderId: user.id,
-              type: "like",
+              type: "postLike",
               relatedId: newPost.$id,
               isRead: false,
               createdAt: new Date().toISOString(),

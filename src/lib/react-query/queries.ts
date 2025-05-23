@@ -650,7 +650,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationRe
       $id: doc.$id,
       userId: doc.userId,
       senderId: doc.senderId,
-      type: doc.type as "message" | "like" | "follow" | "comment",
+      type: doc.type as "message" | "postLike" | "follow" | "comment",
       relatedId: doc.relatedId || "",
       referenceId: doc.referenceId || "",
       content: doc.content || "",
@@ -680,20 +680,7 @@ export const useGetNotifications = (userId: string) => {
   });
 };
 
-// Create a new notification
-export const useCreateNotification = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (notification: Omit<Notification, "$id">) =>
-      createNotification(notification),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["getNotifications"]);
-    },
-    onError: (error) => {
-      console.error("Failed to create notification:", error);
-    },
-  });
-};
+
 
 /**
  * Creates a new notification document in Appwrite.
@@ -793,6 +780,34 @@ export const useSearchUsersAndPosts = (searchTerm: string) => {
     enabled: !!searchTerm,
     staleTime: 10000,
     refetchOnWindowFocus: false,
+  });
+};
+
+// ============================================================
+// NOTIFICATION QUERIES
+// ============================================================
+
+export const useCreateNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notification: {
+      userId: string;
+      senderId: string;
+      type: "message" | "comment" | "comment-like" | "postLike" | "follow" | "unfollow";
+      relatedId: string;
+      referenceId: string;
+      content: string;
+      isRead: boolean;
+      createdAt: string;
+      senderName: string;
+      senderImageUrl: string;
+    }) => createNotification(notification),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getNotifications"]);
+    },
+    onError: (error) => {
+      console.error("Failed to create notification:", error);
+    },
   });
 };
 

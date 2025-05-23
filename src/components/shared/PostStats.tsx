@@ -21,15 +21,15 @@ interface PostStatsProps {
   userId: string;
   isPost?: boolean;
   showComments?: boolean;
-  disableCommentClick?: boolean; // ✅ Add this line to fix the type error
+  disableCommentClick?: boolean;
 }
-
 
 const PostStats = ({
   post,
   userId,
   isPost,
   showComments = true,
+  disableCommentClick = false,
 }: PostStatsProps) => {
   const { user } = useUserContext();
 
@@ -64,9 +64,9 @@ const PostStats = ({
         userId: post.creator.$id,
         senderId: user.id,
         senderName: user.name,
-        type: "like",
+        type: "postLike",
         relatedId: post.$id,
-        referenceId: post.$id,
+        referenceId: `post_${post.$id}`,
         content: `liked your post: "${post.caption || ""}"`,
         isRead: false,
         createdAt: new Date().toISOString(),
@@ -75,7 +75,14 @@ const PostStats = ({
     }
 
     setLikes(updatedLikes);
-    likePost({ postId: post.$id, likesArray: updatedLikes, userId });
+    likePost({
+      postId: post.$id,
+      likesArray: updatedLikes,
+      userId,
+      postOwnerId: post.creator.$id,
+      relatedId: post.$id,
+      referenceId: `post_${post.$id}`,
+    });
   };
 
   const handleToggleLikeComment = (comment: any) => {
@@ -91,9 +98,9 @@ const PostStats = ({
               userId: comment.userId,
               senderId: user.id,
               senderName: user.name,
-              type: "like",
-              relatedId: comment.$id,
-              referenceId: comment.$id,
+              type: "comment-like",
+              relatedId: post.$id,
+              referenceId: `comment_${comment.$id}`,
               content: `${user.name} liked your comment.`,
               isRead: false,
               createdAt: new Date().toISOString(),
@@ -109,7 +116,6 @@ const PostStats = ({
     <>
       <div className="flex justify-between items-center w-full">
         <div className="flex gap-6">
-          {/* Like Button */}
           <div className="flex items-center gap-1">
             <img
               src={checkIsLiked(likes, userId) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
@@ -119,11 +125,14 @@ const PostStats = ({
             <p>{likes.length}</p>
           </div>
 
-          {/* Comment Button — only shown if enabled */}
           {showComments && (
             <div
-              className="flex items-center gap-1 cursor-pointer"
-              onClick={() => setShowCommentBox(!showCommentBox)}
+              className={`flex items-center gap-1 ${
+                disableCommentClick ? "cursor-default" : "cursor-pointer"
+              }`}
+              onClick={() => {
+                if (!disableCommentClick) setShowCommentBox(!showCommentBox);
+              }}
             >
               <FaRegComment className="w-6 h-6" />
               <p>{totalComment}</p>
@@ -131,7 +140,6 @@ const PostStats = ({
           )}
         </div>
 
-        {/* Save Button */}
         <div>
           {isSaved ? (
             <IoBookmark className="cursor-pointer w-6 h-6" onClick={() => deleteSavePost(savedPostRecord.$id)} />
@@ -141,7 +149,6 @@ const PostStats = ({
         </div>
       </div>
 
-      {/* Comments Section */}
       {showComments && showCommentBox && (
         <div className="comments-section mt-4">
           {comments.map((comment: any) => (
