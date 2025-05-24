@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSignOutAccount } from "@/lib/react-query/queries";
 import { useUserContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,20 @@ const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
   const { setIsAuthenticated, setUser } = useUserContext();
   const { mutate: signOut } = useSignOutAccount();
 
+  // ✅ Auto-dismiss after 20 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+    }, 4000); // 20 seconds
+    return () => clearTimeout(timer); // Clean up
+  }, []);
+
   const handleLogout = async () => {
     try {
       await signOut();
       setUser(null);
       setIsAuthenticated(false);
-      window.location.href = "/sign-in"; // Redirect to login page
+      window.location.href = "/sign-in"; // Redirect to login
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -43,11 +51,6 @@ const SessionExpiredNotification: React.FC<SessionExpiredNotificationProps> = ({
       <div className="bg-yellow-100 text-yellow-900 p-4 rounded-b shadow-sm">
         <p className="font-bold mb-2">System Login Error</p>
         <p>{message}</p>
-        <ul className="mt-2 list-disc list-inside">
-          {/* <li>Ensure you are logged in correctly.</li>
-          <li>If the issue persists, try clearing your browser cookies.</li> */}
-          {/* <li>Click the button below to log out and sign back in.</li> */}
-        </ul>
         <div className="mt-3 text-right">
           {/* <Button onClick={handleLogout} className="bg-yellow-600 text-white">
             Logout & Re-login
