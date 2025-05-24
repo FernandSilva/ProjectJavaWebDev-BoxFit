@@ -11,7 +11,6 @@ import {
   useUnfollowUser,
   useCreateNotification,
 } from "@/lib/react-query/queries";
-import { createNotification } from "@/lib/appwrite/api";
 import { TbLogout2 } from "react-icons/tb";
 import {
   Link,
@@ -24,11 +23,11 @@ import {
 } from "react-router-dom";
 import Following from "./Following";
 import Follower from "./Follower";
-import LikedPosts from "./LikedPosts";  // <-- Added missing import for LikedPosts
+import LikedPosts from "./LikedPosts";
 import { useUserContext } from "@/context/AuthContext";
 import { BiMessageDetail } from "react-icons/bi";
 import { Button } from "@/components/ui";
-import {INITIAL_USER } from "@/types";
+import { INITIAL_USER } from "@/types";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -42,12 +41,13 @@ const Profile = () => {
   const { data: followStatusData } = useFollowStatus(user?.id, id);
   const [isFollowing, setIsFollowing] = useState(false);
 
+  const { mutate: createNotification } = useCreateNotification();
+  const followMutation = useFollowUser();
+  const unfollowMutation = useUnfollowUser();
+
   useEffect(() => {
     setIsFollowing(!!followStatusData);
   }, [followStatusData]);
-
-  const followMutation = useFollowUser();
-  const unfollowMutation = useUnfollowUser();
 
   const handleFollow = () => {
     if (!isFollowing) {
@@ -56,7 +56,6 @@ const Profile = () => {
         {
           onSuccess: () => {
             setIsFollowing(true);
-            const { mutate: createNotification } = useCreateNotification();
             createNotification({
               userId: id || "",
               senderId: user?.id || "",
@@ -75,15 +74,11 @@ const Profile = () => {
     }
   };
 
-  const MessageActive = pathname === "/Chat";
-
   const handleUnfollow = () => {
     if (isFollowing && followStatusData) {
       unfollowMutation.mutate(followStatusData.$id, {
         onSuccess: () => {
           setIsFollowing(false);
-  
-          const { mutate: createNotification } = useCreateNotification();
           createNotification({
             userId: id || "",
             senderId: user?.id || "",
@@ -103,7 +98,6 @@ const Profile = () => {
       });
     }
   };
-  
 
   const handleSignOut = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -120,6 +114,8 @@ const Profile = () => {
   const handleNavigateToSettings = () => {
     navigate("/settings");
   };
+
+  const MessageActive = pathname === "/Chat";
 
   if (!currentUser)
     return (
@@ -162,28 +158,19 @@ const Profile = () => {
               </p>
             </div>
             <div className="flex flex-row mt-[10px] md:mt-[0px] gap-2 md:gap-8 pt-[10px] lg:pt-[20px] items-center justify-center xl:justify-start">
-              <Link
-                to={`/profile/${id}`}
-                className="flex-center gap-1 md:gap-2 cursor-pointer"
-              >
+              <Link to={`/profile/${id}`} className="flex-center gap-1 md:gap-2 cursor-pointer">
                 <p className="small-semibold lg:body-bold text-green-500">
                   {currentUser.posts.length}
                 </p>
                 <p className="small-medium lg:base-medium text-light-3">Posts</p>
               </Link>
-              <Link
-                to={`/profile/${id}/followers`}
-                className="flex-center gap-1 md:gap-2 cursor-pointer"
-              >
+              <Link to={`/profile/${id}/followers`} className="flex-center gap-1 md:gap-2 cursor-pointer">
                 <p className="small-semibold lg:body-bold text-green-500">
                   {userRelationships?.followers || 0}
                 </p>
                 <p className="small-medium lg:base-medium text-light-3">Followers</p>
               </Link>
-              <Link
-                to={`/profile/${id}/following`}
-                className="flex-center gap-1 md:gap-2 cursor-pointer"
-              >
+              <Link to={`/profile/${id}/following`} className="flex-center gap-1 md:gap-2 cursor-pointer">
                 <p className="small-semibold lg:body-bold text-green-500">
                   {userRelationships?.following || 0}
                 </p>
@@ -195,66 +182,39 @@ const Profile = () => {
             </p>
           </div>
         </div>
+
         <div className="w-[100%] md:hidden pl-[10px] py-[10px]">
           <p className="text-[10px] text-[#555555]">{currentUser.bio}</p>
         </div>
+
         <div className="flex justify-between xl:justify-end xl:gap-4 md:mt-4 w-full">
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <>
               <Link to={`/update-profile/${currentUser.$id}`}>
-                <Button
-                  variant="ghost"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 transition duration-150 ease-in-out"
-                >
+                <Button variant="ghost" className="inline-flex items-center justify-center gap-2 px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-200 transition">
                   <span className="md:text-sm text-[14px] font-medium">Edit Profile</span>
                 </Button>
               </Link>
-
-              <Button
-                variant="ghost"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-200 rounded-md transition duration-150 ease-in-out"
-                onClick={handleNavigateToSettings}
-              >
+              <Button variant="ghost" className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-200 rounded-md transition" onClick={handleNavigateToSettings}>
                 <span className="text-sm font-medium">Settings</span>
               </Button>
-
-              <Button
-                variant="ghost"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-200 rounded-md transition duration-150 ease-in-out"
-                onClick={handleSignOut}
-              >
+              <Button variant="ghost" className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-gray-200 rounded-md transition" onClick={handleSignOut}>
                 <TbLogout2 className="h-[14px] w-[14px]" />
                 <span className="text-sm font-medium">Logout</span>
               </Button>
             </>
-          )}
-          {!isOwnProfile && (
+          ) : (
             <div className="flex justify-center gap-4 mt-4">
               {isFollowing ? (
-                <Button
-                  variant="ghost"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition duration-150 ease-in-out"
-                  onClick={handleUnfollow}
-                  disabled={false}
-                >
+                <Button variant="ghost" className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition" onClick={handleUnfollow}>
                   Unfollow
                 </Button>
               ) : (
-                <Button
-                  variant="ghost"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition duration-150 ease-in-out"
-                  onClick={handleFollow}
-                  disabled={false}
-                >
+                <Button variant="ghost" className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 hover:bg-green-500 rounded-md transition" onClick={handleFollow}>
                   Follow
                 </Button>
               )}
-              <Button
-                className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition duration-150 ease-in-out bg-white hover:bg-green-500 ${
-                  MessageActive ? "bg-green-500 text-white" : ""
-                }`}
-                onClick={() => navigate("/Chat")}
-              >
+              <Button className={`inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md transition bg-white hover:bg-green-500 ${MessageActive ? "bg-green-500 text-white" : ""}`} onClick={() => navigate("/Chat")}>
                 <BiMessageDetail />
                 <p className="text-sm">Message</p>
               </Button>
@@ -265,57 +225,27 @@ const Profile = () => {
 
       {currentUser.$id === user.id && (
         <div className="flex justify-center max-w-5xl w-full my-4 border-b border-gray-300 gap-8">
-          <Link
-            to={`/profile/${id}`}
-            className={`flex items-center gap-2 px-0.5 py-2 transition-colors duration-150 ease-in-out ${
-              pathname === `/profile/${id}`
-                ? "text-green-500 border-b-2 border-green-500"
-                : "text-gray-600 hover:text-green-500"
-            }`}
-          >
-            <img src={"/assets/icons/posts.svg"} alt="posts" className="w-5 h-5" />
+          <Link to={`/profile/${id}`} className={`flex items-center gap-2 px-0.5 py-2 ${pathname === `/profile/${id}` ? "text-green-500 border-b-2 border-green-500" : "text-gray-600 hover:text-green-500"}`}>
+            <img src="/assets/icons/posts.svg" alt="posts" className="w-5 h-5" />
             <span className="hidden md:inline">Posts</span>
           </Link>
-          <Link
-            to={`/profile/${id}/liked-posts`}
-            className={`flex items-center gap-2 px-0.5 py-2 transition-colors duration-150 ease-in-out ${
-              pathname === `/profile/${id}/liked-posts`
-                ? "text-green-500 border-b-2 border-green-500"
-                : "text-gray-600 hover:text-green-500"
-            }`}
-          >
-            <img src={"/assets/icons/like.svg"} alt="like" className="w-5 h-5" />
+          <Link to={`/profile/${id}/liked-posts`} className={`flex items-center gap-2 px-0.5 py-2 ${pathname === `/profile/${id}/liked-posts` ? "text-green-500 border-b-2 border-green-500" : "text-gray-600 hover:text-green-500"}`}>
+            <img src="/assets/icons/like.svg" alt="like" className="w-5 h-5" />
             <span className="hidden md:inline">Liked Posts</span>
           </Link>
-          <Link
-            to={`/Chat`}
-            className={`flex items-center gap-2 px-0.5 py-2 transition-colors duration-150 ease-in-out ${
-              pathname.includes(`/Chat`)
-                ? "text-green-500 border-b-2 border-green-500"
-                : "text-gray-600 hover:text-green-500"
-            }`}
-          >
-            <img src={"/assets/icons/message.svg"} alt="comments" className="w-5 h-5" />
+          <Link to={`/Chat`} className={`flex items-center gap-2 px-0.5 py-2 ${pathname.includes(`/Chat`) ? "text-green-500 border-b-2 border-green-500" : "text-gray-600 hover:text-green-500"}`}>
+            <img src="/assets/icons/message.svg" alt="comments" className="w-5 h-5" />
             <span className="hidden md:inline">Messages</span>
           </Link>
         </div>
       )}
 
-
-        <Routes>
-          <Route
-            index
-            element={
-              <GridPostList
-                posts={[...(currentUser.posts || [])].reverse()}
-                showUser={false}
-              />
-            }
-          />
-          <Route path="/liked-posts" element={<LikedPosts />} />
-          <Route path="/following" element={<Following />} />
-          <Route path="/followers" element={<Follower />} />
-        </Routes>
+      <Routes>
+        <Route index element={<GridPostList posts={[...(currentUser.posts || [])].reverse()} showUser={false} />} />
+        <Route path="/liked-posts" element={<LikedPosts />} />
+        <Route path="/following" element={<Following />} />
+        <Route path="/followers" element={<Follower />} />
+      </Routes>
 
       <Outlet />
     </div>
@@ -323,4 +253,3 @@ const Profile = () => {
 };
 
 export default Profile;
-

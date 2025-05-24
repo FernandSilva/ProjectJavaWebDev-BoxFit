@@ -650,7 +650,7 @@ export async function fetchNotifications(userId: string): Promise<NotificationRe
       $id: doc.$id,
       userId: doc.userId,
       senderId: doc.senderId,
-      type: doc.type as "message" | "postLike" | "follow" | "comment",
+      type: doc.type as "message" | "comment" | "comment-like" | "postLike" | "follow" | "unfollow",
       relatedId: doc.relatedId || "",
       referenceId: doc.referenceId || "",
       content: doc.content || "",

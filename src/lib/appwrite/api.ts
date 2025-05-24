@@ -1733,3 +1733,37 @@ export async function notifyUnfollow(sender, recipient) {
   });
 }
 
+export const createFollowNotification = async ({
+  receiverId,
+  senderId,
+  senderName,
+  senderImageUrl,
+}: {
+  receiverId: string;
+  senderId: string;
+  senderName: string;
+  senderImageUrl: string;
+}) => {
+  try {
+    return await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.notificationsCollectionId,
+      ID.unique(),
+      {
+        userId: receiverId,
+        senderId,
+        type: "follow",
+        relatedId: receiverId,
+        referenceId: senderId,
+        content: `${senderName} started following you.`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        senderName,
+        senderImageUrl,
+      }
+    );
+  } catch (error) {
+    console.error("❌ Failed to create follow notification:", error);
+    throw error;
+  }
+};
