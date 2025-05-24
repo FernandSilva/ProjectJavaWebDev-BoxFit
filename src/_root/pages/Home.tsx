@@ -8,6 +8,7 @@ import {
 import { Models } from "appwrite";
 import { useMemo } from "react";
 import { useUserContext } from "@/context/AuthContext";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   const { user } = useUserContext();
@@ -122,14 +123,16 @@ const Home = () => {
             ) : (
               creators?.map((creator) => (
                 <div key={creator.$id} className="flex-shrink-0 p-1">
-                  <img
-                    src={
-                      creator.imageUrl ||
-                      "/assets/icons/profile-placeholder.svg"
-                    }
-                    alt={creator.username}
-                    className="h-12 w-12 rounded-full border border-gray-300"
-                  />
+                  <Link to={`/profile/${creator.$id}`}>
+                    <img
+                      src={
+                        creator.imageUrl ||
+                        "/assets/icons/profile-placeholder.svg"
+                      }
+                      alt={creator.username}
+                      className="h-12 w-12 rounded-full border border-gray-300"
+                    />
+                  </Link>
                 </div>
               ))
             )}
