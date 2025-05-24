@@ -11,13 +11,13 @@ import { multiFormatDateString } from "@/lib/utils";
 
 type PostCardProps = {
   post: Models.Document;
+  disableCommentClick?: boolean; // ✅ New prop
 };
 
-const PostCard = ({ post }: PostCardProps) => {
+const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
   const { user } = useUserContext();
   const videoRefs = useRef<HTMLVideoElement[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  console.log({post})
   const [fileTypes, setFileTypes] = useState<string[]>([]);
   const [cleanUrls, setCleanUrls] = useState<string[]>([]);
 
@@ -47,46 +47,33 @@ const PostCard = ({ post }: PostCardProps) => {
   }, [post.imageUrl]);
 
   useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: "0px",
-      threshold: 0.5, // Trigger when 50% of the element is in view
-    };
-
-    const handleIntersection: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        const { target, isIntersecting } = entry;
-        const index = parseInt(target.getAttribute("data-index") || "0", 10);
-
-        if (isIntersecting) {
-          if (videoRefs.current[index]) {
-            videoRefs.current[index].play().catch((error) => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const { target, isIntersecting } = entry;
+          const index = parseInt(target.getAttribute("data-index") || "0", 10);
+          if (isIntersecting) {
+            videoRefs.current[index]?.play().catch((error) => {
               console.error("Error playing video:", error);
             });
+          } else {
+            videoRefs.current[index]?.pause();
           }
-        } else {
-          if (videoRefs.current[index]) {
-            videoRefs.current[index].pause();
-          }
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(
-      handleIntersection,
-      observerOptions
+        });
+      },
+      {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.5,
+      }
     );
 
     cleanUrls.forEach((_, index) => {
       const element = videoRefs.current[index];
-      if (element) {
-        observer.observe(element);
-      }
+      if (element) observer.observe(element);
     });
 
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, [cleanUrls]);
 
   return (
@@ -150,6 +137,7 @@ const PostCard = ({ post }: PostCardProps) => {
           </div>
         </>
       </Link>
+
       <Swiper
         modules={[A11y, Pagination]}
         spaceBetween={16}
@@ -158,38 +146,34 @@ const PostCard = ({ post }: PostCardProps) => {
         onInit={(swiper) => setActiveIndex(swiper.activeIndex)}
         onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
       >
-       {cleanUrls.map((url, index) => (
-  <SwiperSlide key={index} style={{ width: "100%" }}>
-    {fileTypes[index] === "video" && (
-      <video
-        className="post-card_img"
-        loop
-        preload="auto"
-        ref={(el) => (videoRefs.current[index] = el)}
-        data-index={index}
-      >
-        <source src={url} />
-      </video>
-    )}
-    {fileTypes[index] === "image" && (
-      <img
-        className="post-card_img"
-        src={url}
-        alt="File preview"
-        style={{
-          objectFit: "cover",
-          width: "100%",
-          height: "100%",
-        }}
-      />
-    )}
-    {fileTypes[index] === "unknown" && <p>Unknown file type</p>}
-  </SwiperSlide>
-))}
-
+        {cleanUrls.map((url, index) => (
+          <SwiperSlide key={index}>
+            {fileTypes[index] === "video" ? (
+              <video
+                className="post-card_img"
+                loop
+                preload="auto"
+                ref={(el) => (videoRefs.current[index] = el)}
+                data-index={index}
+              >
+                <source src={url} />
+              </video>
+            ) : fileTypes[index] === "image" ? (
+              <img
+                className="post-card_img"
+                src={url}
+                alt="File preview"
+                style={{ objectFit: "cover", width: "100%", height: "100%" }}
+              />
+            ) : (
+              <p>Unknown file type</p>
+            )}
+          </SwiperSlide>
+        ))}
       </Swiper>
 
-      <PostStats post={post} userId={user.id} showComments={true} />
+      {/* ✅ Pass control to PostStats */}
+      <PostStats post={post} userId={user.id} showComments={!disableCommentClick} />
     </div>
   );
 };

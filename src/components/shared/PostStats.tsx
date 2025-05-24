@@ -116,6 +116,7 @@ const PostStats = ({
     <>
       <div className="flex justify-between items-center w-full">
         <div className="flex gap-6">
+          {/* Like */}
           <div className="flex items-center gap-1">
             <img
               src={checkIsLiked(likes, userId) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
@@ -125,14 +126,16 @@ const PostStats = ({
             <p>{likes.length}</p>
           </div>
 
+          {/* Comment */}
           {showComments && (
             <div
               className={`flex items-center gap-1 ${
-                disableCommentClick ? "cursor-default" : "cursor-pointer"
+                disableCommentClick ? "cursor-not-allowed opacity-60" : "cursor-pointer"
               }`}
               onClick={() => {
                 if (!disableCommentClick) setShowCommentBox(!showCommentBox);
               }}
+              title={disableCommentClick ? "Comments viewable in full post" : "Click to view comments"}
             >
               <FaRegComment className="w-6 h-6" />
               <p>{totalComment}</p>
@@ -140,16 +143,24 @@ const PostStats = ({
           )}
         </div>
 
+        {/* Save */}
         <div>
           {isSaved ? (
-            <IoBookmark className="cursor-pointer w-6 h-6" onClick={() => deleteSavePost(savedPostRecord.$id)} />
+            <IoBookmark
+              className="cursor-pointer w-6 h-6"
+              onClick={() => deleteSavePost(savedPostRecord.$id)}
+            />
           ) : (
-            <CiBookmark className="cursor-pointer w-6 h-6" onClick={() => savePost({ userId: user.id, postId: post.$id })} />
+            <CiBookmark
+              className="cursor-pointer w-6 h-6"
+              onClick={() => savePost({ userId: user.id, postId: post.$id })}
+            />
           )}
         </div>
       </div>
 
-      {showComments && showCommentBox && (
+      {/* Comment Box */}
+      {showComments && showCommentBox && !disableCommentClick && (
         <div className="comments-section mt-4">
           {comments.map((comment: any) => (
             <div key={comment.$id} className="flex justify-between items-center mb-2">

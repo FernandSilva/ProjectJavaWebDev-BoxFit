@@ -2,22 +2,22 @@ import { Models } from "appwrite";
 import SavedGridPostList from "./SavedGridPostList";
 
 type GridPostListProps = {
-  posts: Models.Document[]; // Array of post documents
-  showUser?: boolean; // Controls visibility of user details
-  showStats?: boolean; // Controls visibility of post stats (likes/comments)
-  showCreator?: boolean; // Controls visibility of post creator details
-  showComments?: boolean; // Controls visibility of post comments
-  disableCommentClick?: boolean; // <-- Add this line
+  posts: Models.Document[];
+  showUser?: boolean;
+  showStats?: boolean;
+  showCreator?: boolean;
+  showComments?: boolean;
+  disableCommentClick?: boolean; // ✅ Already added here
 };
 
 const GridPostList = ({
   posts,
-  showUser = true, // Default: Show user
-  showStats = true, // Default: Show stats
-  showCreator = true, // Default: Show creator
-  showComments = true, // Default: Show comments
+  showUser = true,
+  showStats = true,
+  showCreator = true,
+  showComments = true,
+  disableCommentClick = false, // ✅ Default to false
 }: GridPostListProps) => {
-  // Handle empty state
   if (!posts || posts.length === 0) {
     return (
       <div className="text-center py-4">
@@ -36,6 +36,7 @@ const GridPostList = ({
           showCreator={showCreator}
           showStats={showStats}
           showComments={showComments}
+          disableCommentClick={disableCommentClick} // ✅ THIS LINE IS MANDATORY
         />
       ))}
     </ul>

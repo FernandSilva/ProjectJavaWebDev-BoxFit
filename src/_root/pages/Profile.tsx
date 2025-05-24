@@ -241,7 +241,7 @@ const Profile = () => {
       )}
 
       <Routes>
-        <Route index element={<GridPostList posts={[...(currentUser.posts || [])].reverse()} showUser={false} />} />
+      <Route index element={<GridPostList posts={[...(currentUser.posts || [])].reverse()} showUser={false} disableCommentClick={true} />} />
         <Route path="/liked-posts" element={<LikedPosts />} />
         <Route path="/following" element={<Following />} />
         <Route path="/followers" element={<Follower />} />
