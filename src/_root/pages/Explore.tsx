@@ -1,5 +1,3 @@
-// src/pages/Explore.tsx
-
 import { GridPostList, Loader, UserCard } from "@/components/shared";
 import { Input } from "@/components/ui";
 import { useWindowSize } from "@uidotdev/usehooks";
@@ -17,6 +15,7 @@ import {
   useSearchUsersAndPosts,
 } from "@/lib/react-query/queries";
 import { Models } from "appwrite";
+import NotificationsPermissionPrompt from "@/components/shared/NotificationPermissionsPrompt"; // ✅ ADDED
 
 const options = [
   { value: "all", label: "All" },
@@ -25,7 +24,6 @@ const options = [
 ];
 
 type PostType = Models.Document;
-
 
 const Explore = () => {
   const size = useWindowSize();
@@ -117,7 +115,7 @@ const Explore = () => {
                 </div>
 
                 <h3 className="h4-bold mt-8 mb-2">Matching Posts</h3>
-                <GridPostList posts={searchData.posts} showComments={false} />
+                <GridPostList posts={searchData.posts} showComments={true} disableCommentClick={true} />
               </>
             ) : (
               <p className="text-gray-500">No matching users or posts found.</p>
@@ -142,7 +140,6 @@ const Explore = () => {
                 <Loader />
               ) : (
                 <GridPostList posts={posts} showComments={true} disableCommentClick={true} />
-
               )}
             </div>
             <div ref={ref} className="py-4">
@@ -158,6 +155,9 @@ const Explore = () => {
             </div>
           </>
         )}
+
+        {/* 🔔 Push Notification Prompt */}
+        <NotificationsPermissionPrompt />
       </div>
     </div>
   );

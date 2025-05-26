@@ -38,7 +38,8 @@ import {
   updateNotification, // Added for notifications
   markNotificationAsRead,
   deleteNotification,
-  searchPostsApi
+  searchPostsApi,
+  
 
 } from "@/lib/appwrite/api";
 import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
@@ -807,6 +808,54 @@ export const useCreateNotification = () => {
     },
     onError: (error) => {
       console.error("Failed to create notification:", error);
+    },
+  });
+};
+
+
+// ✅ Mutation to store a push subscription
+export const useStorePushSubscription = () => {
+  return useMutation({
+    mutationKey: [QUERY_KEYS.STORE_PUSH_SUBSCRIPTION],
+    mutationFn: async ({
+      userId,
+      subscription,
+    }: {
+      userId: string;
+      subscription: PushSubscription;
+    }) => {
+      const payload = {
+        userId,
+        subscription: JSON.stringify(subscription), // Store as string since Appwrite does not support JSON type
+      };
+
+      const result = await databases.createDocument(
+        import.meta.env.VITE_APPWRITE_DATABASE_ID,
+        import.meta.env.VITE_APPWRITE_SUBSCRIPTIONS_COLLECTION_ID,
+        ID.unique(),
+        payload
+      );
+
+      return result;
+    },
+  });
+};
+
+
+export const useGetTopGrowers = () => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.TOP_GROWERS],
+    queryFn: async () => {
+      const allUsers = await getUsers(); // assuming getUsers() fetches all user docs
+      const scored = allUsers
+        .filter((user) => (user.liked?.length || 0) > 0 || (user.followedBy?.length || 0) > 0)
+        .map((user) => ({
+          ...user,
+          score: (user.liked?.length || 0) + (user.followedBy?.length || 0),
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+      return scored;
     },
   });
 };

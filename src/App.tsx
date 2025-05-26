@@ -70,12 +70,13 @@ const App = () => {
     // ✅ Ask for push notification permission if install was accepted
     if (result.outcome === "accepted") {
       try {
-        const permission = await Notification.requestPermission();
+        const permission = await window.Notification.requestPermission();
         console.log("[GrowBuddy] Push notification permission:", permission);
       } catch (err) {
         console.error("Notification permission request failed", err);
       }
     }
+    
   };
 
   if (loading) {

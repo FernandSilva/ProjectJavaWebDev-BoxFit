@@ -1767,3 +1767,42 @@ export const createFollowNotification = async ({
     throw error;
   }
 };
+
+// Updated: getTopGrowers()
+export async function getTopGrowers() {
+  try {
+    const usersResult = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId
+    );
+    const relationshipsResult = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.userRelationshipsCollectionId
+    );
+
+    const users = usersResult.documents;
+    const relationships = relationshipsResult.documents;
+
+    // Build follower count map
+    const followerCounts: Record<string, number> = {};
+    relationships.forEach(({ followsUserId }) => {
+      followerCounts[followsUserId] = (followerCounts[followsUserId] || 0) + 1;
+    });
+
+    // Sort by (likes + followers)
+    const enriched = users
+      .map((user) => {
+        const likes = user.liked?.length || 0;
+        const followers = followerCounts[user.$id] || 0;
+        return { ...user, score: likes + followers };
+      })
+      .filter((user) => user.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
+    return enriched;
+  } catch (err) {
+    console.error("Failed to fetch top growers:", err);
+    throw err;
+  }
+}

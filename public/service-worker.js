@@ -10,10 +10,10 @@ self.addEventListener("activate", (event) => {
 
 // Optional: Handle fetch events if needed later
 self.addEventListener("fetch", (event) => {
-  // You can log or modify fetches here
+  // You can log or modify fetches here if caching is added later
 });
 
-// ✅ Handle push events
+// ✅ Handle push events with fallback and safety
 self.addEventListener("push", (event) => {
   console.log("[GrowBuddy] Push event received", event);
 
@@ -22,18 +22,20 @@ self.addEventListener("push", (event) => {
     try {
       data = event.data.json();
     } catch (err) {
-      console.error("Push event data error:", err);
+      console.error("❌ Push event data JSON parse error:", err);
     }
   }
 
-  const title = data.title || "GrowBuddy Alert 🌿";
+  const title = data.title || "🌿 GrowBuddy Notification";
   const options = {
-    body: data.body || "You have a new notification.",
+    body: data.body || "You have a new update from GrowBuddy.",
     icon: data.icon || "/assets/icons/GrowB-192x192.jpeg",
     badge: data.badge || "/assets/icons/GrowB-192x192.jpeg",
     data: {
-      url: data.url || "https://www.growbuddy.club", // fallback URL
+      url: data.url || "https://www.growbuddy.club",
     },
+    tag: data.tag || "growbuddy-general",
+    renotify: true,
   };
 
   event.waitUntil(
@@ -41,12 +43,14 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// ✅ Handle click events on the notification
+// ✅ Handle click events to redirect or focus
 self.addEventListener("notificationclick", (event) => {
+  console.log("[GrowBuddy] Notification clicked");
+
   event.notification.close();
 
-  const notificationData = event.notification.data;
-  const urlToOpen = notificationData?.url || "https://www.growbuddy.club";
+  const notificationData = event.notification.data || {};
+  const urlToOpen = notificationData.url || "https://www.growbuddy.club";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
