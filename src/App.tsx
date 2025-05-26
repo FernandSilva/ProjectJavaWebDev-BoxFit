@@ -1,4 +1,3 @@
-// src/App.tsx
 import { useEffect, useState } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
 import SigninForm from "@/_auth/forms/SigninForm";
@@ -58,6 +57,27 @@ const App = () => {
     deferredPrompt &&
     ["/", "/sign-in", "/sign-up"].includes(location.pathname);
 
+  const handleInstallClick = async () => {
+    const prompt = deferredPrompt as any;
+    if (!prompt) return;
+
+    prompt.prompt();
+    const result = await prompt.userChoice;
+    console.log("[GrowBuddy] User install choice:", result.outcome);
+
+    setDeferredPrompt(null);
+
+    // ✅ Ask for push notification permission if install was accepted
+    if (result.outcome === "accepted") {
+      try {
+        const permission = await Notification.requestPermission();
+        console.log("[GrowBuddy] Push notification permission:", permission);
+      } catch (err) {
+        console.error("Notification permission request failed", err);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen w-screen bg-white">
@@ -96,17 +116,11 @@ const App = () => {
         </Route>
       </Routes>
 
-      {/* PWA Install Prompt */}
+      {/* 📲 PWA Install Prompt with Notification Permission */}
       {showInstallPrompt && (
         <button
           className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50"
-          onClick={async () => {
-            const prompt = deferredPrompt as any;
-            prompt.prompt();
-            const result = await prompt.userChoice;
-            console.log("[GrowBuddy] User install choice:", result.outcome);
-            setDeferredPrompt(null);
-          }}
+          onClick={handleInstallClick}
         >
           📲 Add GrowBuddy to Home Screen
         </button>

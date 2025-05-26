@@ -60,3 +60,45 @@ export const multiFormatDateString = (timestamp: string = ""): string => {
 export const checkIsLiked = (likeList: string[], userId: string) => {
   return likeList?.includes(userId);
 };
+
+
+// Push Notification Helpers
+export const subscribeToPush = async (
+  vapidPublicKey: string
+): Promise<PushSubscription | null> => {
+  if (!("serviceWorker" in navigator)) {
+    console.error("Service workers are not supported in this browser.");
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
+
+    return subscription;
+  } catch (error) {
+    console.error("Error during push subscription:", error);
+    return null;
+  }
+};
+
+// Helper to convert base64 to Uint8Array (required by Web Push API)
+export const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+};

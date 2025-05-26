@@ -7,6 +7,7 @@
   "background_color": "#ffffff",
   "theme_color": "#2E8B57",
   "orientation": "portrait",
+  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "assets/icons/GrowB-192x192.jpeg",
