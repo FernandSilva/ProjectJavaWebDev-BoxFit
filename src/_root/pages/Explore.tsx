@@ -139,7 +139,13 @@ const Explore = () => {
               {posts.length === 0 && isFetchingNextPage ? (
                 <Loader />
               ) : (
-                <GridPostList posts={posts} showComments={true} disableCommentClick={true} />
+                <GridPostList
+                posts={posts}
+                showComments={true}
+                disableCommentClick={true}
+                isExplorePage={true} // ✅ Add this
+              />
+              
               )}
             </div>
             <div ref={ref} className="py-4">

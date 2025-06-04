@@ -30,14 +30,20 @@ const LikedPosts = () => {
 
   const reversedLikedPosts = [...currentUser.liked].reverse();
 
+  const filteredPosts = reversedLikedPosts.map((post) => ({
+    ...post,
+    canEdit: post.creator?.$id === currentUser.$id, // ✅ Add a flag for edit permission
+  }));
+
   return (
     <div className="liked-posts-container">
       <h1 className="text-lg font-semibold mb-4">Liked Posts</h1>
       <GridPostList
-        posts={reversedLikedPosts}
+        posts={filteredPosts}
         showStats={true}
         showComments={true}
-        disableCommentClick={true} // ✅ New line to disable comment clicking
+        disableCommentClick={true}
+        isExplorePage={false} // ✅ Explicit for consistency
       />
     </div>
   );

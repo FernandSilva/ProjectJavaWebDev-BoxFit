@@ -7,7 +7,8 @@ type GridPostListProps = {
   showStats?: boolean;
   showCreator?: boolean;
   showComments?: boolean;
-  disableCommentClick?: boolean; // ✅ Already added here
+  disableCommentClick?: boolean;
+  isExplorePage?: boolean; // ✅ New
 };
 
 const GridPostList = ({
@@ -16,7 +17,8 @@ const GridPostList = ({
   showStats = true,
   showCreator = true,
   showComments = true,
-  disableCommentClick = false, // ✅ Default to false
+  disableCommentClick = false,
+  isExplorePage = false, // ✅ Default false
 }: GridPostListProps) => {
   if (!posts || posts.length === 0) {
     return (
@@ -36,7 +38,8 @@ const GridPostList = ({
           showCreator={showCreator}
           showStats={showStats}
           showComments={showComments}
-          disableCommentClick={disableCommentClick} // ✅ THIS LINE IS MANDATORY
+          disableCommentClick={disableCommentClick}
+          isExplorePage={isExplorePage} // ✅ Pass it
         />
       ))}
     </ul>

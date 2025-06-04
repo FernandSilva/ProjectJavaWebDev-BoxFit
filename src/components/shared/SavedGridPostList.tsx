@@ -9,7 +9,8 @@ type SavedGridPostListProps = {
   showStats: boolean;
   showCreator: boolean;
   showComments: boolean;
-  disableCommentClick?: boolean; // ✅ Add this prop
+  disableCommentClick?: boolean;
+  isExplorePage?: boolean; // ✅ New
 };
 
 const SavedGridPostList = ({
@@ -18,7 +19,8 @@ const SavedGridPostList = ({
   showStats,
   showCreator,
   showComments,
-  disableCommentClick = false, // ✅ Default to false
+  disableCommentClick = false,
+  isExplorePage = false, // ✅ Default
 }: SavedGridPostListProps) => {
   const { user } = useUserContext();
   const [fileTypes, setFileTypes] = useState<string[]>([]);
@@ -41,9 +43,15 @@ const SavedGridPostList = ({
     setCleanUrls(urls);
   }, [post.imageUrl]);
 
+  const isOwnPost = user?.id === post.creator?.$id;
+
+  const postLink = isExplorePage || !isOwnPost
+    ? `/posts/${post.$id}`
+    : `/update-post/${post.$id}`;
+
   return (
     <li key={post.$id} className="relative min-w-80 h-80">
-      <Link to={`/posts/${post.$id}`} className="grid-post_link">
+      <Link to={postLink} className="grid-post_link">
         {fileTypes[0] === "video" && (
           <video
             className="post-card_img !brightness-75 !h-auto"
@@ -82,7 +90,7 @@ const SavedGridPostList = ({
             post={post}
             userId={user?.id || ""}
             showComments={showComments}
-            disableCommentClick={disableCommentClick} // ✅ Pass to PostStats
+            disableCommentClick={disableCommentClick}
           />
         )}
       </div>

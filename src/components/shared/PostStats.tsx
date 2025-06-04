@@ -174,7 +174,11 @@ const PostStats = ({
                 </div>
               </div>
               <img
-                src={comment.likedBy.includes(user.id) ? "/assets/icons/liked.svg" : "/assets/icons/like.svg"}
+                src={
+                  comment.likedBy.includes(user.id)
+                    ? "/assets/icons/liked.svg"
+                    : "/assets/icons/like.svg"
+                }
                 className="cursor-pointer w-5 h-5"
                 onClick={() => handleToggleLikeComment(comment)}
               />
