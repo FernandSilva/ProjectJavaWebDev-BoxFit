@@ -12,7 +12,6 @@ import {
   FormLabel,
   FormMessage,
   Button,
-  Input,
   Textarea,
 } from "@/components/ui";
 import { PostValidation } from "@/lib/validation";
@@ -30,6 +29,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useUserContext();
+
   const form = useForm<z.infer<typeof PostValidation>>({
     resolver: zodResolver(PostValidation),
     defaultValues: {
@@ -46,6 +46,11 @@ const PostForm = ({ post, action }: PostFormProps) => {
 
   const handleSubmit = async (value: z.infer<typeof PostValidation>) => {
     try {
+      if (!user || !user.$id) {
+        toast({ title: "User not authenticated." });
+        return;
+      }
+
       if (post && action === "Update") {
         const updatedPost = await updatePost({
           ...value,
@@ -64,7 +69,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
       } else {
         const newPost = await createPost({
           ...value,
-          userId: user.id,
+          userId: user.$id, // ✅ Fix: Use $id instead of id
         });
 
         if (!newPost) {
@@ -72,17 +77,18 @@ const PostForm = ({ post, action }: PostFormProps) => {
           return;
         }
 
+        // ✅ Send notifications to followers
         if (user.followers?.length) {
           for (const followerId of user.followers) {
             createNotification({
               userId: followerId,
-              senderId: user.id,
+              senderId: user.$id,
               type: "postLike",
               relatedId: newPost.$id,
               isRead: false,
               createdAt: new Date().toISOString(),
               referenceId: newPost.$id,
-              content: `${user.name} `,
+              content: `${user.name} created a new post.`,
               senderName: user.name,
               senderImageUrl: user.imageUrl,
             });
@@ -103,58 +109,23 @@ const PostForm = ({ post, action }: PostFormProps) => {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4 md:gap-9 w-full max-w-5xl">
         <div className="flex flex-col lg:flex-row items-start gap-4 md:gap-8 justify-between">
           <div className="w-[100%] lg:w-[50%]">
-            <div>
-              <FormField
-                control={form.control}
-                name="caption"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="shad-form_label">Caption</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Write Caption Here"
-                        className="shad-textarea custom-scrollbar"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="shad-form_message" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="shad-form_label">City</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Add City" type="text" className="shad-input" {...field} />
-                    </FormControl>
-                    <FormMessage className="shad-form_message" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="shad-form_label">Type of Grow</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Indoor, Greenhouse, Outdoor"
-                        type="text"
-                        className="shad-input"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="shad-form_message" />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="caption"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="shad-form_label">Caption</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Write Caption Here"
+                      className="shad-textarea custom-scrollbar"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage className="shad-form_message" />
+                </FormItem>
+              )}
+            />
           </div>
           <div className="w-full">
             <FormField
@@ -162,7 +133,7 @@ const PostForm = ({ post, action }: PostFormProps) => {
               name="file"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="shad-form_label">Add Photos</FormLabel>
+                  <FormLabel className="shad-form_label">Add File</FormLabel>
                   <FormControl>
                     <FileUploader fieldChange={field.onChange} mediaUrl={post?.imageUrl} />
                   </FormControl>

@@ -17,7 +17,7 @@ const AllUsers = () => {
     <div className="common-container">
       <div className="user-container">
         <h2 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
-          Grow Community
+          BoxFit Community
         </h2>
 
         {isLoading && !creators ? (

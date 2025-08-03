@@ -46,11 +46,10 @@ const LeftSidebar = () => {
     <nav className="leftsidebar">
       <div className="flex flex-col gap-11">
         <Link to="/" className="flex gap-3 items-center">
-          <img
-            src="/assets/images/logo.jpeg"
-            alt="logo"
-            className="w-[8rem] mx-auto object-contain"
-          />
+        <div className="flex items-center gap-2">
+          <img src="/assets/images/Boxfitlogo.png" alt="BoxFit logo" className="h-8 w-8" />
+          <span className="text-xl font-bold text-gray-800">BoxFit</span>
+        </div>
         </Link>
 
         {isLoading || !user ? (

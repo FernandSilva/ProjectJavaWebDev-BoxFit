@@ -47,7 +47,7 @@ export enum QUERY_KEYS {
   // USER STATS
   GET_TOP_USERS = "getTopUsers",
   GET_USER_TOTAL_LIKES = "getUserTotalLikes",
-  TOP_GROWERS = "topGrowers", // ✅ Add this line
+  TOP_memberS = "topmembers", // ✅ Add this line
 
 
   

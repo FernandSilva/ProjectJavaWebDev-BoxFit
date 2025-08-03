@@ -1,9 +1,8 @@
-// ✅ POSTCARD.TSX — FINAL PATCHED
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { A11y, Pagination } from "swiper/modules";
 import { Models } from "appwrite";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 
 import { PostStats } from "@/components/shared";
@@ -19,11 +18,12 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
   const { user } = useUserContext();
   const navigate = useNavigate();
   const videoRefs = useRef<HTMLVideoElement[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [fileTypes, setFileTypes] = useState<string[]>([]);
   const [cleanUrls, setCleanUrls] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!post.imageUrl || !Array.isArray(post.imageUrl)) return;
+
     const types: string[] = [];
     const urls: string[] = [];
 
@@ -49,12 +49,9 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        const { target, isIntersecting } = entry;
-        const index = parseInt(target.getAttribute("data-index") || "0", 10);
-        if (isIntersecting) {
-          videoRefs.current[index]?.play().catch((error) => {
-            console.error("Error playing video:", error);
-          });
+        const index = parseInt(entry.target.getAttribute("data-index") || "0", 10);
+        if (entry.isIntersecting) {
+          videoRefs.current[index]?.play().catch(() => {});
         } else {
           videoRefs.current[index]?.pause();
         }
@@ -70,55 +67,58 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
   }, [cleanUrls]);
 
   const handleEditClick = (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     navigate(`/update-post/${post.$id}`);
   };
 
   return (
-    <div className="post-card sm:max-w-screen-sm">
-      <Link to={`/posts/${post.$id}`} className="block">
-        <div className="flex-between">
-          <div className="flex items-center gap-3">
-            <Link to={`/profile/${post.creator.$id}`} onClick={(e) => e.stopPropagation()}>
-              <img
-                src={post.creator?.imageUrl || "/assets/icons/profile-placeholder1.svg"}
-                alt="creator"
-                className="w-12 lg:h-12 rounded-full"
-              />
-            </Link>
-
-            <div className="flex flex-col">
-              <p className="base-medium lg:body-bold text-black">
-                {post.creator.name}
+    <div
+      className="post-card sm:max-w-screen-sm cursor-pointer"
+      onClick={() => navigate(`/posts/${post.$id}`)}
+    >
+      <div className="flex-between">
+        <div className="flex items-center gap-3">
+          <img
+            src={post.creator?.imageUrl || "/assets/icons/profile-placeholder1.svg"}
+            alt="creator"
+            className="w-12 lg:h-12 rounded-full cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/profile/${post.creator?.$id}`);
+            }}
+          />
+          <div className="flex flex-col">
+            <p className="base-medium lg:body-bold text-black">
+              {post.creator?.name || "Unknown User"}
+            </p>
+            <div className="flex-center gap-2 text-light-3">
+              <p className="subtle-semibold lg:small-regular">
+                {multiFormatDateString(post.$createdAt)}
               </p>
-              <div className="flex-center gap-2 text-light-3">
-                <p className="subtle-semibold lg:small-regular">
-                  {multiFormatDateString(post.$createdAt)}
-                </p>
-                •
-                <p className="subtle-semibold lg:small-regular">
-                  {post.location}
-                </p>
-              </div>
+              {post.location && (
+                <>
+                  • <p className="subtle-semibold lg:small-regular">{post.location}</p>
+                </>
+              )}
             </div>
           </div>
-
-          {/* ✅ Fixed: No nested Link here. Only action */}
-          {user.id === post.creator.$id && (
-            <img
-              src="/assets/icons/edit.svg"
-              alt="edit"
-              width={20}
-              height={20}
-              className="cursor-pointer"
-              onClick={handleEditClick}
-            />
-          )}
         </div>
 
-        <div className="small-medium lg:base-medium py-5">
-          <p>{post.caption}</p>
+        {user.id === post.creator?.$id && (
+          <img
+            src="/assets/icons/edit.svg"
+            alt="edit"
+            width={20}
+            height={20}
+            className="cursor-pointer"
+            onClick={handleEditClick}
+          />
+        )}
+      </div>
+
+      <div className="small-medium lg:base-medium py-5">
+        <p>{post.caption}</p>
+        {Array.isArray(post.tags) && post.tags.length > 0 && (
           <ul className="flex gap-1 mt-2">
             {post.tags.map((tag: string, index: number) => (
               <li key={`${tag}${index}`} className="text-light-3 small-regular">
@@ -126,15 +126,15 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
               </li>
             ))}
           </ul>
-        </div>
+        )}
+      </div>
 
+      {cleanUrls.length > 0 && (
         <Swiper
           modules={[A11y, Pagination]}
           spaceBetween={16}
           slidesPerView={1}
           pagination
-          onInit={(swiper) => setActiveIndex(swiper.activeIndex)}
-          onSlideChange={(swiper) => setActiveIndex(swiper.activeIndex)}
         >
           {cleanUrls.map((url, index) => (
             <SwiperSlide key={index}>
@@ -161,7 +161,7 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
             </SwiperSlide>
           ))}
         </Swiper>
-      </Link>
+      )}
 
       <PostStats
         post={post}

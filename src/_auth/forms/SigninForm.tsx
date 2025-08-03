@@ -1,9 +1,8 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+// src/pages/SigninForm.tsx
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
-import Loader from "@/components/shared/Loader";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -13,12 +12,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import Loader from "@/components/shared/Loader";
 import { useUserContext } from "@/context/AuthContext";
 import { useSignInAccount } from "@/lib/react-query/queries";
 import { SigninValidation } from "@/lib/validation";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import SessionExpiredNotification from "@/components/shared/SessionExpiredNotification";
 
 const SigninForm = () => {
@@ -26,31 +25,18 @@ const SigninForm = () => {
   const { checkAuthUser, sessionExpired } = useUserContext();
   const { mutateAsync: signInAccount, isLoading } = useSignInAccount();
   const [loginError, setLoginError] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const handleSignin = async (userData: z.infer<typeof SigninValidation>) => {
     try {
-      if (!userData.email || !userData.password) {
-        throw new Error("Email and password are required");
-      }
-
-      const session = await signInAccount({
-        email: userData.email,
-        password: userData.password,
-      });
-
-      if (!session) {
-        throw new Error("Login failed. Please try again.");
-      }
-
+      const session = await signInAccount(userData);
+      if (!session) throw new Error("Login failed. Please try again.");
       const isLoggedIn = await checkAuthUser();
       if (isLoggedIn) {
         form.reset();
@@ -59,111 +45,135 @@ const SigninForm = () => {
         throw new Error("Login failed. Please try again.");
       }
     } catch (error: any) {
-      const errMsg = error?.response?.message || error?.message || "An unknown error occurred.";
+      const errMsg =
+        error?.response?.message || error?.message || "An unknown error occurred.";
       setLoginError(errMsg);
-      toast.error(errMsg, {
-        position: "bottom-center",
-      });
-      console.error("Sign-in error:", error);
     }
   };
 
   return (
-    <Form {...form}>
-      <div className="w-full max-w-md mx-auto flex flex-col items-center px-4 py-10">
-        <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
-
-        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Log in to your account</h2>
-        <p className="text-light-3 small-medium md:base-regular mt-2">
-          Welcome back! Please enter your details.
-        </p>
-
-        {sessionExpired && (
-          <SessionExpiredNotification 
-            title="Session Expired"
-            message="Your session has expired. Please log in again. If the issue persists, clear your site cookies."
-          />
-        )}
-
-        {loginError && (
-          <div className="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded relative mt-4 w-full">
-            <strong>⚠️ Login Error</strong>
-            <p className="mt-1">{loginError}</p>
-          </div>
-        )}
-
-        <form
-          onSubmit={form.handleSubmit(handleSignin)}
-          className="flex flex-col gap-4 w-full mt-6"
-        >
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field, fieldState: { error } }) => (
-              <FormItem className="form-item">
-                <FormLabel className="shad-form_label">Email</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    className={`shad-input px-4 py-3 ${error ? "error" : ""}`}
-                    {...field}
-                  />
-                </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field, fieldState: { error } }) => (
-              <FormItem className="form-item">
-                <FormLabel className="shad-form_label">Password</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      className={`shad-input px-4 py-3 pr-10 ${error ? "error" : ""}`}
-                      {...field}
-                    />
-                    <span
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <img src="/assets/icons/dot.svg" alt="hide" className="w-5 h-5 opacity-60" />
-                      ) : (
-                        <img src="/assets/icons/dot-single.svg" alt="show" className="w-5 h-5 opacity-60" />
-                      )}
-                    </span>
-                  </div>
-                </FormControl>
-                {error && <FormMessage className="text-red text-[12px]">{error.message}</FormMessage>}
-              </FormItem>
-            )}
-          />
-
-          <Button type="submit" className="shad-button_primary mt-4">
-            {isLoading ? (
-              <div className="flex-center gap-2">
-                <Loader /> Loading...
-              </div>
-            ) : (
-              "Log in"
-            )}
-          </Button>
-
-          <p className="text-small-regular text-light-3 text-center mt-2">
-            Don't have an account?
-            <Link to="/sign-up" className="text-black hover:text-green-500 text-small-semibold ml-1">
-              Sign up
-            </Link>
-          </p>
-        </form>
-        <ToastContainer />
+    <div className="min-h-screen flex flex-col w-full">
+      {/* Top Bar */}
+      <div className="w-full flex justify-between items-center px-6 py-4 bg-white shadow-md">
+        <div className="flex items-center gap-2">
+          <img src="/assets/images/Boxfitlogo.png" alt="BoxFit logo" className="h-8 w-8" />
+          <span className="text-xl font-bold text-gray-800">BoxFit</span>
+        </div>
+        <div className="flex gap-4">
+          <Button onClick={() => navigate('/sign-up')} className="bg-green-600 text-white hover:bg-green-700">Register</Button>
+          <Button onClick={() => setShowLogin(!showLogin)} className="bg-gray-200 hover:bg-gray-300 text-black">Login</Button>
+        </div>
       </div>
-    </Form>
+
+      {/* Login Form */}
+      {showLogin && (
+        <div className="bg-white px-6 py-4 shadow-md max-w-md mx-auto w-full">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSignin)} className="flex flex-col gap-4">
+              {/* {sessionExpired && (
+                <SessionExpiredNotification 
+                  title="Session Expired"
+                  message="Your session has expired. Please log in again."
+                />
+              )} */}
+              {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          {...field}
+                          className="pr-10"
+                        />
+                        <span
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                        >
+                          {showPassword ? "🙈" : "👁️"}
+                        </span>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit">
+                {isLoading ? (<><Loader /> Loading...</>) : "Log In"}
+              </Button>
+            </form>
+          </Form>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex flex-col gap-10 px-4 py-10 md:px-20 w-full max-w-[1440px] mx-auto">
+        <img src="/assets/images/BF1.png" alt="Gym" className="rounded-lg shadow-md w-full h-auto" />
+
+        <section>
+          <h2 className="text-3xl font-bold mb-4 text-gray-900">Welcome to BoxFit Gym</h2>
+          <p className="text-gray-700 mb-8 text-lg leading-relaxed">
+            BoxFit is more than just a boxing gym—it's a community. Our focus is on combining the discipline of boxing with total fitness training, helping people of all backgrounds find strength, confidence, and purpose through movement.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            <div>
+              <h3 className="text-xl font-semibold mb-2">Meet Our Head Coach</h3>
+              <p className="text-gray-700 mb-4">
+                Our lead coach is a professional boxer from South Africa with over 10 years of competitive experience. With 15+ years in the boxing industry, he’s trained champions, youth fighters, and beginners alike. 
+              </p>
+              <p className="text-gray-700 mb-4">
+                Specializing in pad work, combinations, and amateur boxing basics, he’s passionate about building the next generation of fighters and helping adults unlock their hidden strength through the art of boxing.
+              </p>
+
+              <h3 className="text-xl font-semibold mt-6 mb-2">Why Choose BoxFit?</h3>
+              <ul className="list-disc pl-5 text-gray-600">
+                <li>Structured and safe training environments</li>
+                <li>Women’s boxing and fitness-focused programs</li>
+                <li>Youth mentorship and amateur boxing clinics</li>
+                <li>One-on-one coaching and team training options</li>
+              </ul>
+            </div>
+
+            <div>
+              <img src="/assets/images/BF3.png" alt="Boxing coach" className="rounded-lg shadow-md w-full h-auto" />
+            </div>
+          </div>
+
+          <div className="mt-12">
+            <h3 className="text-xl font-semibold mb-2">Training for All Ages</h3>
+            <p className="text-gray-700 mb-2">
+              From school-age children to adults, our tailored programs cater to all skill levels. Whether your goal is to become an amateur boxer, improve your fitness, or just learn how to throw a proper jab—BoxFit is here for you.
+            </p>
+            <p className="text-gray-700">
+              Our space promotes discipline, energy, and respect. We believe boxing teaches more than punches—it teaches life skills.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      {/* Footer */}
+      <footer className="w-full bg-gray-800 text-white text-center py-4">
+        <p>📲 Contact us: <a href="https://instagram.com/boxfit" target="_blank" rel="noopener noreferrer" className="underline">@boxfit</a></p>
+      </footer>
+    </div>
   );
 };
 

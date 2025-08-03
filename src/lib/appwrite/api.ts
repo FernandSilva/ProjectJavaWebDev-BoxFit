@@ -2,6 +2,8 @@ import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 import { Query } from "appwrite";
 import { account, appwriteConfig, avatars, databases, storage, ID } from "./config";
 import { NotificationResponse, Notification } from "@/types/index";
+import { Permission, Role } from 'appwrite';
+
 
 import { Models } from "appwrite";
 
@@ -9,8 +11,9 @@ import { Models } from "appwrite";
 // ============================================================
 // AUTH
 // ============================================================
-
 // ============================== SIGN UP
+
+
 export async function createUserAccount(user: {
   email: string;
   password: string;
@@ -18,30 +21,54 @@ export async function createUserAccount(user: {
   username?: string;
 }) {
   try {
+    // Step 1: Create the auth account
     const newAccount = await account.create(
       ID.unique(),
       user.email,
       user.password,
       user.name
     );
+    console.log("✅ Auth account created:", newAccount);
 
-    console.log("New account created:", newAccount);
+    // Step 2: Logout any active session before creating a new one
+    try {
+      await account.deleteSession("current");
+      console.log("⚠️ Existing session cleared.");
+    } catch (logoutErr) {
+      console.warn("No session to clear:", logoutErr.message);
+    }
 
+    // Step 3: Now login to create a new valid session
+    await account.createEmailSession(user.email, user.password);
+    console.log("✅ New session created");
+
+    // Step 4: Generate avatar
     const avatarUrl = avatars.getInitials(user.name);
 
-    const newUser = await saveUserToDB({
-      accountId: newAccount.$id,
-      name: newAccount.name,
-      email: newAccount.email,
-      username: user.username,
-      imageUrl: avatarUrl,
-    });
+    // Step 5: Save user to DB with proper permissions
+    const newUser = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      ID.unique(),
+      {
+        accountId: newAccount.$id,
+        name: newAccount.name,
+        email: newAccount.email,
+        username: user.username,
+        imageUrl: avatarUrl,
+        role: "user",
+      },
+      [
+        Permission.read(Role.user(newAccount.$id)),
+        Permission.write(Role.user(newAccount.$id)),
+      ]
+    );
 
-    console.log("User saved to DB:", newUser);
-
+    console.log("✅ User saved to DB:", newUser);
     return newUser;
+
   } catch (error) {
-    console.error("Error creating user account:", error);
+    console.error("❌ Error creating user account:", error);
     throw error;
   }
 }
@@ -50,6 +77,9 @@ export async function createUserAccount(user: {
 
 
 // ============================== SAVE USER TO DB
+
+
+
 export async function saveUserToDB(user: {
   accountId: string;
   email: string;
@@ -62,14 +92,24 @@ export async function saveUserToDB(user: {
       appwriteConfig.databaseId,
       appwriteConfig.userCollectionId,
       ID.unique(),
-      user
+      user,
+      [
+        Permission.read(`user:${user.accountId}`),
+        Permission.write(`user:${user.accountId}`),
+      ]
     );
 
     return newUser;
   } catch (error) {
-    console.log(error);
+    console.error("❌ Error saving user to DB:", error);
+    throw error;
   }
 }
+
+
+
+
+
 
 // ============================== SIGN IN
 export async function signInAccount(user: {
@@ -133,7 +173,7 @@ export async function getCurrentUser(): Promise<Models.Document | null> {
     const currentAccount = await account.get();
 
     if (!currentAccount || !currentAccount.$id) {
-      console.warn("[GrowBuddy] ⚠️ No active session found.");
+      console.warn("[BoxFit] ⚠️ No active session found.");
       return null;
     }
 
@@ -145,15 +185,15 @@ export async function getCurrentUser(): Promise<Models.Document | null> {
     );
 
     if (!userDocs || userDocs.total === 0) {
-      console.warn("[GrowBuddy] ⚠️ No user found in DB for account ID:", currentAccount.$id);
+      console.warn("[BoxFit] ⚠️ No user found in DB for account ID:", currentAccount.$id);
       return null;
     }
 
-    console.info("[GrowBuddy] ✅ Logged in user fetched:", userDocs.documents[0].$id);
+    console.info("[BoxFit] ✅ Logged in user fetched:", userDocs.documents[0].$id);
     return userDocs.documents[0];
   } catch (error: any) {
     const msg = error?.message || error?.response?.message || "Unknown error";
-    console.error("[GrowBuddy] ❌ Error fetching current user:", msg);
+    console.error("[BoxFit] ❌ Error fetching current user:", msg);
     return null;
   }
 }
@@ -189,47 +229,36 @@ export const signOutAccount = async (): Promise<any> => {
 // ============================== CREATE POST
 export async function createPost(post: INewPost) {
   try {
-    // Upload file to appwrite storage
     const uploadedFile = await uploadFiles(post.file);
-    console.log({ uploadedFile });
-    if (!uploadedFile) throw Error;
+    if (!uploadedFile || uploadedFile.length === 0) throw new Error("File upload failed");
 
-    // Get file url
     const fileUrl = await getFilePreviews(uploadedFile);
-    console.log({ fileUrl });
-    if (!fileUrl) {
-      // await deleteFile(uploadedFile);
-      throw Error;
-    }
+    if (!fileUrl || fileUrl.length === 0) throw new Error("File preview failed");
 
-    // Convert tags into array
     const tags = post.tags?.replace(/ /g, "").split(",") || [];
 
-    // Create post
     const newPost = await databases.createDocument(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       ID.unique(),
       {
-        creator: post.userId,
+        userId: post.userId,      // ✅ Matches your collection attribute
+        creator: post.userId,     // ✅ Keep if you're using relationship field
         caption: post.caption,
         imageUrl: fileUrl,
         imageId: uploadedFile,
-        location: post.location,
-        tags: tags,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
     );
 
-    if (!newPost) {
-      await deleteFile(uploadedFile[0]);
-      throw Error;
-    }
-
     return newPost;
   } catch (error) {
-    console.log(error);
+    console.log("Create post error:", error);
+    throw error;
   }
 }
+
 
 // ============================== UPLOAD FILE
 export async function uploadFile(file: File) {
@@ -1310,21 +1339,25 @@ export async function getFollowingPosts(userId: string) {
       (rel) => rel.followsUserId
     );
 
+    // ✅ Prevent empty array query
+    if (followingUserIds.length === 0) {
+      console.log("[getFollowingPosts] No following users.");
+      return { documents: [] };
+    }
+
     const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       [Query.equal("creator", followingUserIds), Query.orderDesc("$createdAt")]
     );
 
-    if (!posts) throw Error;
-    // Log the posts to check the structure
-
     return posts;
   } catch (error) {
-    console.log(error);
+    console.error("getFollowingPosts error:", error);
     throw error;
   }
 }
+
 
 // Function to get posts from followers
 export async function getFollowersPosts(userId: string) {
@@ -1339,19 +1372,24 @@ export async function getFollowersPosts(userId: string) {
       (rel) => rel.userId
     );
 
+    // ✅ Prevent empty array query
+    if (followerUserIds.length === 0) {
+      console.log("[getFollowersPosts] No followers.");
+      return { documents: [] };
+    }
+
     const posts = await databases.listDocuments(
       appwriteConfig.databaseId,
       appwriteConfig.postCollectionId,
       [Query.equal("creator", followerUserIds), Query.orderDesc("$createdAt")]
     );
 
-    if (!posts) throw Error;
-
     return posts;
   } catch (error) {
-    console.log(error);
+    console.error("getFollowersPosts error:", error);
     throw error;
   }
+
 }
 
 // ============================================================
@@ -1768,8 +1806,8 @@ export const createFollowNotification = async ({
   }
 };
 
-// Updated: getTopGrowers()
-export async function getTopGrowers() {
+// Updated: getTopmembers()
+export async function getTopmembers() {
   try {
     const usersResult = await databases.listDocuments(
       appwriteConfig.databaseId,
@@ -1802,7 +1840,7 @@ export async function getTopGrowers() {
 
     return enriched;
   } catch (err) {
-    console.error("Failed to fetch top growers:", err);
+    console.error("Failed to fetch top members:", err);
     throw err;
   }
 }

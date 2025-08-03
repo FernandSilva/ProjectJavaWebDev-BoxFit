@@ -1,4 +1,3 @@
-// src/pages/Home.tsx
 import { PostCard, UserCard } from "@/components/shared";
 import {
   useGetFollowersPosts,
@@ -57,11 +56,11 @@ const Home = () => {
       return (
         <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center border">
           <p className="text-base text-gray-700">
-            Your feed is waiting to grow 🌿 <br />
+            Welcome to <span className="font-bold text-green-600">BoxFit</span> 🥊<br />
             Follow other members or share your first post to start building your home page.
           </p>
           <img
-            src="/assets/images/side-img.jpeg"
+            src="/assets/images/BF1.png"
             alt="Welcome"
             className="w-full max-w-md rounded-lg object-cover my-2"
           />
@@ -77,7 +76,7 @@ const Home = () => {
   const renderCommunityBlock = () => (
     <div className="home-creators items-center">
       <h3 className="h3-bold md:h2-bold text-left w-full border-b border-gray-300 pb-2">
-        Grow Community
+        BoxFit Community
       </h3>
       {isUserLoading ? (
         <div className="flex justify-center w-full py-4">
@@ -101,16 +100,13 @@ const Home = () => {
 
   return (
     <>
-      {/* 🔔 Prompt is shown here but does not occupy space if dismissed */}
       <NotificationsPermissionPrompt />
 
       <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden flex-col lg:flex-row">
-        {/* Center Post Feed */}
         <section className="flex-1 overflow-y-auto px-4 lg:px-6 py-10">
-          {/* Mobile View Community */}
           <div className="block lg:hidden mb-6">
             <h3 className="h3-bold text-left w-full border-b border-gray-300 pb-2">
-              Grow Community
+              BoxFit Community
             </h3>
             <div className="flex overflow-x-auto gap-4 py-2">
               {isUserLoading ? (
@@ -140,14 +136,11 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Feed Heading */}
           <h2 className="h3-bold md:h2-bold mb-5">Feed</h2>
 
-          {/* Feed Content */}
           <div className="home-posts">{renderFeedContent()}</div>
         </section>
 
-        {/* Grow Community on the right */}
         <aside className="hidden lg:flex flex-col w-[300px] border-l border-gray-100 overflow-y-auto px-6 py-10">
           {renderCommunityBlock()}
         </aside>

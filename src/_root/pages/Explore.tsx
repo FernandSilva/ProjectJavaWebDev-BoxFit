@@ -66,35 +66,14 @@ const Explore = () => {
     <div className="main-content !w-full">
       <div className="explore-container !w-full">
         <div className="explore-inner_container">
-          <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2">
-            Top Growers
-          </h2>
-          {isFetchingUsers ? (
-            <Loader />
-          ) : (
-            <div className="overflow-hidden w-[300px] md:w-[900px]">
-              <Swiper
-                modules={[A11y]}
-                spaceBetween={16}
-                slidesPerView={
-                  size.width > 1024 ? 4.5 : size.width > 640 ? 3.5 : 2.5
-                }
-              >
-                {sortedUsers.map((user, index) => (
-                  <SwiperSlide key={user.$id}>
-                    <UserCard user={user} rank={index < 10 ? index + 1 : undefined} />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          )}
+          
 
           <h2 className="h3-bold md:h2-bold w-full border-b border-gray-300 pb-2 mt-10">
-            Search Growers & Posts
+            Search 
           </h2>
           <Input
             type="text"
-            placeholder="Search for growers or posts"
+            placeholder="Search for members or posts"
             className="explore-search"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}

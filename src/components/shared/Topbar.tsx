@@ -40,7 +40,10 @@ const Topbar = () => {
     <section className="topbar">
       <div className="flex-between py-4 px-5">
         <Link to="/" className="flex gap-3 items-center">
-          <img src="/assets/images/logo5.jpg" alt="logo" width={160} height={40} />
+        <div className="flex items-center gap-2">
+          <img src="/assets/images/Boxfitlogo.png" alt="BoxFit logo" className="h-8 w-8" />
+          <span className="text-xl font-bold text-gray-800">BoxFit</span>
+        </div>
         </Link>
 
         <div className="flex gap-4 items-center">

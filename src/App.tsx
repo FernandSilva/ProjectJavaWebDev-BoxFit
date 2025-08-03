@@ -41,7 +41,7 @@ const App = () => {
   // Handle beforeinstallprompt event for PWA
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      console.log("[GrowBuddy] beforeinstallprompt event captured");
+      console.log("[BoxFit] beforeinstallprompt event captured");
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -63,7 +63,7 @@ const App = () => {
 
     prompt.prompt();
     const result = await prompt.userChoice;
-    console.log("[GrowBuddy] User install choice:", result.outcome);
+    console.log("[BoxFit] User install choice:", result.outcome);
 
     setDeferredPrompt(null);
 
@@ -71,7 +71,7 @@ const App = () => {
     if (result.outcome === "accepted") {
       try {
         const permission = await window.Notification.requestPermission();
-        console.log("[GrowBuddy] Push notification permission:", permission);
+        console.log("[BoxFit] Push notification permission:", permission);
       } catch (err) {
         console.error("Notification permission request failed", err);
       }
@@ -123,7 +123,7 @@ const App = () => {
           className="fixed bottom-5 right-5 bg-green-600 text-white px-4 py-2 rounded shadow-lg z-50"
           onClick={handleInstallClick}
         >
-          📲 Add GrowBuddy to Home Screen
+          📲 Add BoxFit to Home Screen
         </button>
       )}
 

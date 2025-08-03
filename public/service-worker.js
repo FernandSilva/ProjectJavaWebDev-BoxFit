@@ -1,10 +1,10 @@
 self.addEventListener("install", (event) => {
-  console.log("[GrowBuddy] Service Worker installed");
+  console.log("[BoxFit] Service Worker installed");
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  console.log("[GrowBuddy] Service Worker activated");
+  console.log("[BoxFit] Service Worker activated");
   return self.clients.claim();
 });
 
@@ -15,7 +15,7 @@ self.addEventListener("fetch", (event) => {
 
 // ✅ Handle push events with fallback and safety
 self.addEventListener("push", (event) => {
-  console.log("[GrowBuddy] Push event received", event);
+  console.log("[BoxFit] Push event received", event);
 
   let data = {};
   if (event.data) {
@@ -26,15 +26,15 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const title = data.title || "🌿 GrowBuddy Notification";
+  const title = data.title || "BoxFit Notification";
   const options = {
-    body: data.body || "You have a new update from GrowBuddy.",
-    icon: data.icon || "/assets/icons/GrowB-192x192.jpeg",
-    badge: data.badge || "/assets/icons/GrowB-192x192.jpeg",
+    body: data.body || "You have a new update from BoxFit",
+    icon: data.icon || "/assets/icons/logo2.jpeg",
+    badge: data.badge || "/assets/icons/logo2.jpeg",
     data: {
-      url: data.url || "https://www.growbuddy.club",
+      url: data.url || "",
     },
-    tag: data.tag || "growbuddy-general",
+    tag: data.tag || "",
     renotify: true,
   };
 
@@ -45,12 +45,12 @@ self.addEventListener("push", (event) => {
 
 // ✅ Handle click events to redirect or focus
 self.addEventListener("notificationclick", (event) => {
-  console.log("[GrowBuddy] Notification clicked");
+  console.log("[BoxFit] Notification clicked");
 
   event.notification.close();
 
   const notificationData = event.notification.data || {};
-  const urlToOpen = notificationData.url || "https://www.growbuddy.club";
+  const urlToOpen = notificationData.url || "";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

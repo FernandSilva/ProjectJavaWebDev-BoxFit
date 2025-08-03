@@ -842,9 +842,9 @@ export const useStorePushSubscription = () => {
 };
 
 
-export const useGetTopGrowers = () => {
+export const useGetTopmembers = () => {
   return useQuery({
-    queryKey: [QUERY_KEYS.TOP_GROWERS],
+    queryKey: [QUERY_KEYS.TOP_members],
     queryFn: async () => {
       const allUsers = await getUsers(); // assuming getUsers() fetches all user docs
       const scored = allUsers

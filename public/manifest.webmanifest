@@ -1,6 +1,6 @@
 {
-  "name": "GrowBuddy",
-  "short_name": "GrowBuddy",
+  "name": "BoxFit",
+  "short_name": "BoxFit",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,13 +10,13 @@
   "gcm_sender_id": "103953800507",
   "icons": [
     {
-      "src": "assets/icons/GrowB-192x192.jpeg",
+      "src": "assets/icons/logo2.jpeg",
       "sizes": "192x192",
       "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/icons/GrowB-192x192.jpeg",
+      "src": "assets/icons/logo2.jpeg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"

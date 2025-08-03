@@ -5,21 +5,29 @@ import Bottombar from "@/components/shared/Bottombar";
 import LeftSidebar from "@/components/shared/LeftSidebar";
 import { useWindowSize } from "@uidotdev/usehooks";
 import { useUserContext } from "@/context/AuthContext";
-import { subscribeToPush } from "@/lib/utils"; // Adjust path if needed
+import { subscribeToPush } from "@/lib/utils"; // ✅ Adjust path if needed
 
 const RootLayout = () => {
   const location = useLocation();
   const { width } = useWindowSize();
   const { isAuthenticated } = useUserContext();
 
-  // ⏱️ Subscribe to push notifications on mount IF authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      subscribeToPush().then(() => {
-        console.log("[Push] Subscribed to push notifications");
-      }).catch((err) => {
-        console.error("[Push] Subscription failed", err);
-      });
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+      if (!vapidKey || vapidKey.trim().length === 0) {
+        console.error("[Push] VAPID public key is missing. Check your .env file.");
+        return;
+      }
+
+      subscribeToPush(vapidKey)
+        .then(() => {
+          console.log("[Push] Subscribed to push notifications");
+        })
+        .catch((err) => {
+          console.error("[Push] Subscription failed", err);
+        });
     }
   }, [isAuthenticated]);
 

@@ -53,7 +53,7 @@
 //     <div className={`chatbot-container ${isOpen ? "open" : ""}`} >
 //       <div className="chatbot-trigger" onClick={toggleChat}>
 //         <img
-//           src="/assets/icons/GrowB.jpeg"
+//           src="/assets/icons/logo2.jpeg"
 //           alt="Chatbot"
 //           style={{
 //             width: "50px", // Adjust the size as needed
@@ -70,7 +70,7 @@
 //         <div className="flex justify-between  p-[10px] border-b border-solid">
 //           <div>
 //             <p className="text-[#100f0f] text-[12px] font-semibold">
-//               GrowBuddy Assistant
+//               BoxFit Assistant
 //             </p>
 //           </div>
 //           <div>

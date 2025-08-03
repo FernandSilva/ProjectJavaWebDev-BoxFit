@@ -26,10 +26,10 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/service-worker.js")
       .then((registration) => {
-        console.log("[GrowBuddy] ✅ Service Worker registered:", registration);
+        console.log("[BoxFit] ✅ Service Worker registered:", registration);
       })
       .catch((registrationError) => {
-        console.error("[GrowBuddy] ❌ Service Worker registration failed:", registrationError);
+        console.error("[BoxFit] ❌ Service Worker registration failed:", registrationError);
       });
   });
 }
@@ -38,21 +38,21 @@ if ("serviceWorker" in navigator) {
 let deferredPrompt: any;
 
 window.addEventListener("beforeinstallprompt", (e) => {
-  console.log("[GrowBuddy] 📱 beforeinstallprompt triggered");
+  console.log("[BoxFit] 📱 beforeinstallprompt triggered");
   e.preventDefault();
   deferredPrompt = e;
 
-  const installBtn = document.getElementById("installGrowBuddy");
+  const installBtn = document.getElementById("installBoxFit");
   if (installBtn) {
     installBtn.style.display = "block";
 
     installBtn.addEventListener("click", async () => {
-      console.log("[GrowBuddy] 📲 Install button clicked");
+      console.log("[BoxFit] 📲 Install button clicked");
       installBtn.style.display = "none";
       deferredPrompt.prompt();
 
       const choiceResult = await deferredPrompt.userChoice;
-      console.log("[GrowBuddy] 🛠️ User install result:", choiceResult.outcome);
+      console.log("[BoxFit] 🛠️ User install result:", choiceResult.outcome);
 
       deferredPrompt = null;
     });

@@ -54,9 +54,15 @@ const SignupForm = () => {
       setShowEmailPopup(true);
     } catch (error: any) {
       const errMsg = error?.response?.message || error?.message || "An unknown error occurred.";
-      toast.error(errMsg, {
-        position: "bottom-center",
-      });
+    
+      if (errMsg.includes("already exists")) {
+        toast.error("An account with this email already exists. Please log in.", {
+          position: "bottom-center",
+        });
+      } else {
+        toast.error(errMsg, { position: "bottom-center" });
+      }
+    
       console.error("Signup error:", error);
     }
   };
@@ -64,10 +70,10 @@ const SignupForm = () => {
   return (
     <Form {...form}>
       <div className="w-full max-w-md mx-auto flex flex-col items-center px-4 py-8">
-        <img src="/assets/images/logo.jpeg" alt="logo" className="logo" />
-        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Create your GrowBuddy account</h2>
+        <img src="/assets/images/Boxfitlogo.png" alt="logo" className="logo" />
+        <h2 className="h3-bold md:h2 pt-5 sm:pt-2">Create your BoxFit account</h2>
         <p className="text-light-3 small-medium md:base-regular mt-2">
-          Join the community and start growing together!
+          Join the BoxFit community and begin your fitness and boxing journey today!
         </p>
 
         {showEmailPopup && (

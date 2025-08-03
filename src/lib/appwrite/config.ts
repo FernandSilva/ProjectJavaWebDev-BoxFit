@@ -13,8 +13,7 @@ interface Config {
   messageCollectionId: string;
   notificationsCollectionId: string;
   functionKey: string;
-  gptKey: string;
-  gptchatbotKey: string;
+
   contactRequestsCollectionId: string;
 }
 
@@ -35,8 +34,7 @@ export const appwriteConfig: Config = {
   contactRequestsCollectionId: import.meta.env.VITE_APPWRITE_CONTACT_REQUESTS_COLLECTION_ID,
 
   functionKey: import.meta.env.VITE_APPWRITE_FUNCTION_KEY,
-  gptKey: import.meta.env.VITE_APPWRITE_GPT_KEY,
-  gptchatbotKey: import.meta.env.VITE_APPWRITE_GPTCHATBOT_KEY,
+  
 };
 
 export const client = new Client()
