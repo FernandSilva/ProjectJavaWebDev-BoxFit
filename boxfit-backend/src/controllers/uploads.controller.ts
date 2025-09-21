@@ -1,33 +1,48 @@
-// controllers/uploads.controller.ts
 import { Request, Response } from "express";
-import { ID, InputFile } from "node-appwrite";
+import { ID } from "appwrite";
+import { Readable } from "stream";
 import { storage } from "../lib/appwriteClient";
 import { appwriteConfig } from "../lib/appwriteConfig";
-import fs from "fs";
+import axios from "axios";
+import FormData from "form-data";
+
+
+const { storageId, endpoint, projectId, apiKey } = appwriteConfig;
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
     const file = req.file;
 
-    if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
 
-    const buffer = fs.readFileSync(file.path);
-    const inputFile = InputFile.fromBuffer(buffer, file.originalname);
+    const form = new FormData();
+    const stream = Readable.from(file.buffer);
 
-    const result = await storage.createFile(
-      appwriteConfig.storageId,
-      ID.unique(),
-      inputFile
-    );
+    form.append("file", stream, {
+      filename: file.originalname,
+      contentType: file.mimetype,
+      knownLength: file.size,
+    });
+    form.append("bucketId", storageId);
+    form.append("fileId", "unique()");
 
-    res.status(200).json({ file: result });
-  } catch (error: any) {
-    console.error("Upload failed:", error.message);
-    res.status(500).json({ error: "Failed to upload file" });
+    const uploadRes = await axios.post(`${endpoint}/storage/files`, form, {
+      headers: {
+        ...form.getHeaders(),
+        "X-Appwrite-Project": projectId,
+        "X-Appwrite-Key": apiKey,
+      },
+    });
+
+    const uploaded = uploadRes.data;
+
+    return res.status(200).json({ file: uploaded });
+  } catch (err: any) {
+    console.error("❌ Upload failed:", err.message);
+    return res.status(500).json({ error: "Failed to upload file" });
   }
 };
+
 
 export const getFilePreview = async (req: Request, res: Response) => {
   try {
@@ -37,12 +52,15 @@ export const getFilePreview = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "File ID required" });
     }
 
-    const previewUrl = storage.getFilePreview(appwriteConfig.storageId, fileId);
+    const previewUrl = storage.getFilePreview(
+      appwriteConfig.storageId,
+      fileId
+    );
 
-    res.status(200).json({ previewUrl: previewUrl.href });
+    return res.status(200).json({ previewUrl: previewUrl.toString() });
   } catch (error: any) {
-    console.error("Error getting preview:", error.message);
-    res.status(500).json({ error: "Failed to get preview" });
+    console.error("❌ Error getting preview:", error.message);
+    return res.status(500).json({ error: "Failed to get preview" });
   }
 };
 
@@ -56,9 +74,9 @@ export const deleteFile = async (req: Request, res: Response) => {
 
     await storage.deleteFile(appwriteConfig.storageId, fileId);
 
-    res.status(200).json({ message: "File deleted successfully" });
+    return res.status(200).json({ message: "File deleted successfully" });
   } catch (error: any) {
-    console.error("Error deleting file:", error.message);
-    res.status(500).json({ error: "Failed to delete file" });
+    console.error("❌ Error deleting file:", error.message);
+    return res.status(500).json({ error: "Failed to delete file" });
   }
 };

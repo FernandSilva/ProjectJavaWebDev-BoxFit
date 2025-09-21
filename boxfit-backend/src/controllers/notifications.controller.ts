@@ -1,87 +1,152 @@
-// controllers/notifications.controller.ts
+// src/controllers/notifications.controller.ts
 import { Request, Response } from "express";
 import { ID, Query } from "node-appwrite";
-import { databases } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+import { databases, ids } from "../lib/appwriteClient";
 
-// ============================
-// Create Notification
-// ============================
-export const createNotification = async (req: Request, res: Response) => {
+const DB = ids.databaseId;
+const NOTIFS = ids.notificationsCollectionId;
+
+const toInt = (v: unknown, d = 20, max = 100) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : d;
+};
+
+/**
+ * GET /api/notifications?userId=...&limit=20&cursor=<docId>
+ * Returns paginated notifications for a user (newest first).
+ */
+export async function listNotifications(req: Request, res: Response) {
   try {
-    const notification = req.body;
+    const userId = String(req.query.userId || "");
+    if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const created = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      ID.unique(),
-      notification
-    );
+    const limit = toInt(req.query.limit, 20);
+    const cursor = req.query.cursor ? String(req.query.cursor) : undefined;
 
-    res.status(201).json(created);
-  } catch (error: any) {
-    console.error("Failed to create notification:", error.message);
+    const queries = [
+      Query.equal("userId", userId),
+      Query.orderDesc("$createdAt"),
+      Query.limit(limit),
+    ];
+    if (cursor) queries.push(Query.cursorAfter(cursor));
+
+    const docs = await databases.listDocuments(DB, NOTIFS, queries);
+    res.json(docs);
+  } catch (err: any) {
+    (req as any).log?.error?.({ msg: "notifications.list.error", err: err?.message });
+    res.status(500).json({ error: "Failed to list notifications" });
+  }
+}
+
+/**
+ * POST /api/notifications
+ * Body: { userId, senderId, type, content, relatedId?, referenceId?, isRead?, createdAt?, senderName?, senderImageUrl? }
+ */
+export async function createNotification(req: Request, res: Response) {
+  try {
+    const payload = { ...(req.body || {}) };
+
+    // minimal validation
+    const required = ["userId", "senderId", "type", "content"];
+    for (const k of required) {
+      if (!payload[k]) {
+        return res.status(400).json({ error: `${k} is required` });
+      }
+    }
+
+    if (payload.isRead == null) payload.isRead = false;
+    if (!payload.createdAt) payload.createdAt = new Date().toISOString();
+
+    const doc = await databases.createDocument(DB, NOTIFS, ID.unique(), payload);
+    res.status(201).json(doc);
+  } catch (err: any) {
+    (req as any).log?.error?.({ msg: "notifications.create.error", err: err?.message });
     res.status(500).json({ error: "Failed to create notification" });
   }
-};
+}
 
-// ============================
-// Get Notifications by User ID
-// ============================
-export const getNotifications = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
+/**
+ * PATCH /api/notifications/:id/read
+ * Marks a single notification as read.
+ */
+export async function markRead(req: Request, res: Response) {
   try {
-    const notifications = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      [Query.equal("userId", userId), Query.orderDesc("$createdAt")]
+    const id = req.params.id;
+    const doc = await databases.updateDocument(DB, NOTIFS, id, {
+      isRead: true,
+      readAt: new Date().toISOString(),
+    });
+    res.json(doc);
+  } catch (err: any) {
+    (req as any).log?.error?.({ msg: "notifications.markRead.error", err: err?.message });
+    res.status(500).json({ error: "Failed to update notification" });
+  }
+}
+
+/**
+ * DELETE /api/notifications/:id
+ * Deletes a single notification.
+ */
+export async function deleteNotification(req: Request, res: Response) {
+  try {
+    await databases.deleteDocument(DB, NOTIFS, req.params.id);
+    res.status(204).end();
+  } catch (err: any) {
+    (req as any).log?.warn?.({ msg: "notifications.delete.error", err: err?.message });
+    res.status(404).json({ error: "Notification not found" });
+  }
+}
+
+/**
+ * DELETE /api/notifications?userId=...
+ * Clears all notifications for a user (best-effort, up to 200 at a time).
+ */
+export async function clearNotifications(req: Request, res: Response) {
+  try {
+    const userId = String(req.query.userId || "");
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const list = await databases.listDocuments(DB, NOTIFS, [
+      Query.equal("userId", userId),
+      Query.limit(200),
+    ]);
+
+    await Promise.all(
+      list.documents.map((d: any) => databases.deleteDocument(DB, NOTIFS, d.$id))
     );
 
-    res.status(200).json(notifications);
-  } catch (error: any) {
-    console.error("Failed to fetch notifications:", error.message);
-    res.status(500).json({ error: "Failed to fetch notifications" });
+    res.status(204).end();
+  } catch (err: any) {
+    (req as any).log?.error?.({ msg: "notifications.clear.error", err: err?.message });
+    res.status(500).json({ error: "Failed to clear notifications" });
   }
-};
+}
 
-// ============================
-// Mark Notification as Read
-// ============================
-export const markNotificationAsRead = async (req: Request, res: Response) => {
-  const { notificationId } = req.params;
-
+/**
+ * PATCH /api/notifications/read-all?userId=...
+ * Marks all unread notifications for a user as read (best-effort, up to 200).
+ */
+export async function markAllRead(req: Request, res: Response) {
   try {
-    const updated = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      notificationId,
-      { isRead: true }
+    const userId = String(req.query.userId || "");
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const list = await databases.listDocuments(DB, NOTIFS, [
+      Query.equal("userId", userId),
+      Query.equal("isRead", false),
+      Query.limit(200),
+    ]);
+
+    const now = new Date().toISOString();
+    await Promise.all(
+      list.documents.map((d: any) =>
+        databases.updateDocument(DB, NOTIFS, d.$id, { isRead: true, readAt: now })
+      )
     );
 
-    res.status(200).json(updated);
-  } catch (error: any) {
-    console.error("Failed to mark notification as read:", error.message);
-    res.status(500).json({ error: "Failed to mark notification as read" });
+    res.status(204).end();
+  } catch (err: any) {
+    (req as any).log?.error?.({ msg: "notifications.markAllRead.error", err: err?.message });
+    res.status(500).json({ error: "Failed to mark all read" });
   }
-};
-
-// ============================
-// Delete Notification
-// ============================
-export const deleteNotification = async (req: Request, res: Response) => {
-  const { notificationId } = req.params;
-
-  try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      notificationId
-    );
-
-    res.status(200).json({ message: "Notification deleted successfully" });
-  } catch (error: any) {
-    console.error("Failed to delete notification:", error.message);
-    res.status(500).json({ error: "Failed to delete notification" });
-  }
-};
+}

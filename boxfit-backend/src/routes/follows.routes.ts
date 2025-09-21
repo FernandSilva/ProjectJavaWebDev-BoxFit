@@ -1,8 +1,9 @@
+// routes/follows.routes.ts
 import express from "express";
 import {
   followUser,
   unfollowUser,
-  getFollowStatus,
+  checkFollowStatus,
   getUserRelationships,
 } from "../controllers/follows.controller";
 
@@ -15,7 +16,7 @@ router.post("/", followUser);
 router.delete("/:documentId", unfollowUser);
 
 // Check follow status between two users
-router.get("/status", getFollowStatus);
+router.get("/status", checkFollowStatus);
 
 // Get follow/follower counts for a user
 router.get("/relationships/:userId", getUserRelationships);

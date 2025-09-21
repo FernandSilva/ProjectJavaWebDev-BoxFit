@@ -1,28 +1,8 @@
 // controllers/auth.controller.ts
 import { Request, Response } from "express";
-import { account } from "../lib/appwriteClient";
+import fetch from "node-fetch"; // Ensure this is installed via `npm i node-fetch`
+import { appwriteConfig } from "../lib/appwriteConfig";
 
-// GET /api/auth/current-user
-export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    const sessionCookie = req.headers.cookie;
-
-    if (!sessionCookie) {
-      return res.status(401).json({ error: "No session found" });
-    }
-
-    const session = await account.getSession("current");
-
-    const user = await account.get();
-
-    res.status(200).json({ user, session });
-  } catch (error: any) {
-    console.error("Error fetching current user:", error.message);
-    res.status(500).json({ error: "Failed to get current user" });
-  }
-};
-
-// POST /api/auth/signin
 export const signInAccount = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -31,23 +11,25 @@ export const signInAccount = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing credentials" });
     }
 
-    const session = await account.createEmailSession(email, password);
-    const user = await account.get();
+    const response = await fetch(`${appwriteConfig.endpoint}/account/sessions/email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Appwrite-Project": appwriteConfig.projectId,
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-    res.status(200).json({ user, session });
-  } catch (error: any) {
-    console.error("Sign-in failed:", error.message);
-    res.status(401).json({ error: "Invalid credentials" });
-  }
-};
+    if (!response.ok) {
+      const errData = await response.json();
+      console.error("❌ Signin error:", errData);
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-// POST /api/auth/signout
-export const signOutAccount = async (_req: Request, res: Response) => {
-  try {
-    await account.deleteSession("current");
-    res.status(200).json({ message: "Signed out successfully" });
+    const session = await response.json();
+    return res.status(200).json({ session });
   } catch (error: any) {
-    console.error("Sign-out failed:", error.message);
-    res.status(500).json({ error: "Failed to sign out" });
+    console.error("❌ Signin exception:", error.message);
+    return res.status(500).json({ error: "Signin failed" });
   }
 };

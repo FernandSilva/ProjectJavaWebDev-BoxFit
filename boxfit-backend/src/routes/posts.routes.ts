@@ -1,92 +1,76 @@
-import express from "express";
-import { ID, Query } from "node-appwrite";
-import { databases, storage } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+// src/routes/posts.routes.ts
+import { Router } from "express";
+import multer from "multer";
+import * as Posts from "../controllers/posts.controller";
 
-const router = express.Router();
+const router = Router();
 
-// Create a post
-router.post("/", async (req, res) => {
-  try {
-    const newPost = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      ID.unique(),
-      req.body
-    );
-    res.status(201).json(newPost);
-  } catch (err) {
-    console.error("Error creating post:", err.message);
-    res.status(500).json({ error: "Failed to create post" });
-  }
+// Multer memory storage with sensible file limits
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25 MB per file
+    files: 20,
+  },
 });
 
-// Get post by ID
-router.get("/:postId", async (req, res) => {
-  try {
-    const post = await databases.getDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      req.params.postId
-    );
-    res.status(200).json(post);
-  } catch (err) {
-    console.error("Error getting post:", err.message);
-    res.status(500).json({ error: "Failed to get post" });
-  }
-});
+// Async wrapper to catch errors and forward to next middleware
+const wrap =
+  (fn: any) =>
+  (req: any, res: any, next: any) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
 
-// Update post by ID
-router.put("/:postId", async (req, res) => {
-  try {
-    const updatedPost = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      req.params.postId,
-      req.body
-    );
-    res.status(200).json(updatedPost);
-  } catch (err) {
-    console.error("Error updating post:", err.message);
-    res.status(500).json({ error: "Failed to update post" });
-  }
-});
+/* ============================================================================
+   POST ROUTES
+============================================================================ */
 
-// Delete post by ID and image from storage (if imageId is provided)
-router.delete("/:postId", async (req, res) => {
-  const { imageId } = req.body;
-  try {
-    if (imageId) {
-      await storage.deleteFile(appwriteConfig.storageId, imageId);
-    }
+// List/search/recent
+router.get("/posts", wrap(Posts.listPosts));
+router.get("/posts/recent", wrap(Posts.getRecentPosts));
 
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      req.params.postId
-    );
+// Single post
+router.get("/posts/:id", wrap(Posts.getPostById));
 
-    res.status(200).json({ message: "Post deleted" });
-  } catch (err) {
-    console.error("Error deleting post:", err.message);
-    res.status(500).json({ error: "Failed to delete post" });
-  }
-});
+// Feed (following & followers)
+router.get("/posts/following/:userId", wrap(Posts.getFollowingPosts));
+router.get("/posts/followers/:userId", wrap(Posts.getFollowersPosts));
 
-// Get all posts by a user
-router.get("/user/:userId", async (req, res) => {
-  try {
-    const posts = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      [Query.equal("creator", req.params.userId), Query.orderDesc("$createdAt")]
-    );
+// User-specific posts
+router.get("/posts/user/:userId", wrap(Posts.getUserPosts));
+router.get("/users/:userId/posts", wrap(Posts.getUserPosts)); // legacy alias
 
-    res.status(200).json(posts);
-  } catch (err) {
-    console.error("Error getting user posts:", err.message);
-    res.status(500).json({ error: "Failed to get user posts" });
-  }
-});
+// Create post with files
+router.post(
+  "/posts",
+  upload.fields([
+    { name: "files", maxCount: 20 },
+    { name: "file", maxCount: 20 },
+  ]),
+  wrap(Posts.createPost)
+);
+
+// Update post
+router.patch(
+  "/posts/:id",
+  upload.fields([
+    { name: "files", maxCount: 20 },
+    { name: "file", maxCount: 20 },
+  ]),
+  wrap(Posts.updatePost)
+);
+
+// Delete post
+router.delete("/posts/:id", wrap(Posts.deletePost));
+
+// Like post
+router.post("/posts/:id/like", wrap(Posts.likePost));
+
+// Save post
+router.post("/posts/:id/save", wrap(Posts.savePost));
+
+// Delete saved post (new + legacy)
+router.delete("/posts/saved/:saveId", wrap(Posts.deleteSavedPost)); // preferred
+router.delete("/saves/:saveId", wrap(Posts.deleteSavedPost));       // legacy
 
 export default router;
+

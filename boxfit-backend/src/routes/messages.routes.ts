@@ -1,104 +1,53 @@
-import express from "express";
-import { ID, Query } from "node-appwrite";
-import { databases } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+// src/routes/messages.routes.ts
+import { Router, Request, Response, NextFunction } from "express";
+import * as MessagesController from "../controllers/messages.controller";
 
-const router = express.Router();
+const router = Router();
 
-// Create a new message
-router.post("/", async (req, res) => {
-  try {
-    const message = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId,
-      ID.unique(),
-      req.body
-    );
-    res.status(201).json(message);
-  } catch (error) {
-    console.error("Error creating message:", error.message);
-    res.status(500).json({ error: "Failed to create message" });
+const wrap =
+  (fn: any) =>
+  (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
+
+/* ============================================================================
+   Messages API  (mount at /api/messages)
+
+   - GET    /api/messages/thread?userId=&peerId=&limit=
+   - GET    /api/messages/contacts?userId=&q=
+   - POST   /api/messages
+   - DELETE /api/messages/:id
+   - PATCH  /api/messages/read        (body: { senderId, recipientId })
+============================================================================ */
+
+/**
+ * If userId or peerId is missing/blank, return an empty thread instead of 400.
+ * This keeps the UI quiet while no conversation is selected.
+ */
+function guardEmptyThreadParams(req: Request, res: Response, next: NextFunction) {
+  const userId = String(req.query.userId ?? "").trim();
+  const peerId = String(req.query.peerId ?? "").trim();
+
+  if (!userId || !peerId) {
+    return res.status(200).json({ total: 0, documents: [] });
   }
-});
+  return next();
+}
 
-// Get all messages between two users (senderId and recipientId)
-router.get("/", async (req, res) => {
-  const { senderId, recipientId } = req.query;
-
+/**
+ * Ensure the body contains both senderId and recipientId for read marking.
+ */
+function guardMarkReadBody(req: Request, res: Response, next: NextFunction) {
+  const { senderId, recipientId } = req.body || {};
   if (!senderId || !recipientId) {
     return res.status(400).json({ error: "senderId and recipientId are required" });
   }
+  return next();
+}
 
-  try {
-    const response = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId,
-      [
-        Query.or([
-          Query.and([Query.equal("senderId", senderId), Query.equal("recipientId", recipientId)]),
-          Query.and([Query.equal("senderId", recipientId), Query.equal("recipientId", senderId)]),
-        ]),
-        Query.orderAsc("$createdAt"),
-      ]
-    );
-
-    res.status(200).json(response.documents);
-  } catch (error) {
-    console.error("Error fetching messages:", error.message);
-    res.status(500).json({ error: "Failed to fetch messages" });
-  }
-});
-
-// Delete a message
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId,
-      id
-    );
-    res.status(200).json({ message: "Message deleted" });
-  } catch (error) {
-    console.error("Error deleting message:", error.message);
-    res.status(500).json({ error: "Failed to delete message" });
-  }
-});
-
-// Mark all messages from sender as read
-router.patch("/mark-as-read", async (req, res) => {
-  const { senderId, recipientId } = req.body;
-
-  if (!senderId || !recipientId) {
-    return res.status(400).json({ error: "senderId and recipientId are required" });
-  }
-
-  try {
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.messageCollectionId,
-      [
-        Query.equal("senderId", senderId),
-        Query.equal("recipientId", recipientId),
-        Query.equal("isRead", false),
-      ]
-    );
-
-    for (const msg of result.documents) {
-      await databases.updateDocument(
-        appwriteConfig.databaseId,
-        appwriteConfig.messageCollectionId,
-        msg.$id,
-        { isRead: true }
-      );
-    }
-
-    res.status(200).json({ message: "Messages marked as read" });
-  } catch (error) {
-    console.error("Error marking messages as read:", error.message);
-    res.status(500).json({ error: "Failed to mark messages as read" });
-  }
-});
+router.get("/thread", guardEmptyThreadParams, wrap(MessagesController.getThread));
+router.get("/contacts", wrap(MessagesController.listContacts));
+router.post("/", wrap(MessagesController.createMessage));
+router.delete("/:id", wrap(MessagesController.deleteMessage));
+router.patch("/read", guardMarkReadBody, wrap(MessagesController.markThreadRead));
 
 export default router;

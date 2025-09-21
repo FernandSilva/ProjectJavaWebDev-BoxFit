@@ -1,72 +1,92 @@
 // controllers/likes.controller.ts
 import { Request, Response } from "express";
+import { ID, Query } from "node-appwrite";
 import { databases } from "../lib/appwriteClient";
 import { appwriteConfig } from "../lib/appwriteConfig";
 
-// ============================
-// Like a Post
-// ============================
+// Like a post
 export const likePost = async (req: Request, res: Response) => {
-  const { postId } = req.params;
-  const { userId } = req.body;
-
-  if (!postId || !userId) {
-    return res.status(400).json({ error: "Post ID and User ID are required." });
-  }
-
   try {
-    const post = await databases.getDocument(
+    const newLike = await databases.createDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId
+      appwriteConfig.likesCollectionId,
+      ID.unique(),
+      req.body
     );
 
-    const updatedLikes = [...(post.liked || []), userId];
-
-    const updated = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId,
-      { liked: updatedLikes }
-    );
-
-    res.status(200).json(updated);
-  } catch (error: any) {
-    console.error("Error liking post:", error.message);
-    res.status(500).json({ error: "Failed to like post." });
+    res.status(201).json(newLike);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error liking post:", error.message);
+    } else {
+      console.error("Unknown error liking post:", error);
+    }
+    res.status(500).json({ error: "Failed to like post" });
   }
 };
 
-// ============================
-// Unlike a Post
-// ============================
+// Unlike a post
 export const unlikePost = async (req: Request, res: Response) => {
-  const { postId } = req.params;
-  const { userId } = req.body;
-
-  if (!postId || !userId) {
-    return res.status(400).json({ error: "Post ID and User ID are required." });
-  }
+  const { likeId } = req.body;
 
   try {
-    const post = await databases.getDocument(
+    await databases.deleteDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId
+      appwriteConfig.likesCollectionId,
+      likeId
     );
 
-    const updatedLikes = (post.liked || []).filter((id: string) => id !== userId);
+    res.status(200).json({ message: "Post unliked" });
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error unliking post:", error.message);
+    } else {
+      console.error("Unknown error unliking post:", error);
+    }
+    res.status(500).json({ error: "Failed to unlike post" });
+  }
+};
 
-    const updated = await databases.updateDocument(
+// ✅ Get all likes for a specific post
+export const getPostLikes = async (req: Request, res: Response) => {
+  const { postId } = req.params;
+
+  try {
+    const result = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
-      postId,
-      { liked: updatedLikes }
+      appwriteConfig.likesCollectionId,
+      [Query.equal("postId", postId)]
     );
 
-    res.status(200).json(updated);
-  } catch (error: any) {
-    console.error("Error unliking post:", error.message);
-    res.status(500).json({ error: "Failed to unlike post." });
+    res.status(200).json(result.documents);
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error fetching post likes:", error.message);
+    } else {
+      console.error("Unknown error fetching post likes:", error);
+    }
+    res.status(500).json({ error: "Failed to fetch post likes" });
+  }
+};
+
+// ✅ Get total likes received by a specific user
+export const getUserTotalLikes = async (req: Request, res: Response) => {
+  const { userId } = req.params;
+
+  try {
+    const result = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.likesCollectionId,
+      [Query.equal("postCreator", userId)]
+    );
+
+    res.status(200).json({ totalLikes: result.documents.length });
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error fetching user total likes:", error.message);
+    } else {
+      console.error("Unknown error fetching user total likes:", error);
+    }
+    res.status(500).json({ error: "Failed to fetch user total likes" });
   }
 };

@@ -1,78 +1,53 @@
-import express from "express";
-import { ID, Query } from "node-appwrite";
-import { databases } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+// src/routes/notifications.root.ts
+import { Router } from "express";
+import * as NotificationsController from "../controllers/notifications.controller";
 
-const router = express.Router();
+const router = Router();
 
-// Create a new notification
-router.post("/", async (req, res) => {
-  try {
-    const notification = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      ID.unique(),
-      req.body
-    );
-    res.status(201).json(notification);
-  } catch (error) {
-    console.error("Error creating notification:", error.message);
-    res.status(500).json({ error: "Failed to create notification" });
-  }
-});
+/** Small async wrapper to bubble errors to your error middleware */
+const wrap =
+  (fn: any) =>
+  (req: any, res: any, next: any) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
 
-// Get all notifications for a user
-router.get("/:userId", async (req, res) => {
-  const { userId } = req.params;
+/* ============================================================================
+   Notifications API
+   Mount at: /api/notifications
 
-  try {
-    const response = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      [Query.equal("userId", userId), Query.orderDesc("$createdAt")]
-    );
+   - GET    /api/notifications?userId=&limit=&cursor=
+   - GET    /api/notifications/:userId           (back-compat -> delegates to query form)
+   - POST   /api/notifications
+   - PATCH  /api/notifications/:id/read
+   - PATCH  /api/notifications/read-all?userId=
+   - DELETE /api/notifications/:id
+   - DELETE /api/notifications?userId=           (clear all for a user)
+============================================================================ */
 
-    res.status(200).json(response.documents);
-  } catch (error) {
-    console.error("Error fetching notifications:", error.message);
-    res.status(500).json({ error: "Failed to fetch notifications" });
-  }
-});
+/** List notifications (newest first) by userId (query param) */
+router.get("/", wrap(NotificationsController.listNotifications));
 
-// Mark a notification as read
-router.patch("/:id/read", async (req, res) => {
-  const { id } = req.params;
+/** Back-compat: list by path param, delegates to listNotifications */
+router.get(
+  "/:userId",
+  wrap((req, res) => {
+    req.query.userId = req.params.userId;
+    return NotificationsController.listNotifications(req, res);
+  })
+);
 
-  try {
-    const updated = await databases.updateDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      id,
-      { isRead: true }
-    );
+/** Create a notification */
+router.post("/", wrap(NotificationsController.createNotification));
 
-    res.status(200).json(updated);
-  } catch (error) {
-    console.error("Error marking notification as read:", error.message);
-    res.status(500).json({ error: "Failed to mark notification as read" });
-  }
-});
+/** Mark a single notification as read */
+router.patch("/:id/read", wrap(NotificationsController.markRead));
 
-// Delete a notification
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
+/** Mark all notifications as read for a user (userId query param) */
+router.patch("/read-all", wrap(NotificationsController.markAllRead));
 
-  try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.notificationsCollectionId,
-      id
-    );
-    res.status(200).json({ message: "Notification deleted" });
-  } catch (error) {
-    console.error("Error deleting notification:", error.message);
-    res.status(500).json({ error: "Failed to delete notification" });
-  }
-});
+/** Delete a single notification by id */
+router.delete("/:id", wrap(NotificationsController.deleteNotification));
+
+/** Clear all notifications for a user (userId query param) */
+router.delete("/", wrap(NotificationsController.clearNotifications));
 
 export default router;

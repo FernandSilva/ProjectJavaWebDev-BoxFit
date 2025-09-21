@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES6",                          // Use modern JavaScript features
-    "module": "CommonJS",                     // Compatible with Node.js
-    "rootDir": "./",                          // Compile from root
-    "outDir": "./dist",                       // Output folder for compiled JS
-    "strict": true,                           // Enable all strict type checks
-    "esModuleInterop": true,                  // Support ES-style imports
-    "skipLibCheck": true,                     // Skip checking .d.ts files
-    "forceConsistentCasingInFileNames": true, // Consistent casing
-    "moduleResolution": "node",               // Resolve modules like Node
-    "resolveJsonModule": true,                // Allow importing JSON
-    "baseUrl": "./"                           // Base path for imports
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "src",
+    "outDir": "dist",
+    "baseUrl": "src",          // <- enables `import ... from "routes/..."` style
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
   },
-  "include": ["server.ts", "src/**/*"],
-  "exclude": ["node_modules"]
+  "include": ["src"]
 }
+
