@@ -1,92 +1,93 @@
-// controllers/likes.controller.ts
-import { Request, Response } from "express";
-import { ID, Query } from "node-appwrite";
-import { databases } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+import { Request, Response, NextFunction } from "express";
+import Post from "../models/Post";
+import Comment from "../models/Comment";
 
-// Like a post
-export const likePost = async (req: Request, res: Response) => {
+// ----------------------------- Likes ----------------------------------------
+
+// ✅ Like a post
+export async function likePost(req: Request, res: Response, next: NextFunction) {
   try {
-    const newLike = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      ID.unique(),
-      req.body
-    );
-
-    res.status(201).json(newLike);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error liking post:", error.message);
-    } else {
-      console.error("Unknown error liking post:", error);
+    const { postId, userId } = req.body;
+    if (!postId || !userId) {
+      return res.status(400).json({ error: "postId and userId are required" });
     }
-    res.status(500).json({ error: "Failed to like post" });
+
+    const updated = await Post.findByIdAndUpdate(
+      postId,
+      { $addToSet: { likes: userId } },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// Unlike a post
-export const unlikePost = async (req: Request, res: Response) => {
-  const { likeId } = req.body;
-
+// ✅ Unlike a post
+export async function unlikePost(req: Request, res: Response, next: NextFunction) {
   try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      likeId
-    );
-
-    res.status(200).json({ message: "Post unliked" });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error unliking post:", error.message);
-    } else {
-      console.error("Unknown error unliking post:", error);
+    const { postId, userId } = req.body;
+    if (!postId || !userId) {
+      return res.status(400).json({ error: "postId and userId are required" });
     }
-    res.status(500).json({ error: "Failed to unlike post" });
+
+    const updated = await Post.findByIdAndUpdate(
+      postId,
+      { $pull: { likes: userId } },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// ✅ Get all likes for a specific post
-export const getPostLikes = async (req: Request, res: Response) => {
-  const { postId } = req.params;
-
+// ✅ Like a comment
+export async function likeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      [Query.equal("postId", postId)]
-    );
-
-    res.status(200).json(result.documents);
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error fetching post likes:", error.message);
-    } else {
-      console.error("Unknown error fetching post likes:", error);
+    const { commentId, userId } = req.body;
+    if (!commentId || !userId) {
+      return res.status(400).json({ error: "commentId and userId are required" });
     }
-    res.status(500).json({ error: "Failed to fetch post likes" });
+
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { $addToSet: { likes: userId } },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ error: "Comment not found" });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// ✅ Get total likes received by a specific user
-export const getUserTotalLikes = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
+// ✅ Unlike a comment
+export async function unlikeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.likesCollectionId,
-      [Query.equal("postCreator", userId)]
-    );
-
-    res.status(200).json({ totalLikes: result.documents.length });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error fetching user total likes:", error.message);
-    } else {
-      console.error("Unknown error fetching user total likes:", error);
+    const { commentId, userId } = req.body;
+    if (!commentId || !userId) {
+      return res.status(400).json({ error: "commentId and userId are required" });
     }
-    res.status(500).json({ error: "Failed to fetch user total likes" });
+
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { $pull: { likes: userId } },
+      { new: true }
+    ).lean();
+
+    if (!updated) return res.status(404).json({ error: "Comment not found" });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
   }
-};
+}

@@ -1,35 +1,21 @@
-// src/middleware/verifyToken.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const jwtSecret = process.env.JWT_SECRET || "super-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwt";
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    name?: string;
-    username?: string;
-  };
-}
-
-export const verifyToken = (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const token = req.cookies?.token;
-
-  if (!token) {
-    return res.status(401).json({ error: "Missing authentication token" });
-  }
-
+export function verifyToken(req: Request, res: Response, next: NextFunction) {
   try {
-    const decoded = jwt.verify(token, jwtSecret) as AuthenticatedRequest["user"];
-    req.user = decoded;
+    const token =
+      req.cookies?.jwt_token ||
+      req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) return res.status(401).json({ error: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    (req as any).user = decoded;
     next();
   } catch (err) {
-    console.error("🔐 Invalid token:", err);
-    return res.status(403).json({ error: "Invalid or expired token" });
+    console.error("❌ verifyToken error:", (err as any).message);
+    return res.status(401).json({ error: "Invalid or expired token" });
   }
-};
+}

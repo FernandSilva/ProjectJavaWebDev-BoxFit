@@ -6,16 +6,18 @@ import * as UsersController from "../controllers/users.controller";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Small async wrapper
+// Async wrapper
 const wrap =
   (fn: any) =>
   (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
 /* =============================================================================
-   Users + Relationships
-   (Order matters: fixed /users/* routes before /users/:id)
+   USERS + RELATIONSHIPS
 ============================================================================= */
+
+// Create user
+router.post("/users", wrap(UsersController.createUser));
 
 // Search & leaderboard
 router.get("/users/search", wrap(UsersController.searchUsers));
@@ -28,13 +30,13 @@ router.get("/users/:id/relationships/list", wrap(UsersController.getRelationship
 router.get("/users/:id/followers", wrap(UsersController.getFollowersList));
 router.get("/users/:id/likes/total", wrap(UsersController.getUserTotalLikes));
 
-// ✅ NEW: Fetch user by Appwrite accountId (used by frontend `account.get()`)
+// Get user by accountId
 router.get("/users/by-account/:accountId", wrap(UsersController.getUserByAccountId));
 
-// Single user by docId must come last to avoid route collision
+// Single user by ID
 router.get("/users/:id", wrap(UsersController.getUserById));
 
-// Profile update (supports avatar upload via field name "file")
+// Profile update (optional avatar upload)
 router.patch("/users/:id", upload.single("file"), wrap(UsersController.updateUser));
 
 // Follow / Unfollow / Check

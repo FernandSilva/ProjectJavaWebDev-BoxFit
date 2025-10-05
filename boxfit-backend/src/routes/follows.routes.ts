@@ -1,24 +1,28 @@
-// routes/follows.routes.ts
-import express from "express";
-import {
-  followUser,
-  unfollowUser,
-  checkFollowStatus,
-  getUserRelationships,
-} from "../controllers/follows.controller";
+import { Router, Request, Response, NextFunction } from "express";
+import * as Follows from "../controllers/follows.controller";
 
-const router = express.Router();
+const router = Router();
 
-// Follow a user
-router.post("/", followUser);
+// Async wrapper
+const wrap =
+  (fn: any) =>
+  (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
 
-// Unfollow a user
-router.delete("/:documentId", unfollowUser);
+/* ============================================================================
+   FOLLOW ROUTES
+============================================================================ */
 
-// Check follow status between two users
-router.get("/status", checkFollowStatus);
+// Follow / Unfollow
+router.post("/follows", wrap(Follows.followUser));
+router.delete("/follows/:id", wrap(Follows.unfollowById));
+router.delete("/follows", wrap(Follows.unfollowByPair));
 
-// Get follow/follower counts for a user
-router.get("/relationships/:userId", getUserRelationships);
+// Followers / Following
+router.get("/follows/:userId/followers", wrap(Follows.getFollowers));
+router.get("/follows/:userId/following", wrap(Follows.getFollowing));
+
+// Status check
+router.get("/follows/check", wrap(Follows.checkFollowStatus));
 
 export default router;

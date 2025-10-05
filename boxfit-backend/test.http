@@ -1,0 +1,31 @@
+### Health check
+GET http://localhost:3001/api/healthz
+
+### List users
+GET http://localhost:3001/api/users
+
+### Create user via backend
+POST http://localhost:3001/api/users
+Content-Type: application/json
+
+{
+  "accountId": "demo456",
+  "email": "demo2@example.com",
+  "name": "Second User",
+  "username": "demo2",
+  "imageUrl": "https://placehold.co/100x100"
+}
+
+### Create post
+POST http://localhost:3001/api/posts
+Content-Type: application/json
+
+{
+  "userId": "PUT_USER_ID_FROM_USERS_COLLECTION",
+  "caption": "My first MongoDB-backed post",
+  "tags": "intro,test"
+}
+
+### List posts
+GET http://localhost:3001/api/posts
+

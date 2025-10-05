@@ -1,82 +1,67 @@
-import { Request, Response } from "express";
-import { ID } from "appwrite";
-import { Readable } from "stream";
-import { storage } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
-import axios from "axios";
-import FormData from "form-data";
+import { Request, Response, NextFunction } from "express";
+import fs from "fs";
+import path from "path";
 
+const UPLOAD_DIR = path.join(__dirname, "../../uploads");
 
-const { storageId, endpoint, projectId, apiKey } = appwriteConfig;
+// Ensure upload directory exists
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
-export const uploadFile = async (req: Request, res: Response) => {
+// ----------------------------- Controllers ----------------------------------
+
+// ✅ Handle single upload (profile pic, cover, etc.)
+export async function uploadSingle(req: Request, res: Response, next: NextFunction) {
   try {
-    const file = req.file;
-
-    if (!file) return res.status(400).json({ error: "No file uploaded" });
-
-    const form = new FormData();
-    const stream = Readable.from(file.buffer);
-
-    form.append("file", stream, {
-      filename: file.originalname,
-      contentType: file.mimetype,
-      knownLength: file.size,
-    });
-    form.append("bucketId", storageId);
-    form.append("fileId", "unique()");
-
-    const uploadRes = await axios.post(`${endpoint}/storage/files`, form, {
-      headers: {
-        ...form.getHeaders(),
-        "X-Appwrite-Project": projectId,
-        "X-Appwrite-Key": apiKey,
-      },
-    });
-
-    const uploaded = uploadRes.data;
-
-    return res.status(200).json({ file: uploaded });
-  } catch (err: any) {
-    console.error("❌ Upload failed:", err.message);
-    return res.status(500).json({ error: "Failed to upload file" });
-  }
-};
-
-
-export const getFilePreview = async (req: Request, res: Response) => {
-  try {
-    const { fileId } = req.params;
-
-    if (!fileId) {
-      return res.status(400).json({ error: "File ID required" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const previewUrl = storage.getFilePreview(
-      appwriteConfig.storageId,
-      fileId
-    );
-
-    return res.status(200).json({ previewUrl: previewUrl.toString() });
-  } catch (error: any) {
-    console.error("❌ Error getting preview:", error.message);
-    return res.status(500).json({ error: "Failed to get preview" });
+    res.status(201).json({
+      filename: req.file.filename,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      url: `/uploads/${req.file.filename}`,
+    });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-export const deleteFile = async (req: Request, res: Response) => {
+// ✅ Handle multiple uploads (e.g. post gallery)
+export async function uploadMultiple(req: Request, res: Response, next: NextFunction) {
   try {
-    const { fileId } = req.params;
-
-    if (!fileId) {
-      return res.status(400).json({ error: "File ID required" });
+    if (!req.files || !(req.files instanceof Array) || req.files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
     }
 
-    await storage.deleteFile(appwriteConfig.storageId, fileId);
+    const files = (req.files as Express.Multer.File[]).map((f) => ({
+      filename: f.filename,
+      mimetype: f.mimetype,
+      size: f.size,
+      url: `/uploads/${f.filename}`,
+    }));
 
-    return res.status(200).json({ message: "File deleted successfully" });
-  } catch (error: any) {
-    console.error("❌ Error deleting file:", error.message);
-    return res.status(500).json({ error: "Failed to delete file" });
+    res.status(201).json(files);
+  } catch (err) {
+    next(err);
   }
-};
+}
+
+// ✅ Remove uploaded file
+export async function removeUpload(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(UPLOAD_DIR, filename);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    fs.unlinkSync(filePath);
+    res.json({ message: "Upload deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+}

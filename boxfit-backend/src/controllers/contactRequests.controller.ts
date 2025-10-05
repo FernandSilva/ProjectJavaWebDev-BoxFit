@@ -1,96 +1,60 @@
+// src/controllers/contactRequests.controller.ts
 import { Request, Response } from "express";
-import { ID, Query } from "node-appwrite";
-import { databases } from "../lib/appwriteClient";
-import { appwriteConfig } from "../lib/appwriteConfig";
+import ContactRequest from "../models/ContactRequest";
 
-const DB = appwriteConfig.databaseId;
-// prefer nested key, fall back to flat alias
-const CONTACTS =
-  appwriteConfig.collections.contactRequests ||
-  appwriteConfig.contactRequestsCollectionId;
-
-// small helpers
-const toStr = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-const num = (v: unknown, d = 20) => {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : d;
-};
-const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-
-export async function createContactRequest(req: Request, res: Response) {
+// ============================
+// Create a contact request
+// ============================
+export const createContactRequest = async (req: Request, res: Response) => {
   try {
-    if (!DB || !CONTACTS) {
-      return res
-        .status(500)
-        .json({ error: "Contact requests collection not configured" });
-    }
-
-    const name = toStr(req.body?.name);
-    const email = toStr(req.body?.email);
-    const message = toStr(req.body?.message);
+    const { name, email, message } = req.body;
 
     if (!name || !email || !message) {
-      return res
-        .status(400)
-        .json({ error: "name, email and message are required" });
-    }
-    if (!isEmail(email)) {
-      return res.status(400).json({ error: "Invalid email address" });
-    }
-    if (message.length > 4000) {
-      return res
-        .status(400)
-        .json({ error: "Message exceeds 4000 characters" });
+      return res.status(400).json({ error: "Name, email, and message are required" });
     }
 
-    const payload = {
+    const newRequest = new ContactRequest({
       name,
       email,
       message,
-      createdAt: new Date().toISOString(),
-      ip: req.ip,
-      userAgent: req.get("user-agent") || "",
-    };
-
-    const doc = await databases.createDocument(DB, CONTACTS, ID.unique(), payload);
-    return res.status(201).json(doc);
-  } catch (err: any) {
-    (req as any).log?.error({
-      msg: "contactRequests.create.error",
-      err: err?.message,
     });
-    return res
-      .status(500)
-      .json({ error: "Failed to submit contact request" });
-  }
-}
 
-/**
- * Simple listing (add auth/role checks if needed).
- * Supports: ?limit=20&cursor=<docId>
- */
-export async function listContactRequests(req: Request, res: Response) {
+    const savedRequest = await newRequest.save();
+    return res.status(201).json(savedRequest);
+  } catch (error: any) {
+    console.error("❌ Error creating contact request:", error.message);
+    return res.status(500).json({ error: "Failed to create contact request" });
+  }
+};
+
+// ============================
+// Get all contact requests
+// ============================
+export const getContactRequests = async (_req: Request, res: Response) => {
   try {
-    if (!DB || !CONTACTS) {
-      return res
-        .status(500)
-        .json({ error: "Contact requests collection not configured" });
+    const requests = await ContactRequest.find().sort({ createdAt: -1 });
+    return res.status(200).json(requests);
+  } catch (error: any) {
+    console.error("❌ Error fetching contact requests:", error.message);
+    return res.status(500).json({ error: "Failed to fetch contact requests" });
+  }
+};
+
+// ============================
+// Delete a contact request
+// ============================
+export const deleteContactRequest = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await ContactRequest.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Contact request not found" });
     }
 
-    const limit = num(req.query.limit, 20);
-    const cursor = toStr(req.query.cursor);
-
-    const queries: any[] = [Query.orderDesc("$createdAt"), Query.limit(limit)];
-    if (cursor) queries.push(Query.cursorAfter(cursor));
-
-    // Add Query.search(...) here if you later add fulltext indexes.
-    const result = await databases.listDocuments(DB, CONTACTS, queries);
-    return res.json(result);
-  } catch (err: any) {
-    (req as any).log?.error({
-      msg: "contactRequests.list.error",
-      err: err?.message,
-    });
-    return res.status(500).json({ error: "Failed to list contact requests" });
+    return res.status(200).json({ message: "Contact request deleted" });
+  } catch (error: any) {
+    console.error("❌ Error deleting contact request:", error.message);
+    return res.status(500).json({ error: "Failed to delete contact request" });
   }
-}
+};

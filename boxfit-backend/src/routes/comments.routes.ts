@@ -1,18 +1,29 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import * as Comments from "../controllers/comments.controller";
 
 const router = Router();
 
-// tiny wrapper so unhandled rejections bubble to error middleware
+// Async wrapper
 const wrap =
   (fn: any) =>
-  (req: any, res: any, next: any) =>
+  (req: Request, res: Response, next: NextFunction) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
-router.get("/comments/post/:postId", wrap(Comments.getCommentsByPostId));
+/* ============================================================================
+   COMMENT ROUTES
+============================================================================ */
+
+// Fetch comments for a post
+router.get("/comments/:postId", wrap(Comments.getCommentsByPostId));
+
+// Create comment
 router.post("/comments", wrap(Comments.createComment));
-router.post("/comments/:id/like", wrap(Comments.likeComment));
-router.post("/comments/:id/unlike", wrap(Comments.unlikeComment));
-router.delete("/comments/:id", wrap(Comments.deleteComment));
+
+// Like/unlike comment
+router.post("/comments/like", wrap(Comments.likeComment));
+router.post("/comments/unlike", wrap(Comments.unlikeComment));
+
+// Delete comment
+router.delete("/comments/:commentId", wrap(Comments.deleteComment));
 
 export default router;

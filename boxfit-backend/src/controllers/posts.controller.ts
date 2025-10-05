@@ -1,226 +1,141 @@
-// src/controllers/posts.controller.ts
 import { Request, Response, NextFunction } from "express";
-import { ID, Query } from "node-appwrite";
-import { databases as db, storage, ids } from "../lib/appwriteClient";
-import axios from "axios";
-import FormData from "form-data";
-import { Readable } from "stream";
+import Post from "../models/Post";
+import User from "../models/User";
+import Follow from "../models/Follow";
 
-
-
-const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT!;
-const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY!;
-const PROJECT_ID = process.env.APPWRITE_PROJECT_ID!;
-const BUCKET_ID = ids.bucketId;
+// ----------------------------- Helpers --------------------------------------
 
 function getFilesFromRequest(req: Request): Express.Multer.File[] {
   const raw: any = (req as any).files;
   const files: Express.Multer.File[] = [];
-
   const add = (entry: any) => {
     if (Array.isArray(entry)) {
-      for (const file of entry) {
-        if (file && typeof file === "object" && file.size !== undefined) {
-          files.push(file);
-        }
+      for (const f of entry) {
+        if (f && typeof f === "object" && f.size !== undefined) files.push(f);
       }
     }
   };
-
   if (Array.isArray(raw)) add(raw);
-  else if (typeof raw === "object") {
-    for (const value of Object.values(raw)) add(value);
-  }
-
+  else if (typeof raw === "object") Object.values(raw).forEach(add);
   return files;
 }
 
-async function uploadFiles(
-  files: Array<Express.Multer.File | undefined>
-): Promise<Array<{ id: string; url: string; mimeType: string; size: number }>> {
-  const list = (files || []).filter(Boolean) as Express.Multer.File[];
-  const uploaded = [];
+// ----------------------------- Controllers ----------------------------------
 
-  for (let idx = 0; idx < list.length; idx++) {
-    const file = list[idx];
-    const form = new FormData();
-    const stream = Readable.from(file.buffer);
-
-    form.append("file", stream, {
-      filename: file.originalname,
-      contentType: file.mimetype,
-      knownLength: file.size,
-    });
-
-    const response = await axios.post(
-      `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files`,
-      form,
-      {
-        headers: {
-          ...form.getHeaders(),
-          "X-Appwrite-Project": PROJECT_ID,
-          "X-Appwrite-Key": APPWRITE_API_KEY,
-        },
-        maxBodyLength: Infinity,
-      }
-    );
-
-    const meta = response.data;
-    uploaded.push({
-      id: meta.$id,
-      url: `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${meta.$id}/view?project=${PROJECT_ID}`,
-      mimeType: meta.mimeType || file.mimetype,
-      size: meta.sizeOriginal || file.size,
-    });
-  }
-
-  return uploaded;
-}
-
-const deleteFileSafe = async (fileId: string) => {
-  try {
-    await storage.deleteFile(BUCKET_ID, fileId);
-  } catch {}
-};
-
+// ✅ Create Post
 export async function createPost(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId, caption = "" } = req.body;
+    if (!userId) return res.status(400).json({ error: "userId is required" });
 
     const filesArr = getFilesFromRequest(req);
-    if (!userId) return res.status(400).json({ error: "userId is required" });
     if (!filesArr.length) return res.status(400).json({ error: "At least one file is required" });
 
-    const uploads = await uploadFiles(filesArr);
-    const now = new Date().toISOString();
+    // For now: save filename as imageId, and build local URL
+    const imageUrl = filesArr.map((f) => `/uploads/${f.originalname}`);
+    const imageId = filesArr.map((f) => f.originalname);
 
-    const payload = {
+    const post = new Post({
       userId,
       caption,
-      imageId: uploads.map((u) => u.id),
-      imageUrl: uploads.map((u) => u.url),
+      imageUrl,
+      imageId,
       likes: [],
       saves: [],
-      comments: "",
-      referenceId: null,
-      relatedId: null,
+      comments: [],
       creator: userId,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    const newPost = await db.createDocument({
-      databaseId: ids.databaseId,
-      collectionId: ids.postsCollectionId,
-      documentId: ID.unique(),
-      data: payload,
     });
 
-    let creator = null;
-    try {
-      creator = await db.getDocument({
-        databaseId: ids.databaseId,
-        collectionId: ids.usersCollectionId,
-        documentId: userId,
-      });
-    } catch (e) {
-      console.warn("⚠️ Could not fetch creator:", e.message);
-    }
+    await post.save();
 
-    res.status(201).json({ ...newPost, creator });
+    const creator = await User.findById(userId).lean();
+    res.status(201).json({ ...post.toObject(), creator });
   } catch (err) {
     next(err);
   }
 }
 
-
+// ✅ Get Post by ID
 export async function getPostById(req: Request, res: Response, next: NextFunction) {
   try {
-    const post = await db.getDocument(ids.databaseId, ids.postsCollectionId, req.params.id);
-    let creator = null;
-    try {
-      creator = await db.getDocument(ids.databaseId, ids.usersCollectionId, post.creator);
-    } catch {}
+    const post = await Post.findById(req.params.id).lean();
+    if (!post) return res.status(404).json({ error: "Post not found" });
+
+    const creator = await User.findById(post.creator).lean();
     res.json({ ...post, creator });
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ List Posts
 export async function listPosts(req: Request, res: Response, next: NextFunction) {
   try {
     const limit = Math.min(parseInt((req.query.limit as string) || "10"), 100);
-    const postsList = await db.listDocuments(ids.databaseId, ids.postsCollectionId, [
-      Query.orderDesc("$createdAt"),
-      Query.limit(limit),
-    ]);
+    const posts = await Post.find().sort({ createdAt: -1 }).limit(limit).lean();
 
-    const enrichedPosts = await Promise.all(
-      postsList.documents.map(async (post) => {
+    const enriched = await Promise.all(
+      posts.map(async (p) => {
         try {
-          const user = await db.getDocument(ids.databaseId, ids.usersCollectionId, post.creator);
-          return { ...post, creator: user };
+          const user = await User.findById(p.creator).lean();
+          return { ...p, creator: user };
         } catch {
-          return post;
+          return p;
         }
       })
     );
 
-    const last = postsList.documents[postsList.documents.length - 1];
-    res.json({ documents: enrichedPosts, nextCursor: last ? last.$id : null });
+    const last = posts[posts.length - 1];
+    res.json({ documents: enriched, nextCursor: last ? String(last._id) : null });
   } catch (err) {
     next(err);
   }
 }
 
-// ✅ Add all remaining exports
+// ✅ Recent Posts
 export async function getRecentPosts(req: Request, res: Response, next: NextFunction) {
   try {
-    const posts = await db.listDocuments(ids.databaseId, ids.postsCollectionId, [
-      Query.orderDesc("$createdAt"),
-      Query.limit(20),
-    ]);
+    const posts = await Post.find().sort({ createdAt: -1 }).limit(20).lean();
     res.json(posts);
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ User Posts
 export async function getUserPosts(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId } = req.params;
-    const posts = await db.listDocuments(ids.databaseId, ids.postsCollectionId, [
-      Query.equal("creator", userId),
-      Query.orderDesc("$createdAt"),
-    ]);
+    const posts = await Post.find({ creator: userId }).sort({ createdAt: -1 }).lean();
     res.json(posts);
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ Update Post
 export async function updatePost(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { caption } = req.body;
-    const files = getFilesFromRequest(req);
 
-    const existing = await db.getDocument(ids.databaseId, ids.postsCollectionId, id);
-    let imageId = existing.imageId || [];
+    const filesArr = getFilesFromRequest(req);
+    const existing = await Post.findById(id).lean();
+    if (!existing) return res.status(404).json({ error: "Post not found" });
+
     let imageUrl = existing.imageUrl || [];
+    let imageId = existing.imageId || [];
 
-    if (files.length) {
-      const uploads = await uploadFiles(files);
-      imageId = uploads.map((u) => u.id);
-      imageUrl = uploads.map((u) => u.url);
-      await Promise.all((existing.imageId || []).map(deleteFileSafe));
+    if (filesArr.length) {
+      imageUrl = filesArr.map((f) => `/uploads/${f.originalname}`);
+      imageId = filesArr.map((f) => f.originalname);
     }
 
-    const updated = await db.updateDocument(ids.databaseId, ids.postsCollectionId, id, {
-      caption: caption ?? existing.caption,
-      imageId,
-      imageUrl,
-    });
+    const updated = await Post.findByIdAndUpdate(
+      id,
+      { caption: caption ?? existing.caption, imageUrl, imageId },
+      { new: true }
+    ).lean();
 
     res.json(updated);
   } catch (err) {
@@ -228,126 +143,135 @@ export async function updatePost(req: Request, res: Response, next: NextFunction
   }
 }
 
+// ✅ Delete Post
 export async function deletePost(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
-    const existing = await db.getDocument(ids.databaseId, ids.postsCollectionId, id);
-    const imageIds = existing.imageId || [];
-
-    await db.deleteDocument(ids.databaseId, ids.postsCollectionId, id);
-    await Promise.all(imageIds.map(deleteFileSafe));
-
+    await Post.findByIdAndDelete(id);
     res.json({ status: "Ok" });
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ Like Post
 export async function likePost(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { likes = [] } = req.body;
-    const updated = await db.updateDocument(ids.databaseId, ids.postsCollectionId, id, { likes });
+
+    const updated = await Post.findByIdAndUpdate(id, { likes }, { new: true }).lean();
     res.json(updated);
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ Save Post
 export async function savePost(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const saved = await db.createDocument(ids.databaseId, ids.savesCollectionId, ID.unique(), {
-      user: userId,
-      post: id,
-    });
+    const post = await Post.findById(id).lean();
+    if (!post) return res.status(404).json({ error: "Post not found" });
 
-    res.status(201).json(saved);
+    // Saves are tracked inside Post.saves array
+    const updated = await Post.findByIdAndUpdate(
+      id,
+      { $addToSet: { saves: userId } },
+      { new: true }
+    ).lean();
+
+    res.status(201).json(updated);
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ Delete Saved Post
 export async function deleteSavedPost(req: Request, res: Response, next: NextFunction) {
   try {
-    await db.deleteDocument(ids.databaseId, ids.savesCollectionId, req.params.saveId);
-    res.json({ status: "Ok" });
+    const { saveId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const updated = await Post.findByIdAndUpdate(
+      saveId,
+      { $pull: { saves: userId } },
+      { new: true }
+    ).lean();
+
+    res.json(updated);
   } catch (err) {
     next(err);
   }
 }
 
+// ✅ Following Feed
 export async function getFollowingPosts(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ error: "Missing userId param" });
 
-    const following = await db.listDocuments(ids.databaseId, ids.relationshipsCollectionId, [
-      Query.equal("userId", userId),
-    ]);
+    const following = await Follow.find({ userId }).lean();
+    const followingIds = following.map((f) => f.followsUserId);
 
-    const followingIds = following.documents.map((doc) => doc.followsUserId);
     if (!followingIds.length) return res.json({ documents: [] });
 
-    const creatorQueries = followingIds.map((id) => Query.equal("creator", id));
+    const posts = await Post.find({ creator: { $in: followingIds } })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
 
-    const posts = await db.listDocuments(ids.databaseId, ids.postsCollectionId, [
-      ...creatorQueries,
-      Query.orderDesc("$createdAt"),
-      Query.limit(20),
-    ]);
-
-    const enriched = await Promise.all(posts.documents.map(async (post) => {
-      try {
-        const creator = await db.getDocument(ids.databaseId, ids.usersCollectionId, post.creator);
-        return { ...post, creator };
-      } catch {
-        return post;
-      }
-    }));
+    const enriched = await Promise.all(
+      posts.map(async (p) => {
+        try {
+          const creator = await User.findById(p.creator).lean();
+          return { ...p, creator };
+        } catch {
+          return p;
+        }
+      })
+    );
 
     res.json({ documents: enriched });
   } catch (err) {
-    console.error("❌ getFollowingPosts error:", err.message);
     next(err);
   }
 }
 
+// ✅ Followers Feed
 export async function getFollowersPosts(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId } = req.params;
     if (!userId) return res.status(400).json({ error: "Missing userId param" });
 
-    const followers = await db.listDocuments(ids.databaseId, ids.relationshipsCollectionId, [
-      Query.equal("followsUserId", userId),
-    ]);
+    const followers = await Follow.find({ followsUserId: userId }).lean();
+    const followerIds = followers.map((f) => f.userId);
 
-    const followerIds = followers.documents.map((doc) => doc.userId);
     if (!followerIds.length) return res.json({ documents: [] });
 
-    const creatorQueries = followerIds.map((id) => Query.equal("creator", id));
+    const posts = await Post.find({ creator: { $in: followerIds } })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
 
-    const posts = await db.listDocuments(ids.databaseId, ids.postsCollectionId, [
-      ...creatorQueries,
-      Query.orderDesc("$createdAt"),
-      Query.limit(20),
-    ]);
-
-    const enriched = await Promise.all(posts.documents.map(async (post) => {
-      try {
-        const creator = await db.getDocument(ids.databaseId, ids.usersCollectionId, post.creator);
-        return { ...post, creator };
-      } catch {
-        return post;
-      }
-    }));
+    const enriched = await Promise.all(
+      posts.map(async (p) => {
+        try {
+          const creator = await User.findById(p.creator).lean();
+          return { ...p, creator };
+        } catch {
+          return p;
+        }
+      })
+    );
 
     res.json({ documents: enriched });
   } catch (err) {
-    console.error("❌ getFollowersPosts error:", err.message);
     next(err);
   }
 }

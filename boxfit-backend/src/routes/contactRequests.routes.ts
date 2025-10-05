@@ -1,17 +1,20 @@
+// src/routes/contactRequests.routes.ts
 import { Router } from "express";
-import * as ContactRequestsController from "../controllers/contactRequests.controller";
+import {
+  createContactRequest,
+  getContactRequests,
+  deleteContactRequest,
+} from "../controllers/contactRequests.controller";
 
 const router = Router();
 
-const wrap =
-  (fn: any) =>
-  (req: any, res: any, next: any) =>
-    Promise.resolve(fn(req, res, next)).catch(next);
+// Create a new contact request
+router.post("/", createContactRequest);
 
-/* =============================================================================
-   Contact Requests
-============================================================================= */
-router.post("/contact-requests", wrap(ContactRequestsController.createContactRequest));
-router.get("/contact-requests", wrap(ContactRequestsController.listContactRequests));
+// Get all contact requests
+router.get("/", getContactRequests);
+
+// Delete a contact request by ID
+router.delete("/:id", deleteContactRequest);
 
 export default router;

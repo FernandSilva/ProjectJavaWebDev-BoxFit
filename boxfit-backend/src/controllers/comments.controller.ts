@@ -1,94 +1,65 @@
 import { Request, Response, NextFunction } from "express";
-import { databases as db, ids } from "../lib/appwriteClient";
-import { ID, Query } from "node-appwrite";
+import Comment from "../models/Comment";
+import Post from "../models/Post";
+import User from "../models/User";
 
-const asInt = (v: any, def = 10, max = 100) =>
-  Math.min(parseInt(String(v || def), 10) || def, max);
+// ----------------------------- Controllers ----------------------------------
 
-/** GET /comments/post/:postId?limit=5&cursor=<id> */
-export async function getCommentsByPostId(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+// ✅ Get comments for a post
+export async function getCommentsByPostId(req: Request, res: Response, next: NextFunction) {
   try {
     const { postId } = req.params;
-    const limit = asInt(req.query.limit, 5, 50);
-    const cursor = req.query.cursor ? String(req.query.cursor) : undefined;
+    if (!postId) return res.status(400).json({ error: "postId is required" });
 
-    const queries: any[] = [
-      Query.equal("postId", postId),
-      Query.orderAsc("$createdAt"),
-      Query.limit(limit),
-    ];
-    if (cursor) queries.push(Query.cursorAfter(cursor));
+    const limit = Number(req.query.limit) || 20;
+    const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).limit(limit).lean();
 
-    const page = await db.listDocuments(ids.databaseId, ids.commentsCollectionId, queries);
-    // Use SDK-reported total when available; otherwise fall back to a tiny count probe.
-    const totalProbe = await db.listDocuments(ids.databaseId, ids.commentsCollectionId, [
-      Query.equal("postId", postId),
-      Query.limit(1),
-    ]);
-    const totalComments = totalProbe.total ?? page.total ?? page.documents.length;
-    const last = page.documents[page.documents.length - 1];
-
-    res.json({
-      comments: page.documents,
-      totalComments,
-      nextCursor: last ? last.$id : null,
-    });
+    res.json({ comments, totalComments: await Comment.countDocuments({ postId }) });
   } catch (err) {
     next(err);
   }
 }
 
-/** POST /comments */
+// ✅ Create comment
 export async function createComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { postId, userId, text, userImageUrl, userName } = req.body || {};
-    if (!postId || !userId || !text?.trim()) {
-      return res.status(400).json({ error: "postId, userId and text are required" });
+    const { postId, userId, text, userImageUrl, userName } = req.body;
+    if (!postId || !userId || !text) {
+      return res.status(400).json({ error: "postId, userId, and text are required" });
     }
 
-    const created = await db.createDocument(
-      ids.databaseId,
-      ids.commentsCollectionId,
-      ID.unique(),
-      {
-        postId,
-        userId,
-        text: String(text),
-        userImageUrl: userImageUrl ?? null,
-        userName: userName ?? null,
-        likedBy: [],
-        likes: 0,
-        createdAt: new Date().toISOString(),
-      }
-    );
+    const comment = new Comment({
+      postId,
+      userId,
+      text,
+      userImageUrl,
+      userName,
+    });
 
-    req.log?.info({ msg: "comment.created", id: created.$id, postId, userId });
-    res.status(201).json(created);
+    await comment.save();
+
+    // Link comment ID into post for easy lookup (optional but keeps parity with old logic)
+    await Post.findByIdAndUpdate(postId, { $push: { comments: String(comment._id) } });
+
+    res.status(201).json(comment);
   } catch (err) {
     next(err);
   }
 }
 
-/** POST /comments/:id/like  { userId } */
+// ✅ Like comment
 export async function likeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    const { userId } = req.body || {};
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const { commentId, userId } = req.body;
+    if (!commentId || !userId) {
+      return res.status(400).json({ error: "commentId and userId required" });
+    }
 
-    const doc = await db.getDocument(ids.databaseId, ids.commentsCollectionId, id);
-    const likedBy: string[] = Array.isArray(doc.likedBy) ? doc.likedBy : [];
-    if (likedBy.includes(userId)) return res.json(doc); // idempotent
-
-    const newLikedBy = [...likedBy, userId];
-    const updated = await db.updateDocument(ids.databaseId, ids.commentsCollectionId, id, {
-      likedBy: newLikedBy,
-      likes: newLikedBy.length,
-    });
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { $addToSet: { likes: userId } },
+      { new: true }
+    ).lean();
 
     res.json(updated);
   } catch (err) {
@@ -96,22 +67,19 @@ export async function likeComment(req: Request, res: Response, next: NextFunctio
   }
 }
 
-/** POST /comments/:id/unlike  { userId } */
+// ✅ Unlike comment
 export async function unlikeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    const { userId } = req.body || {};
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const { commentId, userId } = req.body;
+    if (!commentId || !userId) {
+      return res.status(400).json({ error: "commentId and userId required" });
+    }
 
-    const doc = await db.getDocument(ids.databaseId, ids.commentsCollectionId, id);
-    const likedBy: string[] = Array.isArray(doc.likedBy) ? doc.likedBy : [];
-    if (!likedBy.includes(userId)) return res.json(doc); // idempotent
-
-    const newLikedBy = likedBy.filter((u) => u !== userId);
-    const updated = await db.updateDocument(ids.databaseId, ids.commentsCollectionId, id, {
-      likedBy: newLikedBy,
-      likes: Math.max(0, newLikedBy.length),
-    });
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { $pull: { likes: userId } },
+      { new: true }
+    ).lean();
 
     res.json(updated);
   } catch (err) {
@@ -119,13 +87,20 @@ export async function unlikeComment(req: Request, res: Response, next: NextFunct
   }
 }
 
-/** DELETE /comments/:id */
+// ✅ Delete comment
 export async function deleteComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    await db.deleteDocument(ids.databaseId, ids.commentsCollectionId, id);
-    req.log?.info({ msg: "comment.deleted", id });
-    res.json({ status: "Ok" });
+    const { commentId } = req.params;
+    if (!commentId) return res.status(400).json({ error: "commentId required" });
+
+    const deleted = await Comment.findByIdAndDelete(commentId).lean();
+
+    // Also remove from associated post’s comments array
+    if (deleted) {
+      await Post.findByIdAndUpdate(deleted.postId, { $pull: { comments: String(deleted._id) } });
+    }
+
+    res.json({ message: "Comment deleted" });
   } catch (err) {
     next(err);
   }

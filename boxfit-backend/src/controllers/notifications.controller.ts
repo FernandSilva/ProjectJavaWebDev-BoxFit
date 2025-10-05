@@ -1,152 +1,122 @@
 // src/controllers/notifications.controller.ts
-import { Request, Response } from "express";
-import { ID, Query } from "node-appwrite";
-import { databases, ids } from "../lib/appwriteClient";
+import { Request, Response, NextFunction } from "express";
+import Notification from "../models/Notification";
+import User from "../models/User";
 
-const DB = ids.databaseId;
-const NOTIFS = ids.notificationsCollectionId;
-
-const toInt = (v: unknown, d = 20, max = 100) => {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : d;
-};
-
-/**
- * GET /api/notifications?userId=...&limit=20&cursor=<docId>
- * Returns paginated notifications for a user (newest first).
- */
-export async function listNotifications(req: Request, res: Response) {
+/* ============================================================================
+   CREATE NEW NOTIFICATION
+============================================================================ */
+export async function createNotification(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = String(req.query.userId || "");
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const { userId, senderId, type, relatedId, referenceId, content } = req.body;
 
-    const limit = toInt(req.query.limit, 20);
-    const cursor = req.query.cursor ? String(req.query.cursor) : undefined;
-
-    const queries = [
-      Query.equal("userId", userId),
-      Query.orderDesc("$createdAt"),
-      Query.limit(limit),
-    ];
-    if (cursor) queries.push(Query.cursorAfter(cursor));
-
-    const docs = await databases.listDocuments(DB, NOTIFS, queries);
-    res.json(docs);
-  } catch (err: any) {
-    (req as any).log?.error?.({ msg: "notifications.list.error", err: err?.message });
-    res.status(500).json({ error: "Failed to list notifications" });
-  }
-}
-
-/**
- * POST /api/notifications
- * Body: { userId, senderId, type, content, relatedId?, referenceId?, isRead?, createdAt?, senderName?, senderImageUrl? }
- */
-export async function createNotification(req: Request, res: Response) {
-  try {
-    const payload = { ...(req.body || {}) };
-
-    // minimal validation
-    const required = ["userId", "senderId", "type", "content"];
-    for (const k of required) {
-      if (!payload[k]) {
-        return res.status(400).json({ error: `${k} is required` });
-      }
+    if (!userId || !senderId || !type) {
+      return res.status(400).json({ error: "userId, senderId, and type are required" });
     }
 
-    if (payload.isRead == null) payload.isRead = false;
-    if (!payload.createdAt) payload.createdAt = new Date().toISOString();
+    const sender = await User.findById(senderId).lean();
 
-    const doc = await databases.createDocument(DB, NOTIFS, ID.unique(), payload);
-    res.status(201).json(doc);
-  } catch (err: any) {
-    (req as any).log?.error?.({ msg: "notifications.create.error", err: err?.message });
-    res.status(500).json({ error: "Failed to create notification" });
-  }
-}
-
-/**
- * PATCH /api/notifications/:id/read
- * Marks a single notification as read.
- */
-export async function markRead(req: Request, res: Response) {
-  try {
-    const id = req.params.id;
-    const doc = await databases.updateDocument(DB, NOTIFS, id, {
-      isRead: true,
-      readAt: new Date().toISOString(),
+    const notification = new Notification({
+      userId,
+      senderId,
+      type,
+      relatedId,
+      referenceId,
+      content: content || `${sender?.name || "Someone"} sent you a ${type}`,
+      isRead: false,
+      createdAt: new Date(),
+      senderName: sender?.name || "",
+      senderImageUrl: sender?.imageUrl || "",
     });
-    res.json(doc);
-  } catch (err: any) {
-    (req as any).log?.error?.({ msg: "notifications.markRead.error", err: err?.message });
-    res.status(500).json({ error: "Failed to update notification" });
+
+    await notification.save();
+    return res.status(201).json(notification);
+  } catch (err) {
+    console.error("❌ createNotification error:", err);
+    return next(err);
   }
 }
 
-/**
- * DELETE /api/notifications/:id
- * Deletes a single notification.
- */
-export async function deleteNotification(req: Request, res: Response) {
+/* ============================================================================
+   GET NOTIFICATIONS FOR USER  → matches `/api/notifications?userId=...`
+============================================================================ */
+export async function getNotifications(req: Request, res: Response, next: NextFunction) {
   try {
-    await databases.deleteDocument(DB, NOTIFS, req.params.id);
-    res.status(204).end();
-  } catch (err: any) {
-    (req as any).log?.warn?.({ msg: "notifications.delete.error", err: err?.message });
-    res.status(404).json({ error: "Notification not found" });
-  }
-}
-
-/**
- * DELETE /api/notifications?userId=...
- * Clears all notifications for a user (best-effort, up to 200 at a time).
- */
-export async function clearNotifications(req: Request, res: Response) {
-  try {
-    const userId = String(req.query.userId || "");
+    const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const list = await databases.listDocuments(DB, NOTIFS, [
-      Query.equal("userId", userId),
-      Query.limit(200),
-    ]);
+    const limit = Number(req.query.limit) || 50;
+    const notifications = await Notification.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
 
-    await Promise.all(
-      list.documents.map((d: any) => databases.deleteDocument(DB, NOTIFS, d.$id))
-    );
-
-    res.status(204).end();
-  } catch (err: any) {
-    (req as any).log?.error?.({ msg: "notifications.clear.error", err: err?.message });
-    res.status(500).json({ error: "Failed to clear notifications" });
+    // ✅ Always respond 200 with a consistent structure
+    return res.status(200).json({
+      documents: notifications || [],
+      total: notifications?.length || 0,
+    });
+  } catch (err) {
+    console.error("❌ getNotifications error:", err);
+    return next(err);
   }
 }
 
-/**
- * PATCH /api/notifications/read-all?userId=...
- * Marks all unread notifications for a user as read (best-effort, up to 200).
- */
-export async function markAllRead(req: Request, res: Response) {
+/* ============================================================================
+   MARK NOTIFICATION AS READ
+============================================================================ */
+export async function markNotificationAsRead(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = String(req.query.userId || "");
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Notification ID required" });
 
-    const list = await databases.listDocuments(DB, NOTIFS, [
-      Query.equal("userId", userId),
-      Query.equal("isRead", false),
-      Query.limit(200),
-    ]);
+    const updated = await Notification.findByIdAndUpdate(
+      id,
+      { isRead: true },
+      { new: true }
+    ).lean();
 
-    const now = new Date().toISOString();
-    await Promise.all(
-      list.documents.map((d: any) =>
-        databases.updateDocument(DB, NOTIFS, d.$id, { isRead: true, readAt: now })
-      )
-    );
+    if (!updated) return res.status(404).json({ error: "Notification not found" });
+    return res.status(200).json(updated);
+  } catch (err) {
+    console.error("❌ markNotificationAsRead error:", err);
+    return next(err);
+  }
+}
 
-    res.status(204).end();
-  } catch (err: any) {
-    (req as any).log?.error?.({ msg: "notifications.markAllRead.error", err: err?.message });
-    res.status(500).json({ error: "Failed to mark all read" });
+/* ============================================================================
+   DELETE SINGLE NOTIFICATION
+============================================================================ */
+export async function deleteNotification(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Notification ID required" });
+
+    const deleted = await Notification.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: "Notification not found" });
+
+    return res.status(200).json({ message: "Notification deleted" });
+  } catch (err) {
+    console.error("❌ deleteNotification error:", err);
+    return next(err);
+  }
+}
+
+/* ============================================================================
+   CLEAR ALL NOTIFICATIONS FOR USER  → matches DELETE `/api/notifications?userId=...`
+============================================================================ */
+export async function clearNotifications(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = req.query;
+    if (!userId) return res.status(400).json({ error: "userId query parameter required" });
+
+    const result = await Notification.deleteMany({ userId });
+    return res.status(200).json({
+      message: "All notifications cleared",
+      deletedCount: result.deletedCount || 0,
+    });
+  } catch (err) {
+    console.error("❌ clearNotifications error:", err);
+    return next(err);
   }
 }

@@ -1,112 +1,105 @@
-// controllers/follows.controller.ts
-import { Request, Response } from "express";
-import { ID, Query } from "node-appwrite";
-import { appwriteConfig } from "../lib/appwriteConfig";
-import { databases } from "../lib/appwriteClient";
+import { Request, Response, NextFunction } from "express";
+import Follow from "../models/Follow";
+import User from "../models/User";
 
-// ============================
-// Follow a User
-// ============================
-export const followUser = async (req: Request, res: Response) => {
-  const { userId, followsUserId } = req.body;
+// ----------------------------- Controllers ----------------------------------
 
-  if (!userId || !followsUserId) {
-    return res.status(400).json({ error: "Both userId and followsUserId are required." });
-  }
-
+// ✅ Follow a user
+export async function followUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const doc = await databases.createDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.followsCollectionId,
-      ID.unique(),
-      { userId, followsUserId }
-    );
+    const { userId, followsUserId } = req.body;
+    if (!userId || !followsUserId) {
+      return res.status(400).json({ error: "userId and followsUserId are required" });
+    }
 
+    if (userId === followsUserId) {
+      return res.status(400).json({ error: "You cannot follow yourself" });
+    }
+
+    // Check if relationship already exists
+    const existing = await Follow.findOne({ userId, followsUserId }).lean();
+    if (existing) return res.status(200).json(existing);
+
+    const doc = await new Follow({ userId, followsUserId }).save();
     res.status(201).json(doc);
-  } catch (err: any) {
-    console.error("Error following user:", err.message);
-    res.status(500).json({ error: "Failed to follow user" });
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// ============================
-// Unfollow a User
-// ============================
-export const unfollowUser = async (req: Request, res: Response) => {
-  const { documentId } = req.params;
-
-  if (!documentId) {
-    return res.status(400).json({ error: "documentId is required." });
-  }
-
+// ✅ Unfollow by relationship ID
+export async function unfollowById(req: Request, res: Response, next: NextFunction) {
   try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.followsCollectionId,
-      documentId
-    );
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Relationship ID is required" });
 
-    res.status(200).json({ message: "Unfollowed successfully." });
-  } catch (err: any) {
-    console.error("Error unfollowing user:", err.message);
-    res.status(500).json({ error: "Failed to unfollow user" });
+    await Follow.findByIdAndDelete(id);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// ============================
-// Check Follow Status
-// ============================
-export const checkFollowStatus = async (req: Request, res: Response) => {
-  const { userId, followsUserId } = req.query;
-
-  if (!userId || !followsUserId) {
-    return res.status(400).json({ error: "Missing userId or followsUserId." });
-  }
-
+// ✅ Unfollow by user pair
+export async function unfollowByPair(req: Request, res: Response, next: NextFunction) {
   try {
-    const response = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.followsCollectionId,
-      [
-        Query.equal("userId", userId as string),
-        Query.equal("followsUserId", followsUserId as string),
-      ]
-    );
+    const { userId, followsUserId } = req.query;
+    if (!userId || !followsUserId) {
+      return res.status(400).json({ error: "userId and followsUserId are required" });
+    }
 
-    res.status(200).json(response.documents[0] || null);
-  } catch (err: any) {
-    console.error("Error checking follow status:", err.message);
-    res.status(500).json({ error: "Failed to check follow status" });
+    const rel = await Follow.findOneAndDelete({ userId, followsUserId }).lean();
+    if (!rel) return res.status(404).json({ error: "Relationship not found" });
+
+    res.status(204).end();
+  } catch (err) {
+    next(err);
   }
-};
+}
 
-// ============================
-// Get User Relationships (Counts)
-// ============================
-export const getUserRelationships = async (req: Request, res: Response) => {
-  const { userId } = req.params;
-
-  if (!userId) return res.status(400).json({ error: "userId required" });
-
+// ✅ Get followers of a user
+export async function getFollowers(req: Request, res: Response, next: NextFunction) {
   try {
-    const followers = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.followsCollectionId,
-      [Query.equal("followsUserId", userId)]
-    );
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const following = await databases.listDocuments(
-      appwriteConfig.databaseId,
-      appwriteConfig.followsCollectionId,
-      [Query.equal("userId", userId)]
-    );
+    const rels = await Follow.find({ followsUserId: userId }).lean();
+    const ids = rels.map((r) => r.userId);
 
-    res.status(200).json({
-      followers: followers.total,
-      following: following.total,
-    });
-  } catch (err: any) {
-    console.error("Error fetching relationships:", err.message);
-    res.status(500).json({ error: "Failed to fetch relationships" });
+    const users = await User.find({ _id: { $in: ids } }).lean();
+    res.json(users);
+  } catch (err) {
+    next(err);
   }
-};
+}
+
+// ✅ Get users a given user is following
+export async function getFollowing(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const rels = await Follow.find({ userId }).lean();
+    const ids = rels.map((r) => r.followsUserId);
+
+    const users = await User.find({ _id: { $in: ids } }).lean();
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ✅ Check if one user follows another
+export async function checkFollowStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, followsUserId } = req.query as { userId?: string; followsUserId?: string };
+    if (!userId || !followsUserId) {
+      return res.json(null);
+    }
+
+    const rel = await Follow.findOne({ userId, followsUserId }).lean();
+    res.json(rel || null);
+  } catch (err) {
+    next(err);
+  }
+}
