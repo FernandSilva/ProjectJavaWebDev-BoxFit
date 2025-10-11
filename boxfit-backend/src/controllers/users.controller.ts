@@ -1,57 +1,28 @@
-// src/controllers/users.controller.ts
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
+import path from "path";
+import fs from "fs";
 import User from "../models/User";
 import Follow from "../models/Follow";
 import Post from "../models/Post";
 
-// ----------------------------- Helpers --------------------------------------
-
-/** Resolve either a Mongo _id or legacy accountId into a user document */
+/* ================================================================
+   Helper – Resolve valid Mongo ObjectId for user
+================================================================ */
 async function resolveUserDocId(idOrAccountId?: string): Promise<string | null> {
   if (!idOrAccountId) return null;
 
-  // Try direct document _id
-  if (idOrAccountId.match(/^[0-9a-fA-F]{24}$/)) {
+  if (/^[0-9a-fA-F]{24}$/.test(idOrAccountId)) {
     const doc = await User.findById(idOrAccountId).lean();
     if (doc?._id) return String(doc._id);
   }
 
-  // Fallback: lookup by accountId
   const byAccount = await User.findOne({ accountId: idOrAccountId }).lean();
   return byAccount ? String(byAccount._id) : null;
 }
 
-// ----------------------------- Users ----------------------------------------
-
-export async function createUser(req: Request, res: Response) {
-  try {
-    const { accountId, email, name, username, imageUrl } = req.body || {};
-
-    if (!accountId || !email || !name) {
-      return res.status(400).json({ error: "accountId, email, and name are required" });
-    }
-
-    // Prevent duplicate users by accountId
-    const existing = await User.findOne({ accountId }).lean();
-    if (existing) return res.status(200).json(existing);
-
-    const user = await User.create({
-      accountId,
-      email,
-      name,
-      username: username || email.split("@")[0],
-      imageUrl: imageUrl || "",
-      bio: "",
-      createdAt: new Date(),
-    });
-
-    res.status(201).json(user);
-  } catch (err: any) {
-    console.error("❌ createUser error:", err.message);
-    res.status(500).json({ error: "Failed to create user" });
-  }
-}
-
+/* ================================================================
+   CRUD
+================================================================ */
 export async function listUsers(req: Request, res: Response) {
   try {
     const limit = Number(req.query.limit) || 20;
@@ -63,87 +34,51 @@ export async function listUsers(req: Request, res: Response) {
   }
 }
 
-export async function getUserById(req: Request, res: Response, next: NextFunction) {
+export async function getUserById(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: "User ID is required" });
-
-    // ✅ Step 1: Try to resolve ID from either ObjectId or Appwrite accountId
     const docId = await resolveUserDocId(id);
+    if (!docId) return res.status(404).json({ error: "User not found" });
 
-    // ✅ Step 2: If no match, fallback gracefully
-    if (!docId) {
-      return res.status(200).json({
-        $id: id,
-        name: "Unknown User",
-        username: "unknown",
-        email: "",
-        imageUrl: "",
-        posts: [],
-        followers: [],
-        following: [],
-      });
-    }
-
-    // ✅ Step 3: Fetch user using resolved Mongo _id
-    const user = await User.findById(docId).populate("posts").lean();
-
-    // ✅ Step 4: Return a consistent safe structure
-    if (!user) {
-      return res.status(200).json({
-        $id: id,
-        name: "Unknown User",
-        username: "unknown",
-        email: "",
-        imageUrl: "",
-        posts: [],
-        followers: [],
-        following: [],
-      });
-    }
-
-    res.status(200).json(user);
-  } catch (err: any) {
-    console.error("❌ getUserById error:", err.message);
-    return res.status(500).json({
-      error: err.message || "Failed to retrieve user",
-    });
-  }
-}
-
-
-export async function getUserByAccountId(req: Request, res: Response) {
-  try {
-    const { accountId } = req.params;
-    if (!accountId) return res.status(400).json({ error: "Missing accountId" });
-
-    const user = await User.findOne({ accountId }).lean();
-    if (!user) return res.status(404).json({ error: "No user found for accountId" });
+    const user = await User.findById(docId).lean();
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     res.json(user);
   } catch (err: any) {
-    console.error("❌ getUserByAccountId error:", err.message);
-    res.status(500).json({ error: "Failed to fetch user by accountId" });
+    console.error("❌ getUserById error:", err.message);
+    res.status(500).json({ error: "Failed to get user" });
   }
 }
 
 export async function updateUser(req: Request, res: Response) {
   try {
-    const userId = req.params.id;
+    const { id } = req.params;
     const { name, bio } = req.body;
+    let { imageUrl } = req.body;
 
-    const payload: any = {};
-    if (name !== undefined) payload.name = name;
-    if (bio !== undefined) payload.bio = bio;
+    console.log("➡️ [USER/UPDATE] Incoming body:", req.body);
+    console.log("➡️ [USER/UPDATE] Params ID:", id);
 
+    // If the user uploaded a new file via multer
     if (req.file) {
-      payload.imageUrl = `/uploads/${req.file.originalname}`;
-      payload.imageId = req.file.originalname;
+      const filename = req.file.filename;
+      const fullUrl = `${req.protocol}://${req.get("host")}/uploads/${filename}`;
+      imageUrl = fullUrl;
+      console.log("🖼️ [USER/UPDATE] Uploaded file detected:", filename);
+    } else if (imageUrl && !imageUrl.startsWith("http")) {
+      imageUrl = `${req.protocol}://${req.get("host")}${imageUrl}`;
+      console.log("🧩 [USER/UPDATE] Normalized existing imageUrl:", imageUrl);
     }
 
-    const updated = await User.findByIdAndUpdate(userId, payload, { new: true }).lean();
+    const updateFields: any = {};
+    if (name) updateFields.name = name;
+    if (bio !== undefined) updateFields.bio = bio;
+    if (imageUrl) updateFields.imageUrl = imageUrl;
+
+    const updated = await User.findByIdAndUpdate(id, updateFields, { new: true }).lean();
     if (!updated) return res.status(404).json({ error: "User not found" });
 
+    console.log("✅ [USER/UPDATE] Successfully updated user:", updated._id);
     res.json(updated);
   } catch (err: any) {
     console.error("❌ updateUser error:", err.message);
@@ -151,8 +86,24 @@ export async function updateUser(req: Request, res: Response) {
   }
 }
 
-// -------------------------- Relationships -----------------------------------
+export async function getCurrentUser(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id || req.query.userId;
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
+    const user = await User.findById(userId).lean();
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json(user);
+  } catch (err: any) {
+    console.error("❌ getCurrentUser error:", err.message);
+    res.status(500).json({ error: "Failed to fetch current user" });
+  }
+}
+
+/* ================================================================
+   RELATIONSHIPS + FOLLOWING
+================================================================ */
 export async function getRelationshipsCount(req: Request, res: Response) {
   try {
     const docId = await resolveUserDocId(req.params.id);
@@ -163,24 +114,7 @@ export async function getRelationshipsCount(req: Request, res: Response) {
 
     res.json({ followers, following });
   } catch (err: any) {
-    console.error("❌ getRelationshipsCount error:", err.message);
-    res.status(500).json({ error: "Failed to fetch relationships" });
-  }
-}
-
-export async function getRelationshipsList(req: Request, res: Response) {
-  try {
-    const docId = await resolveUserDocId(req.params.id);
-    if (!docId) return res.json([]);
-
-    const rels = await Follow.find({ userId: docId }).lean();
-    const ids = rels.map((r) => r.followsUserId);
-    const users = await User.find({ _id: { $in: ids } }).lean();
-
-    res.json(users);
-  } catch (err: any) {
-    console.error("❌ getRelationshipsList error:", err.message);
-    res.status(500).json({ error: "Failed to fetch following list" });
+    res.status(500).json({ error: "Failed to fetch relationships count" });
   }
 }
 
@@ -200,122 +134,100 @@ export async function getFollowersList(req: Request, res: Response) {
   }
 }
 
+export async function getRelationshipsList(req: Request, res: Response) {
+  try {
+    const docId = await resolveUserDocId(req.params.id);
+    if (!docId) return res.json([]);
+
+    const rels = await Follow.find({ userId: docId }).lean();
+    const ids = rels.map((r) => r.followsUserId);
+    const users = await User.find({ _id: { $in: ids } }).lean();
+
+    res.json(users);
+  } catch (err: any) {
+    console.error("❌ getRelationshipsList error:", err.message);
+    res.status(500).json({ error: "Failed to fetch following list" });
+  }
+}
+
 export async function followUser(req: Request, res: Response) {
   try {
     const { userId, followsUserId } = req.body;
-    if (!userId || !followsUserId) {
+    if (!userId || !followsUserId)
       return res.status(400).json({ error: "userId and followsUserId required" });
-    }
+
+    if (userId === followsUserId)
+      return res.status(400).json({ error: "Cannot follow yourself" });
 
     const existing = await Follow.findOne({ userId, followsUserId }).lean();
     if (existing) return res.status(200).json(existing);
 
-    const doc = await new Follow({ userId, followsUserId }).save();
-    res.status(201).json(doc);
+    const rel = await new Follow({ userId, followsUserId }).save();
+    res.status(201).json(rel);
   } catch (err: any) {
     console.error("❌ followUser error:", err.message);
     res.status(500).json({ error: "Failed to follow user" });
   }
 }
 
-export async function unfollowByDocId(req: Request, res: Response) {
-  try {
-    const id = req.params.docId;
-    await Follow.findByIdAndDelete(id);
-    res.status(204).end();
-  } catch {
-    res.status(404).json({ error: "Relationship not found" });
-  }
-}
-
 export async function unfollowByPair(req: Request, res: Response) {
   try {
     const { userId, followsUserId } = req.query;
-    if (!userId || !followsUserId) {
-      return res.status(400).json({ error: "userId and followsUserId required" });
-    }
+    if (!userId || !followsUserId)
+      return res.status(400).json({ error: "Missing userId or followsUserId" });
 
-    const rel = await Follow.findOneAndDelete({ userId, followsUserId }).lean();
-    if (!rel) return res.status(404).json({ error: "Relationship not found" });
-
+    await Follow.findOneAndDelete({ userId, followsUserId }).lean();
     res.status(204).end();
   } catch (err: any) {
     console.error("❌ unfollowByPair error:", err.message);
-    res.status(500).json({ error: "Failed to unfollow user" });
+    res.status(500).json({ error: "Failed to unfollow" });
   }
 }
 
 export async function checkFollowStatus(req: Request, res: Response) {
   try {
-    const { userId, followsUserId } = req.query as { userId?: string; followsUserId?: string };
-    if (!userId || !followsUserId || userId === followsUserId) {
-      return res.json(null);
-    }
+    const { userId, followsUserId } = req.query;
+    if (!userId || !followsUserId)
+      return res.status(400).json({ error: "Missing parameters" });
 
-    const rel = await Follow.findOne({ userId, followsUserId }).lean();
-    res.json(rel || null);
+    const relation = await Follow.findOne({ userId, followsUserId }).lean();
+    res.json({ isFollowing: !!relation });
   } catch (err: any) {
     console.error("❌ checkFollowStatus error:", err.message);
     res.status(500).json({ error: "Failed to check follow status" });
   }
 }
 
-// ----------------------- Search & Analytics ----------------------------------
-
+/* ================================================================
+   SEARCH & ANALYTICS
+================================================================ */
 export async function searchUsers(req: Request, res: Response) {
   try {
     const q = String(req.query.q || "").trim();
-    if (!q) return res.json({ documents: [] });
+    if (!q) return res.json([]);
 
     const users = await User.find({
-      $or: [
-        { name: { $regex: q, $options: "i" } },
-        { username: { $regex: q, $options: "i" } },
-      ],
+      $or: [{ name: new RegExp(q, "i") }, { username: new RegExp(q, "i") }],
     }).lean();
 
-    res.json({ documents: users });
+    res.json(users);
   } catch (err: any) {
     console.error("❌ searchUsers error:", err.message);
     res.status(500).json({ error: "User search failed" });
   }
 }
 
-export async function getTopMembers(_req: Request, res: Response) {
-  try {
-    const users = await User.find().lean();
-    const rels = await Follow.find().lean();
-
-    const followerCounts: Record<string, number> = {};
-    rels.forEach((r) => {
-      followerCounts[r.followsUserId] = (followerCounts[r.followsUserId] || 0) + 1;
-    });
-
-    const enriched = users
-      .map((u) => ({
-        ...u,
-        score: followerCounts[String(u._id)] || 0,
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-
-    res.json(enriched);
-  } catch (err: any) {
-    console.error("❌ getTopMembers error:", err.message);
-    res.status(500).json({ error: "Failed to compute top members" });
-  }
-}
-
+/* ================================================================
+   ✅ FIX: Total Likes Route (supports both /likes and /likes/total)
+================================================================ */
 export async function getUserTotalLikes(req: Request, res: Response) {
   try {
-    const input = req.params.id;
-    if (!input) return res.status(400).json({ error: "id is required" });
-
-    const docId = (await resolveUserDocId(input)) || input;
+    const id = req.params.id;
+    const docId = (await resolveUserDocId(id)) || id;
     const posts = await Post.find({ creator: docId }).lean();
 
     const totalLikes = posts.reduce((sum, p) => sum + (p.likes?.length || 0), 0);
-    res.json({ totalLikes });
+  res.json(totalLikes);
   } catch (err: any) {
     console.error("❌ getUserTotalLikes error:", err.message);
     res.status(500).json({ error: "Failed to compute total likes" });

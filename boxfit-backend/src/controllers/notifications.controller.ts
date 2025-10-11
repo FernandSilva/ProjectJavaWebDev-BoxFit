@@ -1,122 +1,172 @@
 // src/controllers/notifications.controller.ts
 import { Request, Response, NextFunction } from "express";
+import mongoose from "mongoose";
 import Notification from "../models/Notification";
-import User from "../models/User";
 
-/* ============================================================================
-   CREATE NEW NOTIFICATION
-============================================================================ */
-export async function createNotification(req: Request, res: Response, next: NextFunction) {
+const log = (...args: any[]) =>
+  console.log("[NOTIFS]", new Date().toISOString(), "-", ...args);
+
+/**
+ * Shape helper for consistent logging of documents
+ */
+const brief = (n: any) => {
+  if (!n) return n;
+  return {
+    _id: n._id,
+    userId: n.userId,
+    senderId: n.senderId,
+    type: n.type,
+    isRead: n.isRead,
+    createdAt: n.createdAt,
+  };
+};
+
+// ============================================================================
+// CREATE
+// ============================================================================
+export const createNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, senderId, type, relatedId, referenceId, content } = req.body;
+    log("CREATE → body:", req.body);
 
+    const {
+      userId,          // recipient
+      senderId,
+      type,
+      content = "",
+      relatedId = "",
+      referenceId = "",
+      senderName = "",
+      senderImageUrl = "",
+    } = req.body || {};
+
+    // Validate minimal fields
     if (!userId || !senderId || !type) {
-      return res.status(400).json({ error: "userId, senderId, and type are required" });
+      log("CREATE ❌ missing fields", { userId, senderId, type });
+      return res.status(400).json({ error: "userId, senderId and type are required" });
     }
 
-    const sender = await User.findById(senderId).lean();
+    // Avoid self-notifications for certain types if desired (comment this out if not needed)
+    // if (userId === senderId && type !== "system") {
+    //   log("CREATE ⚠️ skipping self-notification");
+    //   return res.status(200).json({ skipped: true });
+    // }
 
-    const notification = new Notification({
+    const notification = await Notification.create({
       userId,
       senderId,
       type,
+      content,
       relatedId,
       referenceId,
-      content: content || `${sender?.name || "Someone"} sent you a ${type}`,
+      senderName,
+      senderImageUrl,
       isRead: false,
       createdAt: new Date(),
-      senderName: sender?.name || "",
-      senderImageUrl: sender?.imageUrl || "",
     });
 
-    await notification.save();
+    log("CREATE ✅ created:", brief(notification));
     return res.status(201).json(notification);
   } catch (err) {
-    console.error("❌ createNotification error:", err);
-    return next(err);
+    log("CREATE ❌ error:", err);
+    next(err);
   }
-}
+};
 
-/* ============================================================================
-   GET NOTIFICATIONS FOR USER  → matches `/api/notifications?userId=...`
-============================================================================ */
-export async function getNotifications(req: Request, res: Response, next: NextFunction) {
+// ============================================================================
+// LIST (by userId)
+// ============================================================================
+export const getNotifications = async (req, res) => {
   try {
     const { userId } = req.query;
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-    const limit = Number(req.query.limit) || 50;
-    const notifications = await Notification.find({ userId })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
-
-    // ✅ Always respond 200 with a consistent structure
-    return res.status(200).json({
-      documents: notifications || [],
-      total: notifications?.length || 0,
-    });
+    const notifs = await Notification.find({ userId }).sort({ createdAt: -1 });
+    console.log(`[NOTIFS] ${new Date().toISOString()} - LIST ✅ count: ${notifs.length}`);
+    res.status(200).json(notifs); // ✅ returns array
   } catch (err) {
-    console.error("❌ getNotifications error:", err);
-    return next(err);
+    console.error("[NOTIFS] LIST ❌", err);
+    res.status(500).json({ error: "Failed to list notifications" });
   }
-}
+};
 
-/* ============================================================================
-   MARK NOTIFICATION AS READ
-============================================================================ */
-export async function markNotificationAsRead(req: Request, res: Response, next: NextFunction) {
+
+// ============================================================================
+// MARK READ
+// ============================================================================
+export const markNotificationAsRead = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: "Notification ID required" });
+    log("READ → id:", id);
+
+    if (!id || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
+      log("READ ❌ invalid id:", id);
+      return res.status(400).json({ error: "Invalid notification ID" });
+    }
 
     const updated = await Notification.findByIdAndUpdate(
       id,
       { isRead: true },
       { new: true }
-    ).lean();
+    );
 
-    if (!updated) return res.status(404).json({ error: "Notification not found" });
+    if (!updated) {
+      log("READ ❌ not found:", id);
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    log("READ ✅ updated:", brief(updated));
     return res.status(200).json(updated);
   } catch (err) {
-    console.error("❌ markNotificationAsRead error:", err);
-    return next(err);
+    log("READ ❌ error:", err);
+    next(err);
   }
-}
+};
 
-/* ============================================================================
-   DELETE SINGLE NOTIFICATION
-============================================================================ */
-export async function deleteNotification(req: Request, res: Response, next: NextFunction) {
+// ============================================================================
+// DELETE ONE
+// ============================================================================
+export const deleteNotification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: "Notification ID required" });
+    log("DELETE → id:", id);
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      log("DELETE ❌ invalid id:", id);
+      return res.status(400).json({ error: "Invalid notification ID" });
+    }
 
     const deleted = await Notification.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: "Notification not found" });
+    if (!deleted) {
+      log("DELETE ❌ not found:", id);
+      return res.status(404).json({ error: "Notification not found" });
+    }
 
-    return res.status(200).json({ message: "Notification deleted" });
+    log("DELETE ✅ removed:", brief(deleted));
+    return res.status(200).json({ message: "Notification deleted successfully" });
   } catch (err) {
-    console.error("❌ deleteNotification error:", err);
-    return next(err);
+    log("DELETE ❌ error:", err);
+    next(err);
   }
-}
+};
 
-/* ============================================================================
-   CLEAR ALL NOTIFICATIONS FOR USER  → matches DELETE `/api/notifications?userId=...`
-============================================================================ */
-export async function clearNotifications(req: Request, res: Response, next: NextFunction) {
+// ============================================================================
+// CLEAR ALL FOR USER
+// ============================================================================
+export const clearNotifications = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.query;
-    if (!userId) return res.status(400).json({ error: "userId query parameter required" });
+    const { userId } = req.params;
+    log("CLEAR → userId:", userId);
+
+    if (!userId) {
+      log("CLEAR ❌ missing userId");
+      return res.status(400).json({ error: "userId is required" });
+    }
 
     const result = await Notification.deleteMany({ userId });
-    return res.status(200).json({
-      message: "All notifications cleared",
-      deletedCount: result.deletedCount || 0,
-    });
+    log("CLEAR ✅ deletedCount:", result?.deletedCount ?? 0);
+    return res.status(200).json({ message: "All notifications cleared", deleted: result?.deletedCount ?? 0 });
   } catch (err) {
-    console.error("❌ clearNotifications error:", err);
-    return next(err);
+    log("CLEAR ❌ error:", err);
+    next(err);
   }
-}
+};

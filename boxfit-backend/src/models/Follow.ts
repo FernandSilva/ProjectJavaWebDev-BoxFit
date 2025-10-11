@@ -1,15 +1,15 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IFollow extends Document {
-  userId: string;        // person doing the follow
-  followsUserId: string; // person being followed
+  userId: string;
+  followsUserId: string;
   createdAt: Date;
 }
 
 const FollowSchema = new Schema<IFollow>(
   {
-    userId: { type: String, required: true, index: true },
-    followsUserId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
+    followsUserId: { type: String, required: true },
   },
   { timestamps: true }
 );

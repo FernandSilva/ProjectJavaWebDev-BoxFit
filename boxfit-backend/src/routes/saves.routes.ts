@@ -2,19 +2,19 @@
 import { Router } from "express";
 import {
   savePost,
-  getSavedPostsByUser,
   deleteSavedPost,
+  getSavedPostsByUser,
 } from "../controllers/saves.controller";
 
 const router = Router();
 
-// Save a post
+// POST /api/saves
 router.post("/", savePost);
 
-// Get all saved posts for a user
-router.get("/user/:userId", getSavedPostsByUser);
-
-// Delete a saved post by its document ID
+// DELETE /api/saves/:saveId
 router.delete("/:saveId", deleteSavedPost);
+
+// GET /api/saves/user/:userId
+router.get("/user/:userId", getSavedPostsByUser);
 
 export default router;

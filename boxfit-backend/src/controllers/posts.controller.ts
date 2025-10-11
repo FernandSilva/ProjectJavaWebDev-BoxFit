@@ -3,275 +3,347 @@ import Post from "../models/Post";
 import User from "../models/User";
 import Follow from "../models/Follow";
 
-// ----------------------------- Helpers --------------------------------------
-
+// ───────────────────────────────
+// Helpers
+// ───────────────────────────────
 function getFilesFromRequest(req: Request): Express.Multer.File[] {
-  const raw: any = (req as any).files;
-  const files: Express.Multer.File[] = [];
+  // Handles req.files when it is:
+  //  - an array (upload.array)
+  //  - an object of arrays (upload.fields)
+  //  - undefined
+  const out: Express.Multer.File[] = [];
+  const raw = (req as any).files;
+  if (!raw) return out;
+
   const add = (entry: any) => {
     if (Array.isArray(entry)) {
-      for (const f of entry) {
-        if (f && typeof f === "object" && f.size !== undefined) files.push(f);
-      }
+      for (const f of entry) if (f && typeof f === "object") out.push(f);
     }
   };
+
   if (Array.isArray(raw)) add(raw);
   else if (typeof raw === "object") Object.values(raw).forEach(add);
-  return files;
+
+  return out;
 }
 
-// ----------------------------- Controllers ----------------------------------
+function toAbsoluteUrl(req: Request, url: string) {
+  if (!url) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/uploads/")) {
+    return `${req.protocol}://${req.get("host")}${url}`;
+  }
+  return `${req.protocol}://${req.get("host")}/uploads/${url}`;
+}
 
-// ✅ Create Post
+function hydratePostForClient(req: Request, postDoc: any) {
+  if (!postDoc) return postDoc;
+  const obj =
+    typeof postDoc.toObject === "function" ? postDoc.toObject() : { ...postDoc };
+
+  obj.id = obj._id?.toString?.() ?? obj._id;
+
+  if (Array.isArray(obj.imageUrl)) {
+    obj.imageUrl = obj.imageUrl.map((u: string) => toAbsoluteUrl(req, u));
+  } else if (typeof obj.imageUrl === "string") {
+    obj.imageUrl = toAbsoluteUrl(req, obj.imageUrl);
+  }
+
+  if (obj.creator && typeof obj.creator === "object") {
+    if (obj.creator.imageUrl) {
+      obj.creator.imageUrl = toAbsoluteUrl(req, obj.creator.imageUrl);
+    }
+    obj.creator.id = obj.creator._id?.toString?.() ?? obj.creator._id;
+  }
+
+  return obj;
+}
+
+// ───────────────────────────────
+// ✅ Create Post (multipart safe)
+// ───────────────────────────────
 export async function createPost(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId, caption = "" } = req.body;
+    const { userId, caption = "", location = "", tags = "" } = req.body;
     if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const filesArr = getFilesFromRequest(req);
-    if (!filesArr.length) return res.status(400).json({ error: "At least one file is required" });
+    // ✅ SAFE: robustly read Multer files whether req.files is array or object
+    const filesArr =
+      Array.isArray((req as any).files) ? ((req as any).files as Express.Multer.File[]) : getFilesFromRequest(req);
 
-    // For now: save filename as imageId, and build local URL
-    const imageUrl = filesArr.map((f) => `/uploads/${f.originalname}`);
-    const imageId = filesArr.map((f) => f.originalname);
+    const imageUrls = filesArr.map((f) =>
+      toAbsoluteUrl(req, `/uploads/${f.filename}`)
+    );
 
-    const post = new Post({
+    const post = await Post.create({
       userId,
       caption,
-      imageUrl,
-      imageId,
+      imageUrl: imageUrls,
+      location,
+      tags,
+      creator: userId, // Mongoose will cast to ObjectId
       likes: [],
       saves: [],
       comments: [],
-      creator: userId,
     });
 
-    await post.save();
+    const populated = await Post.findById(post._id)
+      .populate("creator", "name username imageUrl _id")
+      .lean();
 
-    const creator = await User.findById(userId).lean();
-    res.status(201).json({ ...post.toObject(), creator });
-  } catch (err) {
+    res.status(201).json(hydratePostForClient(req, populated));
+  } catch (err: any) {
+    console.error("❌ createPost error:", err.message);
     next(err);
   }
 }
 
-// ✅ Get Post by ID
-export async function getPostById(req: Request, res: Response, next: NextFunction) {
-  try {
-    const post = await Post.findById(req.params.id).lean();
-    if (!post) return res.status(404).json({ error: "Post not found" });
-
-    const creator = await User.findById(post.creator).lean();
-    res.json({ ...post, creator });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ✅ List Posts
-export async function listPosts(req: Request, res: Response, next: NextFunction) {
-  try {
-    const limit = Math.min(parseInt((req.query.limit as string) || "10"), 100);
-    const posts = await Post.find().sort({ createdAt: -1 }).limit(limit).lean();
-
-    const enriched = await Promise.all(
-      posts.map(async (p) => {
-        try {
-          const user = await User.findById(p.creator).lean();
-          return { ...p, creator: user };
-        } catch {
-          return p;
-        }
-      })
-    );
-
-    const last = posts[posts.length - 1];
-    res.json({ documents: enriched, nextCursor: last ? String(last._id) : null });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ✅ Recent Posts
-export async function getRecentPosts(req: Request, res: Response, next: NextFunction) {
-  try {
-    const posts = await Post.find().sort({ createdAt: -1 }).limit(20).lean();
-    res.json(posts);
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ✅ User Posts
-export async function getUserPosts(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { userId } = req.params;
-    const posts = await Post.find({ creator: userId }).sort({ createdAt: -1 }).lean();
-    res.json(posts);
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ✅ Update Post
-export async function updatePost(req: Request, res: Response, next: NextFunction) {
+// ───────────────────────────────
+export async function getPostById(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { caption } = req.body;
-
-    const filesArr = getFilesFromRequest(req);
-    const existing = await Post.findById(id).lean();
-    if (!existing) return res.status(404).json({ error: "Post not found" });
-
-    let imageUrl = existing.imageUrl || [];
-    let imageId = existing.imageId || [];
-
-    if (filesArr.length) {
-      imageUrl = filesArr.map((f) => `/uploads/${f.originalname}`);
-      imageId = filesArr.map((f) => f.originalname);
+    if (!id || id === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
     }
 
-    const updated = await Post.findByIdAndUpdate(
-      id,
-      { caption: caption ?? existing.caption, imageUrl, imageId },
-      { new: true }
-    ).lean();
+    const post = await Post.findById(id)
+      .populate("creator", "name username imageUrl _id")
+      .lean();
 
-    res.json(updated);
-  } catch (err) {
-    next(err);
+    if (!post) return res.status(404).json({ error: "Post not found" });
+    res.json(hydratePostForClient(req, post));
+  } catch (err: any) {
+    console.error("❌ getPostById error:", err.message);
+    res.status(500).json({ error: "Failed to fetch post" });
   }
 }
 
-// ✅ Delete Post
-export async function deletePost(req: Request, res: Response, next: NextFunction) {
+// ───────────────────────────────
+// ✅ List Posts (homepage feed) — POPULATED
+// returns { documents: [...] } for FE compatibility
+// ───────────────────────────────
+export async function listPosts(req: Request, res: Response) {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const search = String(req.query.search || "").trim();
+    const filter = search ? { caption: { $regex: search, $options: "i" } } : {};
+
+    const posts = await Post.find(filter)
+      .populate("creator", "name username imageUrl _id")
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json({ documents: posts.map((p) => hydratePostForClient(req, p)) });
+  } catch (err: any) {
+    console.error("❌ listPosts error:", err.message);
+    res.status(500).json({ error: "Failed to list posts" });
+  }
+}
+
+// ───────────────────────────────
+// ✅ Get Recent Posts — POPULATED
+// returns array (your FE helper expects an array here)
+// ───────────────────────────────
+export async function getRecentPosts(req: Request, res: Response) {
+  try {
+    const posts = await Post.find()
+      .populate("creator", "name username imageUrl _id")
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    res.json(posts.map((p) => hydratePostForClient(req, p)));
+  } catch (err: any) {
+    console.error("❌ getRecentPosts error:", err.message);
+    res.status(500).json({ error: "Failed to fetch recent posts" });
+  }
+}
+
+// ───────────────────────────────
+// ✅ Get User Posts (populated)
+// ───────────────────────────────
+export async function getUserPosts(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const posts = await Post.find({ creator: userId })
+      .populate("creator", "name username imageUrl _id")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(posts.map((p) => hydratePostForClient(req, p)));
+  } catch (err: any) {
+    console.error("❌ getUserPosts error:", err.message);
+    res.status(500).json({ error: "Failed to fetch user posts" });
+  }
+}
+
+// ───────────────────────────────
+// ✅ Update Post
+// ───────────────────────────────
+export async function updatePost(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    await Post.findByIdAndDelete(id);
-    res.json({ status: "Ok" });
-  } catch (err) {
-    next(err);
+    const { caption, location, tags } = req.body;
+
+    if (!id || id === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
+
+    const filesArr = getFilesFromRequest(req);
+    const updateData: any = { caption, location, tags };
+
+    if (filesArr.length) {
+      updateData.imageUrl = filesArr.map((f) =>
+        toAbsoluteUrl(req, `/uploads/${f.filename}`)
+      );
+    }
+
+    const updated = await Post.findByIdAndUpdate(id, updateData, { new: true })
+      .populate("creator", "name username imageUrl _id")
+      .lean();
+
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+    res.json(hydratePostForClient(req, updated));
+  } catch (err: any) {
+    console.error("❌ updatePost error:", err.message);
+    res.status(500).json({ error: "Failed to update post" });
   }
 }
 
-// ✅ Like Post
-export async function likePost(req: Request, res: Response, next: NextFunction) {
+// ───────────────────────────────
+// ✅ Delete Post
+// ───────────────────────────────
+export async function deletePost(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    if (!id || id === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
+
+    await Post.findByIdAndDelete(id);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("❌ deletePost error:", err.message);
+    res.status(500).json({ error: "Failed to delete post" });
+  }
+}
+
+// ───────────────────────────────
+// ✅ Like Post (client sends full likes array)
+// ───────────────────────────────
+export async function likePost(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const { likes = [] } = req.body;
 
-    const updated = await Post.findByIdAndUpdate(id, { likes }, { new: true }).lean();
-    res.json(updated);
-  } catch (err) {
-    next(err);
+    if (!id || id === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
+
+    const updated = await Post.findByIdAndUpdate(
+      id,
+      { likes },
+      { new: true }
+    )
+      .populate("creator", "name username imageUrl _id")
+      .lean();
+
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+    res.json(hydratePostForClient(req, updated));
+  } catch (err: any) {
+    console.error("❌ likePost error:", err.message);
+    res.status(500).json({ error: "Failed to like post" });
   }
 }
 
-// ✅ Save Post
-export async function savePost(req: Request, res: Response, next: NextFunction) {
+// ───────────────────────────────
+// ✅ Save / Unsave Post
+// ───────────────────────────────
+export async function savePost(req: Request, res: Response) {
   try {
     const { id } = req.params;
     const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    const post = await Post.findById(id).lean();
-    if (!post) return res.status(404).json({ error: "Post not found" });
+    if (!id || id === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
 
-    // Saves are tracked inside Post.saves array
     const updated = await Post.findByIdAndUpdate(
       id,
       { $addToSet: { saves: userId } },
       { new: true }
-    ).lean();
+    )
+      .populate("creator", "name username imageUrl _id")
+      .lean();
 
-    res.status(201).json(updated);
-  } catch (err) {
-    next(err);
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+    res.json(hydratePostForClient(req, updated));
+  } catch (err: any) {
+    console.error("❌ savePost error:", err.message);
+    res.status(500).json({ error: "Failed to save post" });
   }
 }
 
-// ✅ Delete Saved Post
-export async function deleteSavedPost(req: Request, res: Response, next: NextFunction) {
+export async function deleteSavedPost(req: Request, res: Response) {
   try {
     const { saveId } = req.params;
     const { userId } = req.body;
 
-    if (!userId) return res.status(400).json({ error: "userId is required" });
+    if (!saveId || saveId === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
 
     const updated = await Post.findByIdAndUpdate(
       saveId,
       { $pull: { saves: userId } },
       { new: true }
-    ).lean();
+    )
+      .populate("creator", "name username imageUrl _id")
+      .lean();
 
-    res.json(updated);
-  } catch (err) {
-    next(err);
+    if (!updated) return res.status(404).json({ error: "Post not found" });
+    res.json(hydratePostForClient(req, updated));
+  } catch (err: any) {
+    console.error("❌ deleteSavedPost error:", err.message);
+    res.status(500).json({ error: "Failed to remove saved post" });
   }
 }
 
-// ✅ Following Feed
-export async function getFollowingPosts(req: Request, res: Response, next: NextFunction) {
+// ───────────────────────────────
+// ✅ Following + Followers Feeds (populated)
+// ───────────────────────────────
+async function enrichFeed(req: Request, filter: any) {
+  const posts = await Post.find(filter)
+    .populate("creator", "name username imageUrl _id")
+    .sort({ createdAt: -1 })
+    .limit(20)
+    .lean();
+
+  return posts.map((p) => hydratePostForClient(req, p));
+}
+
+export async function getFollowingPosts(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: "Missing userId param" });
-
     const following = await Follow.find({ userId }).lean();
-    const followingIds = following.map((f) => f.followsUserId);
-
-    if (!followingIds.length) return res.json({ documents: [] });
-
-    const posts = await Post.find({ creator: { $in: followingIds } })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
-
-    const enriched = await Promise.all(
-      posts.map(async (p) => {
-        try {
-          const creator = await User.findById(p.creator).lean();
-          return { ...p, creator };
-        } catch {
-          return p;
-        }
-      })
-    );
-
-    res.json({ documents: enriched });
-  } catch (err) {
-    next(err);
+    const ids = following.map((f) => f.followsUserId);
+    res.json({ documents: await enrichFeed(req, { creator: { $in: ids } }) });
+  } catch (err: any) {
+    console.error("❌ getFollowingPosts error:", err.message);
+    res.status(500).json({ error: "Failed to fetch following posts" });
   }
 }
 
-// ✅ Followers Feed
-export async function getFollowersPosts(req: Request, res: Response, next: NextFunction) {
+export async function getFollowersPosts(req: Request, res: Response) {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ error: "Missing userId param" });
-
     const followers = await Follow.find({ followsUserId: userId }).lean();
-    const followerIds = followers.map((f) => f.userId);
-
-    if (!followerIds.length) return res.json({ documents: [] });
-
-    const posts = await Post.find({ creator: { $in: followerIds } })
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .lean();
-
-    const enriched = await Promise.all(
-      posts.map(async (p) => {
-        try {
-          const creator = await User.findById(p.creator).lean();
-          return { ...p, creator };
-        } catch {
-          return p;
-        }
-      })
-    );
-
-    res.json({ documents: enriched });
-  } catch (err) {
-    next(err);
+    const ids = followers.map((f) => f.userId);
+    res.json({ documents: await enrichFeed(req, { creator: { $in: ids } }) });
+  } catch (err: any) {
+    console.error("❌ getFollowersPosts error:", err.message);
+    res.status(500).json({ error: "Failed to fetch followers posts" });
   }
 }

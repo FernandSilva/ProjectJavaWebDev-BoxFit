@@ -1,21 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import Comment from "../models/Comment";
 import Post from "../models/Post";
-import User from "../models/User";
-
-// ----------------------------- Controllers ----------------------------------
 
 // ✅ Get comments for a post
 export async function getCommentsByPostId(req: Request, res: Response, next: NextFunction) {
   try {
-    const { postId } = req.params;
-    if (!postId) return res.status(400).json({ error: "postId is required" });
+    // Support BOTH /comments/post/:postId and /comments/:postId
+    const postId = (req.params.postId || req.params.id || "").toString();
+    if (!postId || postId === "undefined") {
+      return res.status(400).json({ error: "Invalid or missing post ID" });
+    }
 
-    const limit = Number(req.query.limit) || 20;
-    const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).limit(limit).lean();
-
-    res.json({ comments, totalComments: await Comment.countDocuments({ postId }) });
+    const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).lean();
+    res.json({ comments: comments || [], totalComments: comments.length });
   } catch (err) {
+    console.error("❌ getCommentsByPostId error:", (err as Error).message);
     next(err);
   }
 }
@@ -28,21 +27,20 @@ export async function createComment(req: Request, res: Response, next: NextFunct
       return res.status(400).json({ error: "postId, userId, and text are required" });
     }
 
-    const comment = new Comment({
+    const comment = await new Comment({
       postId,
       userId,
       text,
       userImageUrl,
       userName,
-    });
+    }).save();
 
-    await comment.save();
-
-    // Link comment ID into post for easy lookup (optional but keeps parity with old logic)
+    // Link comment ID into post (optional)
     await Post.findByIdAndUpdate(postId, { $push: { comments: String(comment._id) } });
 
     res.status(201).json(comment);
   } catch (err) {
+    console.error("❌ createComment error:", (err as Error).message);
     next(err);
   }
 }
@@ -50,7 +48,8 @@ export async function createComment(req: Request, res: Response, next: NextFunct
 // ✅ Like comment
 export async function likeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { commentId, userId } = req.body;
+    const { commentId } = req.params;
+    const { userId } = req.body;
     if (!commentId || !userId) {
       return res.status(400).json({ error: "commentId and userId required" });
     }
@@ -61,8 +60,10 @@ export async function likeComment(req: Request, res: Response, next: NextFunctio
       { new: true }
     ).lean();
 
+    if (!updated) return res.status(404).json({ error: "Comment not found" });
     res.json(updated);
   } catch (err) {
+    console.error("❌ likeComment error:", (err as Error).message);
     next(err);
   }
 }
@@ -70,7 +71,8 @@ export async function likeComment(req: Request, res: Response, next: NextFunctio
 // ✅ Unlike comment
 export async function unlikeComment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { commentId, userId } = req.body;
+    const { commentId } = req.params;
+    const { userId } = req.body;
     if (!commentId || !userId) {
       return res.status(400).json({ error: "commentId and userId required" });
     }
@@ -81,8 +83,10 @@ export async function unlikeComment(req: Request, res: Response, next: NextFunct
       { new: true }
     ).lean();
 
+    if (!updated) return res.status(404).json({ error: "Comment not found" });
     res.json(updated);
   } catch (err) {
+    console.error("❌ unlikeComment error:", (err as Error).message);
     next(err);
   }
 }
@@ -95,13 +99,13 @@ export async function deleteComment(req: Request, res: Response, next: NextFunct
 
     const deleted = await Comment.findByIdAndDelete(commentId).lean();
 
-    // Also remove from associated post’s comments array
     if (deleted) {
       await Post.findByIdAndUpdate(deleted.postId, { $pull: { comments: String(deleted._id) } });
     }
 
     res.json({ message: "Comment deleted" });
   } catch (err) {
+    console.error("❌ deleteComment error:", (err as Error).message);
     next(err);
   }
 }

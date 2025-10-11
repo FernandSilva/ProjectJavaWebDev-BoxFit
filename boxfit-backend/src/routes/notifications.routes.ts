@@ -1,32 +1,48 @@
 // src/routes/notifications.routes.ts
-import { Router, Request, Response, NextFunction } from "express";
-import * as Notifications from "../controllers/notifications.controller";
+import { Router } from "express";
+import {
+  getNotifications,
+  createNotification,
+  markNotificationAsRead,
+  deleteNotification,
+  clearNotifications,
+} from "../controllers/notifications.controller";
+import { verifyToken } from "../middleware/verifyToken";
 
 const router = Router();
 
-// Async wrapper
-const wrap =
-  (fn: any) =>
-  (req: Request, res: Response, next: NextFunction) =>
-    Promise.resolve(fn(req, res, next)).catch(next);
+/**
+ * --------------------------------------------------------------------
+ *  Notifications Routes
+ *  Mounted in server.ts as: app.use("/api/notifications", notificationsRouter)
+ *  So these routes map to:
+ *    GET    /api/notifications?userId=xxx
+ *    POST   /api/notifications
+ *    PATCH  /api/notifications/:id/read
+ *    DELETE /api/notifications/:id
+ *    DELETE /api/notifications/user/:userId/clear
+ * --------------------------------------------------------------------
+ */
 
-/* ============================================================================
-   NOTIFICATION ROUTES
-============================================================================ */
+// ✅ Quick health check (optional)
+router.get("/health", (_req, res) => {
+  console.log("[NOTIFS]", new Date().toISOString(), "- HEALTH OK");
+  res.status(200).json({ ok: true });
+});
 
-// Create new notification
-router.post("/notifications", wrap(Notifications.createNotification));
+// ✅ Get all notifications for a user
+router.get("/", verifyToken, getNotifications);
 
-// Get all notifications for a user (via query param)
-router.get("/notifications", wrap(Notifications.getNotifications));
+// ✅ Create a new notification
+router.post("/", verifyToken, createNotification);
 
-// Mark single notification as read
-router.patch("/notifications/:id/read", wrap(Notifications.markNotificationAsRead));
+// ✅ Mark a notification as read
+router.patch("/:id/read", verifyToken, markNotificationAsRead);
 
-// Delete single notification
-router.delete("/notifications/:id", wrap(Notifications.deleteNotification));
+// ✅ Delete a specific notification
+router.delete("/:id", verifyToken, deleteNotification);
 
-// Clear all notifications for a user (query version for frontend match)
-router.delete("/notifications", wrap(Notifications.clearNotifications));
+// ✅ Clear all notifications for a user
+router.delete("/user/:userId/clear", verifyToken, clearNotifications);
 
 export default router;

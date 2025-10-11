@@ -1,48 +1,50 @@
-// src/routes/users.routes.ts
-import { Router, Request, Response, NextFunction } from "express";
-import multer from "multer";
-import * as UsersController from "../controllers/users.controller";
+import { Router } from "express";
+import * as Users from "../controllers/users.controller";
+import { verifyToken } from "../middleware/verifyToken";
+import { upload as uploadMiddleware } from "../middleware/upload"; // ✅ renamed to avoid conflicts
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
-// Async wrapper
+// async wrapper
 const wrap =
   (fn: any) =>
-  (req: Request, res: Response, next: NextFunction) =>
+  (req: any, res: any, next: any) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
-/* =============================================================================
-   USERS + RELATIONSHIPS
-============================================================================= */
+/* ================================================================
+   USER ROUTES
+================================================================ */
+router.get("/users/current", verifyToken, wrap(Users.getCurrentUser));
+router.get("/users", wrap(Users.listUsers));
+router.get("/users/:id", wrap(Users.getUserById));
 
-// Create user
-router.post("/users", wrap(UsersController.createUser));
+// ✅ Add image upload middleware (renamed to uploadMiddleware)
+router.patch(
+  "/users/:id",
+  verifyToken,
+  uploadMiddleware.single("file"),
+  wrap(Users.updateUser)
+);
 
-// Search & leaderboard
-router.get("/users/search", wrap(UsersController.searchUsers));
-router.get("/users/top", wrap(UsersController.getTopMembers));
+/* ================================================================
+   RELATIONSHIPS
+================================================================ */
+router.get("/users/:id/relationships", wrap(Users.getRelationshipsCount));
+router.get("/users/:id/followers", wrap(Users.getFollowersList));
+router.get("/users/:id/following", wrap(Users.getRelationshipsList));
+router.post("/users/follow", verifyToken, wrap(Users.followUser));
+router.delete("/users/unfollow", verifyToken, wrap(Users.unfollowByPair));
+router.get("/relationships/check", wrap(Users.checkFollowStatus));
 
-// Listing, relationship counts & lists, likes total
-router.get("/users", wrap(UsersController.listUsers));
-router.get("/users/:id/relationships", wrap(UsersController.getRelationshipsCount));
-router.get("/users/:id/relationships/list", wrap(UsersController.getRelationshipsList));
-router.get("/users/:id/followers", wrap(UsersController.getFollowersList));
-router.get("/users/:id/likes/total", wrap(UsersController.getUserTotalLikes));
+/* ================================================================
+   SEARCH & ANALYTICS
+================================================================ */
+router.get("/users/search", wrap(Users.searchUsers));
 
-// Get user by accountId
-router.get("/users/by-account/:accountId", wrap(UsersController.getUserByAccountId));
+// ✅ keep existing /likes for backward compatibility
+router.get("/users/:id/likes", wrap(Users.getUserTotalLikes));
 
-// Single user by ID
-router.get("/users/:id", wrap(UsersController.getUserById));
-
-// Profile update (optional avatar upload)
-router.patch("/users/:id", upload.single("file"), wrap(UsersController.updateUser));
-
-// Follow / Unfollow / Check
-router.post("/relationships", wrap(UsersController.followUser));
-router.delete("/relationships/:docId", wrap(UsersController.unfollowByDocId));
-router.delete("/relationships", wrap(UsersController.unfollowByPair));
-router.get("/relationships/check", wrap(UsersController.checkFollowStatus));
+// ✅ NEW ALIAS — frontend expects `/likes/total`
+router.get("/users/:id/likes/total", wrap(Users.getUserTotalLikes));
 
 export default router;
