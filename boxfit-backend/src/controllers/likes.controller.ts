@@ -1,200 +1,149 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import Post from "../models/Post";
 import Comment from "../models/Comment";
+import Like from "../models/Like";
+import User from "../models/User";
 
-/**
- * Toggle like on a post by userId.
- * - If user already liked -> unlike (pull).
- * - Else -> like (addToSet).
- * Returns: { liked, likesCount, post }
- */
-export const likePost = async (req: Request, res: Response, next: NextFunction) => {
+// ────────────────────────────────
+// ✅ Like a Post
+// ────────────────────────────────
+export const likePost = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
     const { userId } = req.body;
 
-    if (!postId || !userId) {
-      return res.status(400).json({ message: "postId and userId are required" });
+    if (!postId || !userId)
+      return res.status(400).json({ error: "postId and userId required" });
+
+    const existing = await Like.findOne({ post: postId, user: userId });
+    if (existing) {
+      return res.status(200).json({ message: "Already liked" });
     }
 
-    const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+    await Like.create({ post: postId, user: userId });
 
-    const already = (post.likes || []).some((id: string) => String(id) === String(userId));
+    await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
 
-    let updated;
-    let liked: boolean;
-
-    if (already) {
-      updated = await Post.findByIdAndUpdate(
-        postId,
-        { $pull: { likes: userId } },
-        { new: true }
-      ).lean();
-      liked = false;
-    } else {
-      updated = await Post.findByIdAndUpdate(
-        postId,
-        { $addToSet: { likes: userId } },
-        { new: true }
-      ).lean();
-      liked = true;
-    }
-
-    return res.status(200).json({
-      liked,
-      likesCount: (updated?.likes || []).length,
-      post: updated,
-    });
-  } catch (err) {
-    next(err);
+    return res.status(201).json({ message: "Post liked successfully" });
+  } catch (err: any) {
+    console.error("❌ likePost error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-/**
- * (Optional explicit unlike endpoint if you keep it around)
- */
-export const unlikePost = async (req: Request, res: Response, next: NextFunction) => {
+// ────────────────────────────────
+// ✅ Unlike a Post
+// ────────────────────────────────
+export const unlikePost = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
     const { userId } = req.body;
 
-    if (!postId || !userId) {
-      return res.status(400).json({ message: "postId and userId are required" });
-    }
+    const like = await Like.findOneAndDelete({ post: postId, user: userId });
 
-    const updated = await Post.findByIdAndUpdate(
-      postId,
-      { $pull: { likes: userId } },
-      { new: true }
-    ).lean();
+    if (!like) return res.status(404).json({ message: "Like not found" });
 
-    if (!updated) return res.status(404).json({ message: "Post not found" });
+    await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
 
-    return res.status(200).json({
-      liked: false,
-      likesCount: (updated.likes || []).length,
-      post: updated,
-    });
-  } catch (err) {
-    next(err);
+    return res.status(200).json({ message: "Like removed successfully" });
+  } catch (err: any) {
+    console.error("❌ unlikePost error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-/**
- * Get posts a user has liked.
- * Uses Post.likes array so you don't need a separate Like collection.
- */
-export const getLikedPostsByUser = async (req, res) => {
+// ────────────────────────────────
+// ✅ Get all posts liked by a user
+// ────────────────────────────────
+export const getLikedPostsByUser = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    if (!userId) return res.status(400).json({ error: "userId required" });
 
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userId" });
-    }
+    const likes = await Like.find({ user: userId }).populate("post");
+    // ✅ Explicitly cast to any to avoid TS2339
+    const likedPosts = likes.map((like: any) => like.post);
 
-    // Find all posts where the likes array contains this userId
-    const posts = await Post.find({ likes: userId })
-      .populate("userId", "name username imageUrl") // optional
-      .sort({ createdAt: -1 });
-
-    if (!posts || posts.length === 0) {
-      return res.status(200).json({ posts: [] });
-    }
-
-    // Normalize image URLs
-    const normalized = posts.map((p) => ({
-      ...p._doc,
-      imageUrl:
-        Array.isArray(p.imageUrl) && p.imageUrl.length > 0
-          ? p.imageUrl.map((img) =>
-              img.startsWith("http")
-                ? img
-                : `http://localhost:3001/uploads/${img}`
-            )
-          : p.imageUrl
-          ? `http://localhost:3001/uploads/${p.imageUrl}`
-          : null,
-    }));
-
-    res.status(200).json({ posts: normalized });
-  } catch (error) {
-    console.error("❌ getLikedPostsByUser failed:", error);
-    res.status(500).json({ error: "Failed to fetch liked posts" });
+    return res.status(200).json({ documents: likedPosts });
+  } catch (err: any) {
+    console.error("❌ getLikedPostsByUser error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-/**
- * Comment like/unlike stays as-is (works today).
- */
-export const likeComment = async (req: Request, res: Response, next: NextFunction) => {
+// ────────────────────────────────
+// ✅ Like a Comment
+// ────────────────────────────────
+export const likeComment = async (req: Request, res: Response) => {
   try {
     const { commentId, userId } = req.body;
-    if (!commentId || !userId) {
-      return res.status(400).json({ message: "commentId and userId are required" });
+
+    if (!commentId || !userId)
+      return res.status(400).json({ error: "commentId and userId required" });
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+    const alreadyLiked = comment.likes?.includes(userId);
+    if (alreadyLiked) {
+      return res.status(200).json({ message: "Already liked" });
     }
-    const updated = await Comment.findByIdAndUpdate(
-      commentId,
-      { $addToSet: { likedBy: userId } },
-      { new: true }
-    ).lean();
 
-    if (!updated) return res.status(404).json({ message: "Comment not found" });
+    comment.likes?.push(userId);
+    await comment.save();
 
-    return res.status(200).json({ comment: updated });
-  } catch (err) {
-    next(err);
+    return res.status(201).json({ message: "Comment liked successfully" });
+  } catch (err: any) {
+    console.error("❌ likeComment error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-export const unlikeComment = async (req: Request, res: Response, next: NextFunction) => {
+// ────────────────────────────────
+// ✅ Unlike a Comment
+// ────────────────────────────────
+export const unlikeComment = async (req: Request, res: Response) => {
   try {
     const { commentId, userId } = req.body;
-    if (!commentId || !userId) {
-      return res.status(400).json({ message: "commentId and userId are required" });
-    }
-    const updated = await Comment.findByIdAndUpdate(
-      commentId,
-      { $pull: { likedBy: userId } },
-      { new: true }
-    ).lean();
 
-    if (!updated) return res.status(404).json({ message: "Comment not found" });
+    if (!commentId || !userId)
+      return res.status(400).json({ error: "commentId and userId required" });
 
-    return res.status(200).json({ comment: updated });
-  } catch (err) {
-    next(err);
+    const comment = await Comment.findById(commentId);
+    if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+    comment.likes = comment.likes?.filter(
+      (id: string) => String(id) !== String(userId)
+    );
+
+    await comment.save();
+
+    return res.status(200).json({ message: "Comment unliked successfully" });
+  } catch (err: any) {
+    console.error("❌ unlikeComment error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-/**
- * (You already had this) Total likes across user's posts + comments.
- * Leaving intact if you rely on it in the UI.
- */
-export const getUserTotalLikes = async (req: Request, res: Response, next: NextFunction) => {
+// ────────────────────────────────
+// ✅ Get total likes for a user
+// ────────────────────────────────
+export const getUserTotalLikes = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    if (!userId) return res.status(400).json({ message: "userId is required" });
+    if (!userId) return res.status(400).json({ error: "userId required" });
 
-    // Count likes on posts the user created
-    const postLikesAgg = await Post.aggregate([
-      { $match: { userId } },
-      { $project: { likesCount: { $size: { $ifNull: ["$likes", []] } } } },
-      { $group: { _id: null, total: { $sum: "$likesCount" } } },
-    ]);
+    const userPosts = await Post.find({ creator: userId }).lean();
 
-    // Count likes on comments the user created
-    const commentLikesAgg = await Comment.aggregate([
-      { $match: { userId } },
-      { $project: { likesCount: { $size: { $ifNull: ["$likedBy", []] } } } },
-      { $group: { _id: null, total: { $sum: "$likesCount" } } },
-    ]);
+    // ✅ Cast post as any to access dynamic field
+    const totalLikes = userPosts.reduce(
+      (sum, post: any) => sum + (post.likesCount || 0),
+      0
+    );
 
-    const postLikes = postLikesAgg[0]?.total || 0;
-    const commentLikes = commentLikesAgg[0]?.total || 0;
-
-    return res.status(200).json({ total: postLikes + commentLikes });
-  } catch (err) {
-    next(err);
+    return res.status(200).json({ totalLikes });
+  } catch (err: any) {
+    console.error("❌ getUserTotalLikes error:", err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };

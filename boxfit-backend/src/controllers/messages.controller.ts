@@ -5,10 +5,8 @@ import User from "../models/User";
 // ───────────────────────────────
 // ✅ Send a message
 // ───────────────────────────────
-// ✅ Send a message (handles both field name styles)
 export async function sendMessage(req: Request, res: Response, next: NextFunction) {
   try {
-    // Handle both naming conventions from frontend and backend
     const senderId =
       req.body.senderId || req.body.userId || req.body.from || req.body.user;
     const receiverId =
@@ -27,7 +25,6 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
       text,
     });
 
-    // Populate sender and receiver for better frontend rendering
     const populated = await Message.findById(message._id)
       .populate("senderId", "name username imageUrl _id")
       .populate("receiverId", "name username imageUrl _id")
@@ -39,7 +36,6 @@ export async function sendMessage(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
-
 
 // ───────────────────────────────
 // ✅ Get messages between two users
@@ -71,24 +67,21 @@ export async function getMessagesBetweenUsers(req: Request, res: Response, next:
 }
 
 // ───────────────────────────────
-// ✅ Get all conversation contacts (frontend expects /messages/contacts)
+// ✅ Get all conversation contacts
 // ───────────────────────────────
-// ✅ Get all conversation contacts (supports new user search)
 export async function getContacts(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId, q } = req.query;
     if (!userId) return res.status(400).json({ error: "userId is required" });
 
-    // 1️⃣  Gather existing chat partners
     const sentTo = await Message.distinct("receiverId", { senderId: userId });
     const receivedFrom = await Message.distinct("senderId", { receiverId: userId });
     const partnerIds = Array.from(new Set([...sentTo, ...receivedFrom]));
 
-    // 2️⃣  Build search filter
     let filter: any = {};
 
     if (q && String(q).trim().length > 0) {
-      const query = String(q).replace(/^@/, ""); // allow @username searches
+      const query = String(q).replace(/^@/, "");
       filter = {
         $or: [
           { username: { $regex: query, $options: "i" } },
@@ -96,18 +89,15 @@ export async function getContacts(req: Request, res: Response, next: NextFunctio
         ],
       };
     } else if (partnerIds.length > 0) {
-      // show only existing chat partners when not searching
       filter = { _id: { $in: partnerIds } };
     } else {
       return res.json({ documents: [] });
     }
 
-    // 3️⃣  Query users
     const users = await User.find(filter)
       .select("name username imageUrl _id")
       .lean();
 
-    // 4️⃣  For each user, get their latest message (if any)
     const contacts = await Promise.all(
       users.map(async (u) => {
         const lastMsg = await Message.findOne({
@@ -124,7 +114,7 @@ export async function getContacts(req: Request, res: Response, next: NextFunctio
           peerId: u._id,
           latestMessage: lastMsg
             ? {
-                content: lastMsg.text,
+                content: (lastMsg as any).text || (lastMsg as any).content || "",
                 createdAt: lastMsg.createdAt,
               }
             : null,
@@ -138,7 +128,6 @@ export async function getContacts(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
-
 
 // ───────────────────────────────
 // ✅ Delete a message
