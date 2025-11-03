@@ -1,0 +1,36 @@
+// src/models/Post.ts
+import mongoose, { Schema, Document, Types } from "mongoose";
+
+export interface IPost extends Document {
+  userId: string;
+  caption: string;
+  imageUrl: string[];
+  imageId: string[];
+  likes: string[];
+  saves: string[];
+  comments: string[];
+  creator: Types.ObjectId; // ✅ ref to User
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PostSchema = new Schema<IPost>(
+  {
+    userId: { type: String, required: true, index: true },
+    caption: { type: String, default: "" },
+    imageUrl: [{ type: String }],
+    imageId: [{ type: String }],
+    likes: [{ type: String }],
+    saves: [{ type: String }],
+    comments: [{ type: String }],
+
+    // ✅ Properly reference User model here
+    creator: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true }
+);
+
+// optional index for performance
+PostSchema.index({ creator: 1, createdAt: -1 });
+
+export default mongoose.model<IPost>("Post", PostSchema);

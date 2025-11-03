@@ -1,0 +1,80 @@
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useUserContext } from "@/context/AuthContext";
+import { useNotifications, useMarkNotificationAsRead } from "@/lib/react-query/queries";
+import { Notification } from "@/types";
+
+const Topbar = () => {
+  const { user, isLoading } = useUserContext();
+  const navigate = useNavigate();
+
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // ✅ Call useNotifications INSIDE the component, using user?.id
+  const { data: fetchedNotifications, refetch } = useNotifications(user?.id);
+  const { mutate: markAsRead } = useMarkNotificationAsRead();
+
+  useEffect(() => {
+    if (fetchedNotifications?.documents?.length) {
+      const unreadExists = fetchedNotifications.documents.some((n: Notification) => !n.isRead);
+      setHasUnread(unreadExists);
+    }
+  }, [fetchedNotifications]);
+
+  const handleNotificationsClick = () => {
+    if (!user) return;
+
+    // Mark all unread notifications as read
+    fetchedNotifications?.documents?.forEach((n: Notification) => {
+      if (!n.isRead) {
+        markAsRead(n.$id);
+      }
+    });
+
+    setHasUnread(false);
+    navigate("/notifications");
+  };
+
+  if (isLoading || !user) return null;
+
+  return (
+    <section className="topbar">
+      <div className="flex-between py-4 px-5">
+        <Link to="/" className="flex gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <img src="/assets/images/Boxfitlogo.png" alt="BoxFit logo" className="h-8 w-8" />
+            <span className="text-xl font-bold text-gray-800">BoxFit</span>
+          </div>
+        </Link>
+
+        <div className="flex gap-4 items-center">
+          
+
+          <div className="relative">
+            <img
+              onClick={handleNotificationsClick}
+              src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
+              alt="Notifications"
+              className="h-6 w-6 cursor-pointer"
+            />
+            {hasUnread && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs rounded-full px-1">
+                •
+              </span>
+            )}
+          </div>
+
+          <Link to={`/profile/${user.id}`} className="flex-center gap-1">
+            <img
+              src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+              alt="profile"
+              className="h-8 w-8 rounded-full"
+            />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default Topbar;
