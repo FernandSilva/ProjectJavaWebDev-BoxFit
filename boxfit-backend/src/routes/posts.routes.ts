@@ -1,8 +1,10 @@
-import { Router, Request, Response, NextFunction } from "express";
+"use strict";
+import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import * as Posts from "../controllers/posts.controller";
+import { verifyToken } from "../middleware/verifyToken";
 
 const router = Router();
 
@@ -33,48 +35,32 @@ const upload = multer({
 // ───────────────────────────────
 // Async wrapper
 // ───────────────────────────────
-const wrap =
-  (fn: any) =>
-  (req: Request, res: Response, next: NextFunction) =>
-    Promise.resolve(fn(req, res, next)).catch(next);
+const wrap = (fn: any) => (req: any, res: any, next: any) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
 
 // ───────────────────────────────
 // POSTS ROUTES
 // ───────────────────────────────
-
-// 🧭 All posts (list + optional search)
 router.get("/posts", wrap(Posts.listPosts));
-
-// 🕐 Recent posts
 router.get("/posts/recent", wrap(Posts.getRecentPosts));
-
-// 🧾 Get single post by ID
 router.get("/posts/:id", wrap(Posts.getPostById));
-
-// 🧑‍🤝‍🧑 Feeds
 router.get("/posts/following/:userId", wrap(Posts.getFollowingPosts));
 router.get("/posts/followers/:userId", wrap(Posts.getFollowersPosts));
-
-// 👤 User posts (both paths supported)
 router.get("/posts/user/:userId", wrap(Posts.getUserPosts));
 router.get("/users/:userId/posts", wrap(Posts.getUserPosts)); // legacy alias
 
-// 🆕 Create + Update  ✅ uses Multer for multipart/form-data
-router.post("/posts", upload.array("files", 20), wrap(Posts.createPost));
-router.patch("/posts/:id", upload.array("files", 20), wrap(Posts.updatePost));
+// 🆕 Protected creation + update + delete
+router.post("/posts", verifyToken, upload.array("files", 20), wrap(Posts.createPost));
+router.patch("/posts/:id", verifyToken, upload.array("files", 20), wrap(Posts.updatePost));
+router.delete("/posts/:id", verifyToken, wrap(Posts.deletePost));
 
-// ❌ Delete post
-router.delete("/posts/:id", wrap(Posts.deletePost));
+// ❤️ Like / Unlike Post – protected
+router.post("/posts/:id/like", verifyToken, wrap(Posts.likePost));
 
-// ❤️ Like / Unlike Post
-router.post("/posts/:id/like", wrap(Posts.likePost));
-
-// 💾 Save / Unsave Post
-router.post("/posts/:id/save", wrap(Posts.savePost));
-router.delete("/posts/saved/:saveId", wrap(Posts.deleteSavedPost));
-// legacy alias for unsave by id
-router.delete("/saves/:saveId", wrap(Posts.deleteSavedPost));
+// 💾 Save / Unsave Post – protected
+router.post("/posts/:id/save", verifyToken, wrap(Posts.savePost));
+router.delete("/posts/saved/:saveId", verifyToken, wrap(Posts.deleteSavedPost));
+router.delete("/saves/:saveId", verifyToken, wrap(Posts.deleteSavedPost)); // legacy alias
 
 console.log("✅ Posts routes registered successfully");
-
 export default router;

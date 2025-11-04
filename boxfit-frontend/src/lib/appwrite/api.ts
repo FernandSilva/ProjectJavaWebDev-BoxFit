@@ -11,10 +11,12 @@ import { INewPost, IUpdatePost, IUpdateUser } from "@/types";
 // CONFIG + HELPERS
 // ============================================================================
 
-const BACKEND_BASE = "http://localhost:3001";
-const API_BASE =
-  import.meta.env?.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  `${BACKEND_BASE}/api`;
+// ✅ Dynamically resolve backend base
+const BACKEND_BASE =
+  import.meta.env?.VITE_API_URL?.replace(/\/$/, "") ||
+  "https://projectjavawebdev-boxfit.onrender.com"; // production default fallback
+
+const API_BASE = `${BACKEND_BASE}/api`;
 
 // ✅ Normalize image URLs so frontend loads correctly
 export function normalizeImageUrl(url?: string) {
@@ -29,10 +31,9 @@ function normalizePost(p: any) {
   if (!p || typeof p !== "object") return p;
   const id = p._id || p.$id || p.id;
 
-  const normImage =
-    Array.isArray(p.imageUrl)
-      ? p.imageUrl.map((u: string) => normalizeImageUrl(u))
-      : normalizeImageUrl(p.imageUrl);
+  const normImage = Array.isArray(p.imageUrl)
+    ? p.imageUrl.map((u: string) => normalizeImageUrl(u))
+    : normalizeImageUrl(p.imageUrl);
 
   const creator =
     p?.creator && typeof p.creator === "object"
@@ -93,8 +94,6 @@ export async function apiJson<T = any>(
   }
 }
 
-
-
 // ============================================================================
 // AUTH (MongoDB + JWT)
 // ============================================================================
@@ -144,14 +143,13 @@ export async function signOutAccount() {
 }
 
 // ============================================================================
-// POSTS
-// ============================================================================
-// ============================================================================
 // POSTS — FIXED: File Uploads (multipart/form-data)
 // ============================================================================
 export async function createPost(post: INewPost) {
   const form = new FormData();
-  (Array.isArray(post.file) ? post.file : [post.file]).forEach((f) => f && form.append("files", f));
+  (Array.isArray(post.file) ? post.file : [post.file]).forEach(
+    (f) => f && form.append("files", f)
+  );
   form.append("userId", post.userId);
   form.append("caption", post.caption ?? "");
   if (post.location) form.append("location", post.location);
@@ -161,7 +159,7 @@ export async function createPost(post: INewPost) {
 
   const res = await fetch(`${API_BASE}/posts`, {
     method: "POST",
-    body: form, // ✅ do NOT set Content-Type manually
+    body: form,
     credentials: "include",
   });
 
@@ -173,7 +171,6 @@ export async function createPost(post: INewPost) {
 
   return res.json();
 }
-
 
 export const getPostById = (id: string) => {
   if (!id || id === "undefined")
@@ -216,34 +213,22 @@ export async function likePost(
   return res.json();
 }
 
-/**
- * ✅ Get all posts the user has liked.
- * Uses /api/users/:id/likes because that's the working backend route.
- */
 export async function getLikedPostsByUser(userId: string) {
   if (!userId) throw new Error("Missing userId in getLikedPostsByUser");
-
   const res = await fetch(`${API_BASE}/users/${userId}/likes`, {
     credentials: "include",
   });
-
   if (res.status === 404) {
     console.warn("⚠️ Liked posts endpoint not found");
     return { documents: [] };
   }
-
   if (!res.ok) throw new Error(`Failed to fetch liked posts (${res.status})`);
-
   const data = await res.json();
-
-  // Extract array safely — backend may return {documents:[{post:...}]} or [{post:...}]
   const arr = Array.isArray(data?.documents)
     ? data.documents
     : Array.isArray(data)
     ? data
     : [];
-
-  // Unwrap .post objects, normalize image URLs
   const posts = arr
     .map((item: any) => item?.post ?? item)
     .filter(Boolean)
@@ -260,37 +245,25 @@ export async function getLikedPostsByUser(userId: string) {
             }
           : p.creator,
     }));
-
   return { documents: posts };
 }
 
-/**
- * ✅ Get all posts the user has saved.
- * Uses /api/saves/user/:id (confirmed 200 OK from logs).
- */
 export async function getSavedPostsByUser(userId: string) {
   if (!userId) throw new Error("Missing userId in getSavedPostsByUser");
-
   const res = await fetch(`${API_BASE}/saves/user/${userId}`, {
     credentials: "include",
   });
-
   if (res.status === 404) {
     console.warn("⚠️ Saved posts endpoint not found");
     return { documents: [] };
   }
-
   if (!res.ok) throw new Error(`Failed to fetch saved posts (${res.status})`);
-
   const data = await res.json();
-
   const arr = Array.isArray(data?.documents)
     ? data.documents
     : Array.isArray(data)
     ? data
     : [];
-
-  // unwrap .post if present; fallback to item directly
   const posts = arr
     .map((item: any) => item?.post ?? item)
     .filter(Boolean)
@@ -307,11 +280,8 @@ export async function getSavedPostsByUser(userId: string) {
             }
           : p.creator,
     }));
-
   return { documents: posts };
 }
-
-
 
 export async function savePost(userId: string, postId: string) {
   const res = await fetch(`${API_BASE}/saves`, {
@@ -333,7 +303,6 @@ export async function deleteSavedPost(saveId: string) {
   return res.json();
 }
 
-
 // ============================================================================
 // COMMENTS
 // ============================================================================
@@ -347,9 +316,15 @@ export const getCommentsByPostId = (postId: string) => {
 export const createComment = (data: any) =>
   apiJson(`/comments`, { method: "POST", body: JSON.stringify(data) });
 export const likeComment = (id: string, userId: string) =>
-  apiJson(`/comments/${id}/like`, { method: "POST", body: JSON.stringify({ userId }) });
+  apiJson(`/comments/${id}/like`, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
 export const unlikeComment = (id: string, userId: string) =>
-  apiJson(`/comments/${id}/unlike`, { method: "POST", body: JSON.stringify({ userId }) });
+  apiJson(`/comments/${id}/unlike`, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
 export const deleteComment = (id: string) =>
   apiJson(`/comments/${id}`, { method: "DELETE" });
 
@@ -383,7 +358,9 @@ export const followUser = (userId: string, followsUserId: string) =>
 export const unfollowUser = (docId: string) =>
   apiJson(`/relationships/${docId}`, { method: "DELETE" });
 export const checkFollowStatus = (userId: string, followsUserId: string) =>
-  apiJson(`/relationships/check?userId=${userId}&followsUserId=${followsUserId}`);
+  apiJson(
+    `/relationships/check?userId=${userId}&followsUserId=${followsUserId}`
+  );
 
 // ============================================================================
 // MESSAGES
@@ -462,15 +439,9 @@ export const storePushSubscription = (userId: string, subscription: any) =>
     body: JSON.stringify({ userId, subscription }),
   });
 
-
-  // ============================================================================
+// ============================================================================
 // POST HELPERS — Recent, User, Following, Followers
 // ============================================================================
-
-/**
- * Get recent posts for explore feed.
- * Default limit = 20
- */
 export const getRecentPosts = async () => {
   const data = await apiJson(`/posts/recent?limit=20`);
   const docs = data?.documents || data || [];
@@ -484,9 +455,6 @@ export const getRecentPosts = async () => {
   };
 };
 
-/**
- * Get all posts created by a specific user.
- */
 export const getUserPosts = async (userId: string) => {
   if (!userId) throw new Error("Missing userId in getUserPosts");
   const data = await apiJson(`/posts/user/${userId}`);
@@ -501,9 +469,6 @@ export const getUserPosts = async (userId: string) => {
   };
 };
 
-/**
- * Get posts from users that the given user is following.
- */
 export const getFollowingPosts = async (userId: string) => {
   if (!userId) throw new Error("Missing userId in getFollowingPosts");
   const data = await apiJson(`/posts/following/${userId}`);
@@ -518,9 +483,6 @@ export const getFollowingPosts = async (userId: string) => {
   };
 };
 
-/**
- * Get posts from users who follow this user (optional use case).
- */
 export const getFollowersPosts = async (userId: string) => {
   if (!userId) throw new Error("Missing userId in getFollowersPosts");
   const data = await apiJson(`/posts/followers/${userId}`);
@@ -537,12 +499,13 @@ export const getFollowersPosts = async (userId: string) => {
 
 // --- Create Notification ---
 export const createNotification = async (data: any) => {
-  const res = await fetch(`http://localhost:3001/api/notifications`, {
+  const res = await fetch(`${API_BASE}/notifications`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`Failed to create notification: ${res.status}`);
+  if (!res.ok)
+    throw new Error(`Failed to create notification: ${res.status}`);
   return res.json();
 };
