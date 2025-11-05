@@ -8,6 +8,7 @@ import morgan from "morgan";
 import mongoose from "mongoose";
 import path from "path";
 import fs from "fs";
+import listEndpoints from "express-list-endpoints";
 
 console.log("===========================================================");
 console.log("🚀 Starting BoxFit Backend...");
@@ -15,7 +16,6 @@ console.log("🕓 Timestamp:", new Date().toISOString());
 console.log("Working directory:", process.cwd());
 console.log("===========================================================");
 
-// ─── ENV CONFIG ─────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 const CORS_ORIGIN =
@@ -23,8 +23,7 @@ const CORS_ORIGIN =
   "http://localhost:5173,https://projectjavawebdev-boxfit.onrender.com";
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "BoxFit";
-const BACKEND_URL =
-  process.env.BACKEND_URL || `http://localhost:${PORT}`;
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 console.log("🛠 Config:", {
   PORT,
@@ -36,10 +35,11 @@ console.log("🛠 Config:", {
 });
 
 const app = express();
-
-// ─── MIDDLEWARE ─────────────────────────────────────────────
 app.set("trust proxy", 1);
 
+// ───────────────────────────────
+// MIDDLEWARE
+// ───────────────────────────────
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -54,19 +54,19 @@ app.use(
     credentials: true,
   })
 );
-
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Handle JSON and form-data payloads
 app.use((req, res, next) => {
-  const type = req.headers["content-type"] || "";
+  const type = (req.headers["content-type"] as string) || "";
   if (type.startsWith("multipart/form-data")) return next();
   express.json({ limit: "10mb" })(req, res, next);
 });
 app.use(express.urlencoded({ extended: true }));
 
-// ─── STATIC UPLOADS ─────────────────────────────────────────
+// ───────────────────────────────
+// STATIC UPLOADS
+// ───────────────────────────────
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -87,25 +87,40 @@ app.use(
 
 console.log("📂 Serving uploads from:", `${BACKEND_URL}/uploads`);
 
-// ─── ROUTER IMPORTS ─────────────────────────────────────────
+// ───────────────────────────────
+// ROUTER IMPORTS (Robust loader)
+// ───────────────────────────────
 let routesPath = path.join(__dirname, "../src/routes");
 if (!fs.existsSync(routesPath)) {
   routesPath = path.join(__dirname, "routes");
 }
 
-function safeImportRouter(name: string, importPath: string) {
-  try {
-    const router = require(importPath).default;
-    if (!router) throw new Error("No default export found");
-    console.log(`✅ Loaded router '${name}' from:`, importPath);
-    return router;
-  } catch (err: any) {
-    console.error(`❌ Failed to import router '${name}':`, err.message);
-    return null;
+// ✅ Improved loader: supports CJS + ESM, .ts + .js, and router objects
+function safeImportRouter(name: string, basePath: string) {
+  const importPaths = [
+    `${basePath}.js`,
+    `${basePath}.ts`,
+    basePath,
+  ];
+  for (const p of importPaths) {
+    if (!fs.existsSync(p)) continue;
+    try {
+      const mod = require(p);
+      const router = mod?.default || mod;
+      // Express routers have .use and .stack
+      if (router && typeof router.use === "function" && Array.isArray(router.stack)) {
+        console.log(`✅ Loaded router '${name}' from:`, p);
+        return router;
+      }
+    } catch (err: any) {
+      console.error(`❌ Failed to import router '${name}' from ${p}:`, err.message);
+    }
   }
+  console.warn(`⚠️ Router '${name}' not found at: ${basePath}`);
+  return null;
 }
 
-// Load routers dynamically
+// Load routers
 const authRouter = safeImportRouter("auth", path.join(routesPath, "auth.routes"));
 const usersRouter = safeImportRouter("users", path.join(routesPath, "users.routes"));
 const postsRouter = safeImportRouter("posts", path.join(routesPath, "posts.routes"));
@@ -115,24 +130,44 @@ const notificationsRouter = safeImportRouter("notifications", path.join(routesPa
 const messagesRouter = safeImportRouter("messages", path.join(routesPath, "messages.routes"));
 const commentsRouter = safeImportRouter("comments", path.join(routesPath, "comments.routes"));
 
-// ─── ROUTE MOUNTING (flat /api/* structure) ─────────────────
+// ───────────────────────────────
+// ROUTE MOUNTING — flat /api
+// ───────────────────────────────
 if (authRouter) app.use("/api", authRouter);
 if (usersRouter) app.use("/api", usersRouter);
 if (postsRouter) app.use("/api", postsRouter);
 if (likesRouter) app.use("/api", likesRouter);
-if (savesRouter) app.use("/api/saves", savesRouter);
-if (notificationsRouter) app.use("/api/notifications", notificationsRouter);
-if (messagesRouter) app.use("/api/messages", messagesRouter);
-if (commentsRouter) app.use("/api/comments", commentsRouter);
+if (savesRouter) app.use("/api", savesRouter);
+if (notificationsRouter) app.use("/api", notificationsRouter);
+if (messagesRouter) app.use("/api", messagesRouter);
+if (commentsRouter) app.use("/api", commentsRouter);
 
-console.log("✅ Routers mounted successfully");
+console.log("✅ Routers mounted (flat /api)");
 
-// ─── HEALTH CHECK ───────────────────────────────────────────
+// ───────────────────────────────
+// DIAGNOSTICS
+// ───────────────────────────────
+app.get("/api/_endpoints", (_req, res) => {
+  res.json(listEndpoints(app));
+});
+
+// Log endpoints on boot
+process.nextTick(() => {
+  console.log("📜 Mounted endpoints:");
+  const endpoints = listEndpoints(app);
+  endpoints.forEach((e) => {
+    e.methods.forEach((m) => console.log(`${m.padEnd(6)} ${e.path}`));
+  });
+});
+
+// Health
 app.get("/api/healthz", (_req, res) =>
   res.status(200).json({ ok: true, backend: BACKEND_URL })
 );
 
-// ─── GLOBAL ERROR HANDLER ───────────────────────────────────
+// ───────────────────────────────
+// GLOBAL ERROR HANDLER
+// ───────────────────────────────
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error("❌ Unhandled Error:", err);
   res.status(err.status || 500).json({
@@ -141,7 +176,9 @@ app.use((err: any, _req: any, res: any, _next: any) => {
   });
 });
 
-// ─── DATABASE & SERVER BOOT ─────────────────────────────────
+// ───────────────────────────────
+// DATABASE + SERVER BOOT
+// ───────────────────────────────
 (async () => {
   try {
     console.log("🔌 Connecting to MongoDB...");
@@ -157,6 +194,7 @@ app.use((err: any, _req: any, res: any, _next: any) => {
         backend_url: BACKEND_URL,
       });
       console.log(`📂 Serving uploads from: ${BACKEND_URL}/uploads`);
+      console.log(`🔎 Inspect routes at: ${BACKEND_URL}/api/_endpoints`);
     });
   } catch (err: any) {
     console.error("❌ MongoDB connection failed:", err.message);
