@@ -104,7 +104,7 @@ export async function signUpAccount(user: {
   username?: string;
   imageUrl?: string;
 }) {
-  const res = await fetch(`${API_BASE}/auth/signup`, {
+  const res = await fetch(`${API_BASE}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -115,7 +115,7 @@ export async function signUpAccount(user: {
 }
 
 export async function signInAccount(user: { email: string; password: string }) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${API_BASE}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",

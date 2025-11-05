@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(fileUpload()); // Enables multipart form data
 
 // Route registration
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postsRoutes);
