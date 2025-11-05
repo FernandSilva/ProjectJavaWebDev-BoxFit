@@ -6,12 +6,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import mongoose from "mongoose";
-import listEndpoints from "express-list-endpoints";
 import path from "path";
 import fs from "fs";
-
-// Routes
-import commentsRouter from "./routes/comments.routes";
 
 console.log("===========================================================");
 console.log("🚀 Starting BoxFit Backend...");
@@ -19,6 +15,7 @@ console.log("🕓 Timestamp:", new Date().toISOString());
 console.log("Working directory:", process.cwd());
 console.log("===========================================================");
 
+// ─── ENV CONFIG ─────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 const CORS_ORIGIN =
@@ -27,8 +24,7 @@ const CORS_ORIGIN =
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "BoxFit";
 const BACKEND_URL =
-  process.env.BACKEND_URL ||
-  `http://localhost:${PORT}`;
+  process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 console.log("🛠 Config:", {
   PORT,
@@ -41,9 +37,7 @@ console.log("🛠 Config:", {
 
 const app = express();
 
-// ────────────────────────────────
-// Core Middleware
-// ────────────────────────────────
+// ─── MIDDLEWARE ─────────────────────────────────────────────
 app.set("trust proxy", 1);
 
 app.use(
@@ -64,7 +58,7 @@ app.use(
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Support large JSON
+// Handle JSON and form-data payloads
 app.use((req, res, next) => {
   const type = req.headers["content-type"] || "";
   if (type.startsWith("multipart/form-data")) return next();
@@ -72,9 +66,7 @@ app.use((req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true }));
 
-// ────────────────────────────────
-// Static Uploads
-// ────────────────────────────────
+// ─── STATIC UPLOADS ─────────────────────────────────────────
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -95,9 +87,7 @@ app.use(
 
 console.log("📂 Serving uploads from:", `${BACKEND_URL}/uploads`);
 
-// ────────────────────────────────
-// Dynamic Router Imports
-// ────────────────────────────────
+// ─── ROUTER IMPORTS ─────────────────────────────────────────
 let routesPath = path.join(__dirname, "../src/routes");
 if (!fs.existsSync(routesPath)) {
   routesPath = path.join(__dirname, "routes");
@@ -115,7 +105,7 @@ function safeImportRouter(name: string, importPath: string) {
   }
 }
 
-// Load routers
+// Load routers dynamically
 const authRouter = safeImportRouter("auth", path.join(routesPath, "auth.routes"));
 const usersRouter = safeImportRouter("users", path.join(routesPath, "users.routes"));
 const postsRouter = safeImportRouter("posts", path.join(routesPath, "posts.routes"));
@@ -123,8 +113,9 @@ const likesRouter = safeImportRouter("likes", path.join(routesPath, "likes.route
 const savesRouter = safeImportRouter("saves", path.join(routesPath, "saves.routes"));
 const notificationsRouter = safeImportRouter("notifications", path.join(routesPath, "notifications.routes"));
 const messagesRouter = safeImportRouter("messages", path.join(routesPath, "messages.routes"));
+const commentsRouter = safeImportRouter("comments", path.join(routesPath, "comments.routes"));
 
-app.use("/api", commentsRouter);
+// ─── ROUTE MOUNTING (flat /api/* structure) ─────────────────
 if (authRouter) app.use("/api", authRouter);
 if (usersRouter) app.use("/api", usersRouter);
 if (postsRouter) app.use("/api", postsRouter);
@@ -132,19 +123,16 @@ if (likesRouter) app.use("/api", likesRouter);
 if (savesRouter) app.use("/api/saves", savesRouter);
 if (notificationsRouter) app.use("/api/notifications", notificationsRouter);
 if (messagesRouter) app.use("/api/messages", messagesRouter);
+if (commentsRouter) app.use("/api/comments", commentsRouter);
 
 console.log("✅ Routers mounted successfully");
 
-// ────────────────────────────────
-// Healthcheck
-// ────────────────────────────────
+// ─── HEALTH CHECK ───────────────────────────────────────────
 app.get("/api/healthz", (_req, res) =>
   res.status(200).json({ ok: true, backend: BACKEND_URL })
 );
 
-// ────────────────────────────────
-// Global Error Handler
-// ────────────────────────────────
+// ─── GLOBAL ERROR HANDLER ───────────────────────────────────
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error("❌ Unhandled Error:", err);
   res.status(err.status || 500).json({
@@ -153,9 +141,7 @@ app.use((err: any, _req: any, res: any, _next: any) => {
   });
 });
 
-// ────────────────────────────────
-// MongoDB + Server Boot
-// ────────────────────────────────
+// ─── DATABASE & SERVER BOOT ─────────────────────────────────
 (async () => {
   try {
     console.log("🔌 Connecting to MongoDB...");
