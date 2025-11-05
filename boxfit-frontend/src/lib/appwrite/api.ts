@@ -16,7 +16,7 @@ const BACKEND_BASE =
   import.meta.env?.VITE_API_URL?.replace(/\/$/, "") ||
   "https://projectjavawebdev-boxfit.onrender.com"; // production default fallback
 
-const API_BASE = `${BACKEND_BASE}/api`;
+const API_BASE = `${BACKEND_BASE}`;
 
 // ✅ Normalize image URLs so frontend loads correctly
 export function normalizeImageUrl(url?: string) {
