@@ -1,5 +1,5 @@
 // ============================================================================
-// api.ts — Frontend Auth (Appwrite SDK) + REST backend for everything else
+// api.ts — Unified BoxFit API handler (frontend ↔ backend)
 // ============================================================================
 
 import type { Models } from "appwrite";
@@ -11,14 +11,12 @@ import { INewPost, IUpdatePost, IUpdateUser } from "@/types";
 // CONFIG + HELPERS
 // ============================================================================
 
-// ✅ Dynamically resolve backend base
 const BACKEND_BASE =
   import.meta.env?.VITE_API_URL?.replace(/\/$/, "") ||
-  "https://projectjavawebdev-boxfit.onrender.com"; // production default fallback
+  "https://projectjavawebdev-boxfit.onrender.com";
 
 const API_BASE = `${BACKEND_BASE}/api`;
 
-// ✅ Normalize image URLs so frontend loads correctly
 export function normalizeImageUrl(url?: string) {
   if (!url) return "";
   if (url.startsWith("http")) return url;
@@ -26,15 +24,12 @@ export function normalizeImageUrl(url?: string) {
   return `${BACKEND_BASE}/uploads/${url}`;
 }
 
-// ✅ Uniform post normalizer (non-breaking; only used where needed below)
 function normalizePost(p: any) {
   if (!p || typeof p !== "object") return p;
   const id = p._id || p.$id || p.id;
-
   const normImage = Array.isArray(p.imageUrl)
     ? p.imageUrl.map((u: string) => normalizeImageUrl(u))
     : normalizeImageUrl(p.imageUrl);
-
   const creator =
     p?.creator && typeof p.creator === "object"
       ? {
@@ -43,22 +38,21 @@ function normalizePost(p: any) {
           imageUrl: normalizeImageUrl(p.creator.imageUrl),
         }
       : p.creator;
-
   return { ...p, _id: id, id, imageUrl: normImage, creator };
 }
 
-// ✅ Universal JSON helper for all REST requests
+// ============================================================================
+// UNIVERSAL FETCH WRAPPER
+// ============================================================================
 export async function apiJson<T = any>(
   path: string,
   init: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
   const method = init.method || "GET";
-
   console.log(`[API] ${method} ${url}`);
 
   try {
-    // ✅ detect if body is FormData — do NOT override Content-Type
     const isFormData =
       init?.body &&
       typeof FormData !== "undefined" &&
@@ -68,9 +62,7 @@ export async function apiJson<T = any>(
       credentials: "include",
       ...init,
       headers: isFormData
-        ? {
-            ...(init.headers || {}),
-          }
+        ? { ...(init.headers || {}) }
         : {
             "Content-Type": "application/json",
             ...(init.headers || {}),
@@ -78,7 +70,7 @@ export async function apiJson<T = any>(
     });
 
     const text = await res.text().catch(() => "");
-    console.log(`[API] Response → ${res.status} ${res.statusText} (${method} ${url})`);
+    console.log(`[API] Response → ${res.status} ${res.statusText}`);
 
     if (!res.ok) {
       console.error(`❌ API Error: ${res.status} ${res.statusText}`);
@@ -86,7 +78,6 @@ export async function apiJson<T = any>(
       throw new Error(`HTTP ${res.status} ${res.statusText} — ${text}`);
     }
 
-    // Safely parse JSON
     return text ? (JSON.parse(text) as T) : ({} as T);
   } catch (err: any) {
     console.error("🚨 apiJson() failed:", path, err.message);
@@ -97,6 +88,7 @@ export async function apiJson<T = any>(
 // ============================================================================
 // AUTH (MongoDB + JWT)
 // ============================================================================
+
 export async function signUpAccount(user: {
   name: string;
   email: string;
@@ -126,7 +118,7 @@ export async function signInAccount(user: { email: string; password: string }) {
 }
 
 export const getCurrentUser = async () => {
-  const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
+  const res = await fetch(`${API_BASE}/me`, { credentials: "include" });
   if (res.status === 401) return null;
   const user = await res.json();
   user.imageUrl = normalizeImageUrl(user.imageUrl);
@@ -134,16 +126,16 @@ export const getCurrentUser = async () => {
 };
 
 export async function signOutAccount() {
-  const res = await fetch(`${API_BASE}/auth/logout`, {
+  const res = await fetch(`${API_BASE}/logout`, {
     method: "POST",
     credentials: "include",
   });
-  if (!res.ok) throw new Error(`Logout failed`);
+  if (!res.ok) throw new Error("Logout failed");
   return res.json();
 }
 
 // ============================================================================
-// POSTS — FIXED: File Uploads (multipart/form-data)
+// POSTS
 // ============================================================================
 export async function createPost(post: INewPost) {
   const form = new FormData();
@@ -172,12 +164,7 @@ export async function createPost(post: INewPost) {
   return res.json();
 }
 
-export const getPostById = (id: string) => {
-  if (!id || id === "undefined")
-    return Promise.reject(new Error("Invalid or missing post ID (client)"));
-  return apiJson(`/posts/${id}`);
-};
-
+export const getPostById = (id: string) => apiJson(`/posts/${id}`);
 export const listPosts = (limit = 10, search = "") =>
   apiJson(`/posts?limit=${limit}&search=${encodeURIComponent(search)}`);
 
@@ -196,8 +183,6 @@ export const deletePost = (id: string) =>
 // ============================================================================
 // LIKES & SAVES
 // ============================================================================
-
-// Like/unlike post
 export async function likePost(
   postId: string,
   likes: string[],
@@ -218,11 +203,7 @@ export async function getLikedPostsByUser(userId: string) {
   const res = await fetch(`${API_BASE}/users/${userId}/likes`, {
     credentials: "include",
   });
-  if (res.status === 404) {
-    console.warn("⚠️ Liked posts endpoint not found");
-    return { documents: [] };
-  }
-  if (!res.ok) throw new Error(`Failed to fetch liked posts (${res.status})`);
+  if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   const arr = Array.isArray(data?.documents)
     ? data.documents
@@ -239,10 +220,7 @@ export async function getLikedPostsByUser(userId: string) {
         : normalizeImageUrl(p.imageUrl),
       creator:
         p.creator && typeof p.creator === "object"
-          ? {
-              ...p.creator,
-              imageUrl: normalizeImageUrl(p.creator.imageUrl),
-            }
+          ? { ...p.creator, imageUrl: normalizeImageUrl(p.creator.imageUrl) }
           : p.creator,
     }));
   return { documents: posts };
@@ -253,11 +231,7 @@ export async function getSavedPostsByUser(userId: string) {
   const res = await fetch(`${API_BASE}/saves/user/${userId}`, {
     credentials: "include",
   });
-  if (res.status === 404) {
-    console.warn("⚠️ Saved posts endpoint not found");
-    return { documents: [] };
-  }
-  if (!res.ok) throw new Error(`Failed to fetch saved posts (${res.status})`);
+  if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   const arr = Array.isArray(data?.documents)
     ? data.documents
@@ -274,10 +248,7 @@ export async function getSavedPostsByUser(userId: string) {
         : normalizeImageUrl(p.imageUrl),
       creator:
         p.creator && typeof p.creator === "object"
-          ? {
-              ...p.creator,
-              imageUrl: normalizeImageUrl(p.creator.imageUrl),
-            }
+          ? { ...p.creator, imageUrl: normalizeImageUrl(p.creator.imageUrl) }
           : p.creator,
     }));
   return { documents: posts };
@@ -306,13 +277,8 @@ export async function deleteSavedPost(saveId: string) {
 // ============================================================================
 // COMMENTS
 // ============================================================================
-export const getCommentsByPostId = (postId: string) => {
-  if (!postId || postId === "undefined") {
-    console.warn("⚠️ Skipping comments fetch — invalid postId");
-    return Promise.resolve({ documents: [] });
-  }
-  return apiJson(`/comments/post/${postId}`);
-};
+export const getCommentsByPostId = (postId: string) =>
+  apiJson(`/comments/post/${postId}`);
 export const createComment = (data: any) =>
   apiJson(`/comments`, { method: "POST", body: JSON.stringify(data) });
 export const likeComment = (id: string, userId: string) =>
@@ -333,13 +299,11 @@ export const deleteComment = (id: string) =>
 // ============================================================================
 export const getUsers = (limit?: number) =>
   apiJson(`/users${limit ? `?limit=${limit}` : ""}`);
-
 export const getUserById = async (id: string) => {
   const user = await apiJson(`/users/${id}`);
   user.imageUrl = normalizeImageUrl(user.imageUrl);
   return user;
 };
-
 export const updateUser = (user: IUpdateUser) => {
   const fd = new FormData();
   if (user.name) fd.append("name", user.name);
@@ -347,9 +311,6 @@ export const updateUser = (user: IUpdateUser) => {
   if (user.file?.length) fd.append("file", user.file[0]);
   return apiJson(`/users/${user.userId}`, { method: "PATCH", body: fd });
 };
-
-export const getUserRelationships = (id: string) =>
-  apiJson(`/users/${id}/relationships`);
 export const followUser = (userId: string, followsUserId: string) =>
   apiJson(`/relationships`, {
     method: "POST",
@@ -382,10 +343,8 @@ export const markMessagesAsRead = (senderId: string, recipientId: string) =>
 // ============================================================================
 // NOTIFICATIONS
 // ============================================================================
-export const getNotifications = async (userId: string) => {
-  const res = await apiJson(`/notifications?userId=${userId}`);
-  return Array.isArray(res) ? { documents: res } : res;
-};
+export const getNotifications = async (userId: string) =>
+  apiJson(`/notifications?userId=${userId}`);
 export const markNotificationAsRead = (id: string) =>
   apiJson(`/notifications/${id}/read`, { method: "PATCH" });
 export const deleteNotification = (id: string) =>
@@ -414,33 +373,8 @@ export const submitContactRequest = (data: {
     body: JSON.stringify(data),
   });
 
-export const searchUsersAndPosts = async (q: string) => {
-  const qs = new URLSearchParams();
-  if (q.trim()) qs.set("q", q.trim());
-  const [usersRes, postsRes] = await Promise.all([
-    apiJson(`/users/search?${qs.toString()}`),
-    apiJson(`/posts?${qs.toString()}`),
-  ]);
-  return {
-    users: usersRes?.documents ?? [],
-    posts: postsRes?.documents ?? postsRes ?? [],
-  };
-};
-
 // ============================================================================
-// LIKES + PUSH
-// ============================================================================
-export const getUserTotalLikes = (userId: string) =>
-  apiJson(`/users/${userId}/likes/total`);
-
-export const storePushSubscription = (userId: string, subscription: any) =>
-  apiJson(`/push-subscriptions`, {
-    method: "POST",
-    body: JSON.stringify({ userId, subscription }),
-  });
-
-// ============================================================================
-// POST HELPERS — Recent, User, Following, Followers
+// POSTS HELPERS
 // ============================================================================
 export const getRecentPosts = async () => {
   const data = await apiJson(`/posts/recent?limit=20`);
@@ -456,7 +390,6 @@ export const getRecentPosts = async () => {
 };
 
 export const getUserPosts = async (userId: string) => {
-  if (!userId) throw new Error("Missing userId in getUserPosts");
   const data = await apiJson(`/posts/user/${userId}`);
   const docs = data?.documents || data || [];
   return {
@@ -470,7 +403,6 @@ export const getUserPosts = async (userId: string) => {
 };
 
 export const getFollowingPosts = async (userId: string) => {
-  if (!userId) throw new Error("Missing userId in getFollowingPosts");
   const data = await apiJson(`/posts/following/${userId}`);
   const docs = data?.documents || data || [];
   return {
@@ -483,21 +415,9 @@ export const getFollowingPosts = async (userId: string) => {
   };
 };
 
-export const getFollowersPosts = async (userId: string) => {
-  if (!userId) throw new Error("Missing userId in getFollowersPosts");
-  const data = await apiJson(`/posts/followers/${userId}`);
-  const docs = data?.documents || data || [];
-  return {
-    documents: docs.map((p: any) => ({
-      ...p,
-      imageUrl: Array.isArray(p.imageUrl)
-        ? p.imageUrl.map(normalizeImageUrl)
-        : normalizeImageUrl(p.imageUrl),
-    })),
-  };
-};
-
-// --- Create Notification ---
+// ============================================================================
+// NOTIFICATIONS CREATION
+// ============================================================================
 export const createNotification = async (data: any) => {
   const res = await fetch(`${API_BASE}/notifications`, {
     method: "POST",
