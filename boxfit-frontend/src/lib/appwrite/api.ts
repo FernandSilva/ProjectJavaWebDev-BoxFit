@@ -304,6 +304,7 @@ export const getUserById = async (id: string) => {
   user.imageUrl = normalizeImageUrl(user.imageUrl);
   return user;
 };
+
 export const updateUser = (user: IUpdateUser) => {
   const fd = new FormData();
   if (user.name) fd.append("name", user.name);
@@ -445,4 +446,12 @@ export const getFollowersPosts = async (userId: string) => {
         : normalizeImageUrl(p.imageUrl),
     })),
   };
+};
+
+// ============================================================================
+// USER RELATIONSHIPS
+// ============================================================================
+export const getUserRelationships = (userId: string) => {
+  if (!userId) throw new Error("Missing userId in getUserRelationships");
+  return apiJson(`/users/${userId}/relationships`);
 };
