@@ -429,3 +429,20 @@ export const createNotification = async (data: any) => {
     throw new Error(`Failed to create notification: ${res.status}`);
   return res.json();
 };
+
+// ============================================================================
+// FOLLOWERS POSTS
+// ============================================================================
+export const getFollowersPosts = async (userId: string) => {
+  if (!userId) throw new Error("Missing userId in getFollowersPosts");
+  const data = await apiJson(`/posts/followers/${userId}`);
+  const docs = data?.documents || data || [];
+  return {
+    documents: docs.map((p: any) => ({
+      ...p,
+      imageUrl: Array.isArray(p.imageUrl)
+        ? p.imageUrl.map(normalizeImageUrl)
+        : normalizeImageUrl(p.imageUrl),
+    })),
+  };
+};
