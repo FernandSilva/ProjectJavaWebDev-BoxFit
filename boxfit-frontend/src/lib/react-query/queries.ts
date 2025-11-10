@@ -41,7 +41,6 @@ import {
   signInAccount,
   signOutAccount,
   getCurrentUser,
-  getUserTotalLikes,
 
   // MESSAGES
   fetchUsersAndMessages,
@@ -62,11 +61,9 @@ import {
   deleteFile,
 
   // SEARCH / CONTACT
-  searchUsersAndPosts,
+ 
   submitContactRequest,
 
-  // PUSH
-  storePushSubscription,
 } from "@/lib/appwrite/api";
 
 // ======================================================================
@@ -440,24 +437,7 @@ export function useClearNotifications() {
   });
 }
 
-// ======================================================================
-// SEARCH / CONTACT REQUESTS
-// ======================================================================
-export function useSearchUsersAndPosts(q: string) {
-  return useQuery({
-    queryKey: QK.search(q),
-    enabled: q.trim().length > 0,
-    queryFn: () => searchUsersAndPosts(q),
-  });
-}
 
-export function useSubmitContactRequest() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: submitContactRequest,
-    onSuccess: () => qc.invalidateQueries(),
-  });
-}
 
 // ======================================================================
 // FILES
@@ -515,31 +495,9 @@ export function useCurrentUser() {
   });
 }
 
-// ======================================================================
-// USER TOTAL LIKES
-// ======================================================================
-export function useUserTotalLikes(userId?: string) {
-  return useQuery({
-    queryKey: ["userTotalLikes", userId],
-    enabled: !!userId,
-    queryFn: () => getUserTotalLikes(userId as string),
-  });
-}
 
-// ======================================================================
-// PUSH SUBSCRIPTIONS
-// ======================================================================
-export function useStorePushSubscription() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ userId, subscription }: { userId: string; subscription: any }) =>
-      storePushSubscription(userId, subscription),
-    onSuccess: (_d, vars) => {
-      if (vars?.userId)
-        qc.invalidateQueries({ queryKey: QK.notifications(vars.userId) });
-    },
-  });
-}
+
+
 
 // ======================================================================
 // FOLLOWERS LIST
