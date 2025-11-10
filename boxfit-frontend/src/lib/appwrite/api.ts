@@ -455,3 +455,24 @@ export const getUserRelationships = (userId: string) => {
   if (!userId) throw new Error("Missing userId in getUserRelationships");
   return apiJson(`/users/${userId}/relationships`);
 };
+
+
+// ============================================================================
+// USER TOTAL LIKES — Counts all likes a user's posts have received
+// ============================================================================
+export const getUserTotalLikes = async (userId: string) => {
+  if (!userId) throw new Error("Missing userId in getUserTotalLikes");
+
+  const res = await fetch(`${API_BASE}/users/${userId}/likes/total`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error("❌ getUserTotalLikes failed:", res.status, text);
+    throw new Error(`Failed to fetch total likes: ${res.status} — ${text}`);
+  }
+
+  // The backend should return something like: { totalLikes: number }
+  return res.json();
+};
