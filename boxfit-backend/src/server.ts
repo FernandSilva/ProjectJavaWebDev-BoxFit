@@ -1,4 +1,5 @@
 "use strict";
+
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -38,7 +39,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 // ───────────────────────────────
-// MIDDLEWARE
+// SECURITY + LOGGING
 // ───────────────────────────────
 app.use(
   helmet({
@@ -47,16 +48,37 @@ app.use(
   })
 );
 
-const allowedOrigins = CORS_ORIGIN.split(",").map((o) => o.trim());
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-  })
+// ───────────────────────────────
+// DYNAMIC CORS (✅ FIXED)
+// ───────────────────────────────
+const allowedOrigins = new Set(
+  (CORS_ORIGIN || "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean)
 );
+
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.has(origin)) return cb(null, true);
+    console.warn(`🚫 Blocked by CORS: ${origin}`);
+    return cb(new Error(`Not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// ───────────────────────────────
+// BODY PARSING
+// ───────────────────────────────
 app.use((req, res, next) => {
   const type = (req.headers["content-type"] as string) || "";
   if (type.startsWith("multipart/form-data")) return next();
@@ -65,7 +87,7 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }));
 
 // ───────────────────────────────
-// STATIC UPLOADS
+// STATIC UPLOADS (✅ FIXED CORS)
 // ───────────────────────────────
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -73,9 +95,15 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use(
   "/uploads",
   (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", allowedOrigins.join(","));
+    const origin = req.headers.origin as string | undefined;
+    if (origin && allowedOrigins.has(origin)) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Vary", "Origin");
+      res.header("Access-Control-Allow-Credentials", "true");
+    }
     res.header("Access-Control-Allow-Methods", "GET,OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
   },
   express.static(uploadsDir, {
@@ -91,23 +119,15 @@ console.log("📂 Serving uploads from:", `${BACKEND_URL}/uploads`);
 // ROUTER IMPORTS (Robust loader)
 // ───────────────────────────────
 let routesPath = path.join(__dirname, "../src/routes");
-if (!fs.existsSync(routesPath)) {
-  routesPath = path.join(__dirname, "routes");
-}
+if (!fs.existsSync(routesPath)) routesPath = path.join(__dirname, "routes");
 
-// ✅ Improved loader: supports CJS + ESM, .ts + .js, and router objects
 function safeImportRouter(name: string, basePath: string) {
-  const importPaths = [
-    `${basePath}.js`,
-    `${basePath}.ts`,
-    basePath,
-  ];
+  const importPaths = [`${basePath}.js`, `${basePath}.ts`, basePath];
   for (const p of importPaths) {
     if (!fs.existsSync(p)) continue;
     try {
       const mod = require(p);
       const router = mod?.default || mod;
-      // Express routers have .use and .stack
       if (router && typeof router.use === "function" && Array.isArray(router.stack)) {
         console.log(`✅ Loaded router '${name}' from:`, p);
         return router;
@@ -131,39 +151,26 @@ const messagesRouter = safeImportRouter("messages", path.join(routesPath, "messa
 const commentsRouter = safeImportRouter("comments", path.join(routesPath, "comments.routes"));
 
 // ───────────────────────────────
-// ROUTE MOUNTING — flat /api
+// ROUTE MOUNTING
 // ───────────────────────────────
-if (authRouter) app.use("/api", authRouter);
-if (usersRouter) app.use("/api", usersRouter);
-if (postsRouter) app.use("/api", postsRouter);
-if (likesRouter) app.use("/api", likesRouter);
-if (savesRouter) app.use("/api", savesRouter);
-if (notificationsRouter) app.use("/api", notificationsRouter);
-if (messagesRouter) app.use("/api", messagesRouter);
-if (commentsRouter) app.use("/api", commentsRouter);
+[
+  authRouter,
+  usersRouter,
+  postsRouter,
+  likesRouter,
+  savesRouter,
+  notificationsRouter,
+  messagesRouter,
+  commentsRouter,
+].forEach((r) => r && app.use("/api", r));
 
 console.log("✅ Routers mounted (flat /api)");
 
 // ───────────────────────────────
-// DIAGNOSTICS
+// HEALTH & DIAGNOSTICS
 // ───────────────────────────────
-app.get("/api/_endpoints", (_req, res) => {
-  res.json(listEndpoints(app));
-});
-
-// Log endpoints on boot
-process.nextTick(() => {
-  console.log("📜 Mounted endpoints:");
-  const endpoints = listEndpoints(app);
-  endpoints.forEach((e) => {
-    e.methods.forEach((m) => console.log(`${m.padEnd(6)} ${e.path}`));
-  });
-});
-
-// Health
-app.get("/api/healthz", (_req, res) =>
-  res.status(200).json({ ok: true, backend: BACKEND_URL })
-);
+app.get("/api/_endpoints", (_req, res) => res.json(listEndpoints(app)));
+app.get("/api/healthz", (_req, res) => res.status(200).json({ ok: true, backend: BACKEND_URL }));
 
 // ───────────────────────────────
 // GLOBAL ERROR HANDLER
@@ -187,12 +194,7 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 
     app.listen(PORT, HOST, () => {
       console.log("🚀 Server running:");
-      console.table({
-        host: HOST,
-        port: PORT,
-        cors: allowedOrigins,
-        backend_url: BACKEND_URL,
-      });
+      console.table({ host: HOST, port: PORT, cors: [...allowedOrigins], backend_url: BACKEND_URL });
       console.log(`📂 Serving uploads from: ${BACKEND_URL}/uploads`);
       console.log(`🔎 Inspect routes at: ${BACKEND_URL}/api/_endpoints`);
     });
