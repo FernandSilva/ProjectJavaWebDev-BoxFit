@@ -107,7 +107,7 @@ export async function signUpAccount(user: {
 }
 
 export async function signInAccount(user: { email: string; password: string }) {
-  const res = await fetch(`${API_BASE}/login`, {
+  const res = await fetch(`${API_BASE}/auth/login`, {  // 👈 added /auth
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -117,8 +117,9 @@ export async function signInAccount(user: { email: string; password: string }) {
   return res.json();
 }
 
+
 export const getCurrentUser = async () => {
-  const res = await fetch(`${API_BASE}/me`, { credentials: "include" });
+  const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
   if (res.status === 401) return null;
   const user = await res.json();
   user.imageUrl = normalizeImageUrl(user.imageUrl);
@@ -126,7 +127,7 @@ export const getCurrentUser = async () => {
 };
 
 export async function signOutAccount() {
-  const res = await fetch(`${API_BASE}/logout`, {
+  const res = await fetch(`${API_BASE}/auth/logout`, {
     method: "POST",
     credentials: "include",
   });

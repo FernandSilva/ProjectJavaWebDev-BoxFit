@@ -577,7 +577,6 @@ export function useCreateNotification() {
 // ============================================================================
 // USER TOTAL LIKES HOOK
 // ============================================================================
-import { useQuery } from "@tanstack/react-query";
 import { getUserTotalLikes } from "@/lib/appwrite/api";
 
 export const useUserTotalLikes = (userId: string) => {
