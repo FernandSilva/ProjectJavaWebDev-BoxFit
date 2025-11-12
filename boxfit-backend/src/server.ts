@@ -17,14 +17,18 @@ console.log("🕓 Timestamp:", new Date().toISOString());
 console.log("Working directory:", process.cwd());
 console.log("===========================================================");
 
+// ───────────────────────────────
+// CONFIG
+// ───────────────────────────────
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
 const CORS_ORIGIN =
   process.env.CORS_ORIGIN ||
-  "http://localhost:5173,https://projectjavawebdev-boxfit.onrender.com";
+  "http://localhost:5173,https://projectjavawebdev-boxfit.onrender.com,https://projectjavawebdev-boxfit-1.onrender.com";
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "BoxFit";
-const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+const BACKEND_URL =
+  process.env.BACKEND_URL || `https://projectjavawebdev-boxfit.onrender.com`;
 
 console.log("🛠 Config:", {
   PORT,
@@ -49,7 +53,7 @@ app.use(
 );
 
 // ───────────────────────────────
-// DYNAMIC CORS (✅ FIXED)
+// DYNAMIC CORS (Handles Render + Local)
 // ───────────────────────────────
 const allowedOrigins = new Set(
   (CORS_ORIGIN || "")
@@ -71,8 +75,6 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-
 app.use(cookieParser());
 app.use(morgan("dev"));
 
@@ -87,7 +89,7 @@ app.use((req, res, next) => {
 app.use(express.urlencoded({ extended: true }));
 
 // ───────────────────────────────
-// STATIC UPLOADS (✅ FIXED CORS)
+// STATIC UPLOADS
 // ───────────────────────────────
 const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -116,10 +118,10 @@ app.use(
 console.log("📂 Serving uploads from:", `${BACKEND_URL}/uploads`);
 
 // ───────────────────────────────
-// ROUTER IMPORTS (Robust loader)
+// ROUTER IMPORTS (Robust Loader)
 // ───────────────────────────────
-let routesPath = path.join(__dirname, "../src/routes");
-if (!fs.existsSync(routesPath)) routesPath = path.join(__dirname, "routes");
+let routesPath = path.join(__dirname, "routes"); // ✅ Use dist/routes in production
+if (!fs.existsSync(routesPath)) routesPath = path.join(__dirname, "../src/routes");
 
 function safeImportRouter(name: string, basePath: string) {
   const importPaths = [`${basePath}.js`, `${basePath}.ts`, basePath];
@@ -140,7 +142,9 @@ function safeImportRouter(name: string, basePath: string) {
   return null;
 }
 
-// Load routers
+// ───────────────────────────────
+// ROUTE MOUNTING
+// ───────────────────────────────
 const authRouter = safeImportRouter("auth", path.join(routesPath, "auth.routes"));
 const usersRouter = safeImportRouter("users", path.join(routesPath, "users.routes"));
 const postsRouter = safeImportRouter("posts", path.join(routesPath, "posts.routes"));
@@ -150,9 +154,6 @@ const notificationsRouter = safeImportRouter("notifications", path.join(routesPa
 const messagesRouter = safeImportRouter("messages", path.join(routesPath, "messages.routes"));
 const commentsRouter = safeImportRouter("comments", path.join(routesPath, "comments.routes"));
 
-// ───────────────────────────────
-// ROUTE MOUNTING
-// ───────────────────────────────
 [
   authRouter,
   usersRouter,
@@ -170,7 +171,9 @@ console.log("✅ Routers mounted (flat /api)");
 // HEALTH & DIAGNOSTICS
 // ───────────────────────────────
 app.get("/api/_endpoints", (_req, res) => res.json(listEndpoints(app)));
-app.get("/api/healthz", (_req, res) => res.status(200).json({ ok: true, backend: BACKEND_URL }));
+app.get("/api/healthz", (_req, res) =>
+  res.status(200).json({ ok: true, backend: BACKEND_URL })
+);
 
 // ───────────────────────────────
 // GLOBAL ERROR HANDLER
@@ -194,7 +197,12 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 
     app.listen(PORT, HOST, () => {
       console.log("🚀 Server running:");
-      console.table({ host: HOST, port: PORT, cors: [...allowedOrigins], backend_url: BACKEND_URL });
+      console.table({
+        host: HOST,
+        port: PORT,
+        cors: [...allowedOrigins],
+        backend_url: BACKEND_URL,
+      });
       console.log(`📂 Serving uploads from: ${BACKEND_URL}/uploads`);
       console.log(`🔎 Inspect routes at: ${BACKEND_URL}/api/_endpoints`);
     });
