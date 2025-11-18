@@ -5,35 +5,52 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwt";
 
 /**
- * 🔐 Middleware: Verify JWT from cookie or Authorization header.
- * Attaches decoded user info to `req.user`.
+ * 🔐 Middleware: Verify JWT from either:
+ *   - HttpOnly cookie: req.cookies.token
+ *   - Bearer Header: Authorization: Bearer <token>
+ *
+ * Attaches decoded user data to req.user
  */
 export function verifyToken(req: Request, res: Response, next: NextFunction): void {
   try {
-    // Extract token from cookie or Bearer header
-    const token =
-      req.cookies?.jwt_token ||
-      req.headers.authorization?.replace("Bearer ", "");
+    let token: string | null = null;
 
+    // 1️⃣ Check Authorization header
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    // 2️⃣ Fallback to JWT cookie (this is what your AuthController uses)
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    // Debug log (safe to leave during deployment)
+    console.log("🔍 Incoming Token:", token);
+
+    // 3️⃣ If missing, block request
     if (!token) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("⚠️ Missing JWT token in request");
-      }
+      console.warn("⚠️ Missing JWT token in request");
       res.status(401).json({ error: "Unauthorized - No token provided" });
       return;
     }
 
-    // Verify JWT and attach decoded payload
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    // 4️⃣ Verify token
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      email?: string;
+    };
+
+    // Attach user to request
     (req as any).user = decoded;
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log("✅ JWT verified for user:", decoded.email);
-    }
+    console.log("✅ JWT verified → User:", decoded.id);
 
     next();
   } catch (err: any) {
     console.error("❌ verifyToken error:", err.message);
-    res.status(401).json({ error: "Unauthorized - Invalid or expired token" });
+    res.status(401).json({
+      error: "Unauthorized - Invalid or expired token",
+    });
   }
 }
