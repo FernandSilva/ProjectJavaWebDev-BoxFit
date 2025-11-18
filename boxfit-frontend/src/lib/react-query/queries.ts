@@ -507,7 +507,7 @@ export function useFollowersList(userId?: string) {
     queryKey: ["followersList", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const res = await fetch(`http://localhost:3001/api/users/${userId}/followers`, {
+      const res = await fetch(`http://https://projectjavawebdev-boxfit.onrender.com/api/users/${userId}/followers`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch followers");

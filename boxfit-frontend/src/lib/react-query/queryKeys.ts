@@ -44,10 +44,7 @@ export enum QUERY_KEYS {
   GET_NOTIFICATIONS = "GET_NOTIFICATIONS",
   STORE_PUSH_SUBSCRIPTION= "storePushSubscription",
 
-  // USER STATS
-  GET_TOP_USERS = "getTopUsers",
-  GET_USER_TOTAL_LIKES = "getUserTotalLikes",
-  TOP_MEMBERS = "topmembers", // ✅ Add this line
+ 
 
 
   

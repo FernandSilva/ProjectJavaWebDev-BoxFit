@@ -27,8 +27,7 @@ const CORS_ORIGIN =
   "http://localhost:5173,https://projectjavawebdev-boxfit.onrender.com,https://projectjavawebdev-boxfit-1.onrender.com";
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || "BoxFit";
-const BACKEND_URL =
-  process.env.BACKEND_URL || `https://projectjavawebdev-boxfit.onrender.com`;
+const BACKEND_URL =`https://projectjavawebdev-boxfit.onrender.com`;
 
 console.log("🛠 Config:", {
   PORT,
