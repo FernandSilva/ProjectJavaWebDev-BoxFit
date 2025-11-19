@@ -25,7 +25,7 @@ export async function signUp(req: Request, res: Response) {
       name,
       username,
       email,
-      password: hashed,
+      password,
     });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
