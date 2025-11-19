@@ -61,19 +61,15 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    if (allowedOrigins.has(origin)) return cb(null, true);
-    console.warn(`🚫 Blocked by CORS: ${origin}`);
-    return cb(new Error(`Not allowed by CORS: ${origin}`));
-  },
+// NEW
+app.use(cors({
+  origin: [
+    "https://projectjavawebdev-boxfit.onrender.com",
+    "https://projectjavawebdev-boxfit-1.onrender.com",
+  ],
   credentials: true,
-  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+}));
 
-app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
