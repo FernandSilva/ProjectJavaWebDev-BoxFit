@@ -343,16 +343,33 @@ export const markMessagesAsRead = (senderId: string, recipientId: string) =>
   });
 
 // ============================================================================
+// ============================================================================
 // NOTIFICATIONS
 // ============================================================================
 export const getNotifications = async (userId: string) =>
-  apiJson(`/notifications?userId=${userId}`);
+  apiJson(`/notifications?userId=${userId}`, {
+    method: "GET",
+    credentials: "include",
+  });
+
 export const markNotificationAsRead = (id: string) =>
-  apiJson(`/notifications/${id}/read`, { method: "PATCH" });
+  apiJson(`/notifications/${id}/read`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+
 export const deleteNotification = (id: string) =>
-  apiJson(`/notifications/${id}`, { method: "DELETE" });
+  apiJson(`/notifications/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
 export const clearNotifications = (userId: string) =>
-  apiJson(`/notifications/user/${userId}/clear`, { method: "DELETE" });
+  apiJson(`/notifications/user/${userId}/clear`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
 
 // ============================================================================
 // FILES & CONTACT / SEARCH

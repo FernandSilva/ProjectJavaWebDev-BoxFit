@@ -332,7 +332,13 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
                   className="post-card_img"
                   src={url}
                   alt="File preview"
-                  style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                  style={{ 
+                            objectFit: "cover",
+                            width: "100%",
+                            height: "auto",     // ✅ important
+                            maxHeight: "80vh"   // ✅ prevents stretching on desktop
+                          }}
+
                   onError={(e) => {
                     const target = e.currentTarget as HTMLImageElement;
                     if (!target.dataset.fallback) {

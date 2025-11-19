@@ -403,9 +403,10 @@ export function useMarkMessagesAsRead() {
 }
 
 // ======================================================================
+// ======================================================================
 // NOTIFICATIONS
 // ======================================================================
-export function useNotifications(userId?: string) {
+export function useGetNotifications(userId?: string) {
   return useQuery({
     queryKey: QK.notifications(userId),
     enabled: !!userId,
@@ -433,7 +434,8 @@ export function useClearNotifications() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => clearNotifications(userId),
-    onSuccess: (_d, userId) => qc.invalidateQueries({ queryKey: QK.notifications(userId) }),
+    onSuccess: (_d, userId) =>
+      qc.invalidateQueries({ queryKey: QK.notifications(userId) }),
   });
 }
 
