@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
 import {
-  useNotifications,
+  useGetNotifications,           // ✅ corrected import
   useDeleteNotification,
   useUser,
 } from "@/lib/react-query/queries";
@@ -31,8 +31,8 @@ const NotificationPage: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [maxVisibleNotifications, setMaxVisibleNotifications] = useState(5);
 
-  // ✅ Replaced old hook with new one
-  const { data: fetchedNotifications, refetch } = useNotifications(user?.id);
+  // ✅ Corrected hook
+  const { data: fetchedNotifications, refetch } = useGetNotifications(user?.id);
   const { mutate: deleteNotification } = useDeleteNotification();
 
   useEffect(() => {
@@ -58,7 +58,8 @@ const NotificationPage: React.FC = () => {
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    const { relatedId: postId, referenceId: reference, type, senderId } = notification;
+    const { relatedId: postId, referenceId: reference, type, senderId } =
+      notification;
 
     switch (type) {
       case "message":

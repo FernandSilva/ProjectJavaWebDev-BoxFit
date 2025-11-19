@@ -3,7 +3,7 @@ import { Input } from "@/components/ui";
 import { useUserContext } from "@/context/AuthContext";
 import {
   useContacts,
-  useNotifications,
+  useGetNotifications,     // ✅ corrected import
   useMarkNotificationAsRead,
 } from "@/lib/react-query/queries";
 import { getUserById } from "@/lib/appwrite/api";
@@ -28,13 +28,12 @@ function UsersList({
   const [enriched, setEnriched] = useState<EnrichedUser[]>([]);
   const { user } = useUserContext();
 
-  // ✅ Use correct hook for fetching contacts
+  // Contacts
   const { data: contactsRaw, isLoading } = useContacts(
     user?.id as string,
     searchQuery
   );
 
-  // Normalize contacts to a plain array
   const contacts: any[] = useMemo(() => {
     if (Array.isArray(contactsRaw)) return contactsRaw;
     if (contactsRaw?.documents && Array.isArray(contactsRaw.documents)) {
@@ -43,7 +42,6 @@ function UsersList({
     return [];
   }, [contactsRaw]);
 
-  // Stable signature
   const contactsSignature = useMemo(() => {
     try {
       return JSON.stringify(
@@ -65,15 +63,14 @@ function UsersList({
     }
   }, [contacts]);
 
-  // ✅ Use correct notifications hook
+  // Notifications  ✅ corrected hook
   const {
     data: notifications,
     refetch: refetchNotifications,
-  } = useNotifications(user?.id as string);
+  } = useGetNotifications(user?.id as string);
 
   const { mutate: markNotificationAsRead } = useMarkNotificationAsRead();
 
-  // Build quick lookup for unread message senders
   const unreadUserIds = useMemo(() => {
     if (!notifications?.documents) return new Set<string>();
     return new Set(
@@ -169,7 +166,6 @@ function UsersList({
     };
   }, [contactsSignature]);
 
-  // Search over enriched users
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
