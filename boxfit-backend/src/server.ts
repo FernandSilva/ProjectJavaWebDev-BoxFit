@@ -61,14 +61,37 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
-// NEW
-app.use(cors({
-  origin: [
-    "https://projectjavawebdev-boxfit.onrender.com",
-    "https://projectjavawebdev-boxfit-1.onrender.com",
-  ],
+// ─────────────────────────────────────────────
+// CORS CONFIGURATION (Combined + Robust)
+// ─────────────────────────────────────────────
+const allowedOrigins = new Set([
+  "https://projectjavawebdev-boxfit.onrender.com",
+  "https://projectjavawebdev-boxfit-1.onrender.com",
+  "http://localhost:3000",
+  "http://localhost:5173",
+]);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow server-to-server or curl
+    const isAllowed =
+      allowedOrigins.has(origin) ||
+      origin.includes("render.com") ||
+      origin.includes("localhost");
+
+    if (isAllowed) return callback(null, true);
+    console.warn(`🚫 CORS blocked: ${origin}`);
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true,
-}));
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  optionsSuccessStatus: 204,
+};
+
+// Apply CORS middleware early in the stack
+app.use(cors(corsOptions));
+
 
 app.use(cookieParser());
 app.use(morgan("dev"));
