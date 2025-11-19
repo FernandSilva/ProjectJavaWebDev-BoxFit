@@ -61,8 +61,9 @@ export async function login(req: Request, res: Response) {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match)
+    // Use comparePassword method from schema
+    const isValid = await user.comparePassword(password);
+    if (!isValid)
       return res.status(401).json({ error: "Invalid email or password" });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
@@ -85,6 +86,7 @@ export async function login(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to log in" });
   }
 }
+
 
 // ─────────────────────────────────────────────
 // LOGOUT
