@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "@/context/AuthContext";
-import { useNotifications, useMarkNotificationAsRead } from "@/lib/react-query/queries";
+import { useGetNotifications, useMarkNotificationAsRead } from "@/lib/react-query/queries";
 import { Notification } from "@/types";
 
 const Topbar = () => {
@@ -10,13 +10,15 @@ const Topbar = () => {
 
   const [hasUnread, setHasUnread] = useState(false);
 
-  // ✅ Call useNotifications INSIDE the component, using user?.id
-  const { data: fetchedNotifications, refetch } = useNotifications(user?.id);
+  // ✅ Correct hook name: useGetNotifications()
+  const { data: fetchedNotifications, refetch } = useGetNotifications(user?.id);
   const { mutate: markAsRead } = useMarkNotificationAsRead();
 
   useEffect(() => {
     if (fetchedNotifications?.documents?.length) {
-      const unreadExists = fetchedNotifications.documents.some((n: Notification) => !n.isRead);
+      const unreadExists = fetchedNotifications.documents.some(
+        (n: Notification) => !n.isRead
+      );
       setHasUnread(unreadExists);
     }
   }, [fetchedNotifications]);
@@ -48,8 +50,6 @@ const Topbar = () => {
         </Link>
 
         <div className="flex gap-4 items-center">
-          
-
           <div className="relative">
             <img
               onClick={handleNotificationsClick}

@@ -1,19 +1,22 @@
-// src/components/shared/LeftSidebar.tsx (or similar path)
+// src/components/shared/LeftSidebar.tsx
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Loader } from "@/components/shared";
 import { sidebarLinks } from "@/constants";
 import { useUserContext } from "@/context/AuthContext";
 import { INavLink } from "@/types";
 import { CiBookmark } from "react-icons/ci";
-import { useNotifications, useMarkNotificationAsRead } from "@/lib/react-query/queries";
+import {
+  useGetNotifications,          // ✅ Corrected import
+  useMarkNotificationAsRead
+} from "@/lib/react-query/queries";
 import { useEffect, useState, useRef } from "react";
 
 const LeftSidebar = () => {
   const { pathname } = useLocation();
   const { user, isLoading } = useUserContext();
 
-  // ✅ updated hook
-  const { data: notificationsData, refetch } = useNotifications(user?.id);
+  // ✅ Correct hook name
+  const { data: notificationsData, refetch } = useGetNotifications(user?.id);
   const { mutate: markAsRead } = useMarkNotificationAsRead();
 
   const [hasUnread, setHasUnread] = useState(false);
@@ -77,22 +80,23 @@ const LeftSidebar = () => {
         {/* Sidebar Links */}
         <ul className="flex flex-col gap-4">
 
-           <NavLink
-              to="/notifications"
-              onClick={handleNotificationView}
-              className={`flex gap-4 items-center py-2 px-4 rounded-md ${
-                pathname === "/notifications"
-                  ? "text-green-500 !font-bold"
-                  : "text-black !font-normal"
-              }`}
-            >
-              <img
-                src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
-                alt="Notifications"
-                className="h-6 w-6"
-              />
-              Notifications
-            </NavLink>
+          <NavLink
+            to="/notifications"
+            onClick={handleNotificationView}
+            className={`flex gap-4 items-center py-2 px-4 rounded-md ${
+              pathname === "/notifications"
+                ? "text-green-500 !font-bold"
+                : "text-black !font-normal"
+            }`}
+          >
+            <img
+              src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
+              alt="Notifications"
+              className="h-6 w-6"
+            />
+            Notifications
+          </NavLink>
+
           {sidebarLinks.map((link: INavLink) => {
             const isActive = pathname === link.route;
 
@@ -115,9 +119,8 @@ const LeftSidebar = () => {
             );
           })}
 
-          {/* Notifications */}
+          {/* Notifications Placeholder (kept as-is) */}
           <li className="leftsidebar-link group">
-           
           </li>
         </ul>
       </div>
