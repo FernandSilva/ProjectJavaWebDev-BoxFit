@@ -50,24 +50,35 @@ export async function signUp(req: Request, res: Response) {
 }
 
 // ─────────────────────────────────────────────
-// LOGIN
+// LOGIN 
 // ─────────────────────────────────────────────
 export async function login(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    if (!email || !password)
+
+    if (!email || !password) {
       return res.status(400).json({ error: "Email and password required" });
+    }
 
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.warn("Login failed: User not found for email", email);
+      return res.status(404).json({ error: "User not found" });
+    }
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user.password || typeof user.password !== "string") {
+      console.error("Login failed: Password is missing or invalid for", user.email);
+      return res.status(500).json({ error: "Server misconfiguration: password missing" });
+    }
 
-    // Use comparePassword method from schema
-    const isValid = await user.comparePassword(password);
-    if (!isValid)
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      console.warn("Login failed: Invalid password for", user.email);
       return res.status(401).json({ error: "Invalid email or password" });
+    }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+
     res.cookie("token", token, {
       httpOnly: true,
       sameSite: "none",
@@ -75,7 +86,9 @@ export async function login(req: Request, res: Response) {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    console.log("✅ Login successful for:", user.email);
+
+    return res.json({
       id: user._id,
       name: user.name,
       username: user.username,
@@ -87,6 +100,7 @@ export async function login(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to log in" });
   }
 }
+
 
 
 // ─────────────────────────────────────────────
