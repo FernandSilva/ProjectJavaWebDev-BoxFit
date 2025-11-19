@@ -51,15 +51,7 @@ app.use(
   })
 );
 
-// ───────────────────────────────
-// DYNAMIC CORS (Handles Render + Local)
-// ───────────────────────────────
-const allowedOrigins = new Set(
-  (CORS_ORIGIN || "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean)
-);
+
 
 // ─────────────────────────────────────────────
 // CORS CONFIGURATION (Combined + Robust)
