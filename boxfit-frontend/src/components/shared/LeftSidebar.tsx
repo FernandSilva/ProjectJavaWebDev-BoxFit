@@ -80,22 +80,6 @@ const LeftSidebar = () => {
         {/* Sidebar Links */}
         <ul className="flex flex-col gap-4">
 
-          <NavLink
-            to="/notifications"
-            onClick={handleNotificationView}
-            className={`flex gap-4 items-center py-2 px-4 rounded-md ${
-              pathname === "/notifications"
-                ? "text-green-500 !font-bold"
-                : "text-black !font-normal"
-            }`}
-          >
-            <img
-              src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
-              alt="Notifications"
-              className="h-6 w-6"
-            />
-            Notifications
-          </NavLink>
 
           {sidebarLinks.map((link: INavLink) => {
             const isActive = pathname === link.route;
@@ -119,7 +103,6 @@ const LeftSidebar = () => {
             );
           })}
 
-          {/* Notifications Placeholder (kept as-is) */}
           <li className="leftsidebar-link group">
           </li>
         </ul>

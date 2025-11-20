@@ -7,7 +7,6 @@ import RootLayout from "./_root/RootLayout";
 
 import {
   AllUsers,
-  Chat,
   CreatePost,
   EditPost,
   Home,
@@ -16,7 +15,6 @@ import {
   Saved,
   Settings,
   UpdateProfile,
-  Notification,
 } from "./_root/pages";
 
 import { Toaster } from "./components/ui/toaster";
@@ -109,9 +107,7 @@ const App = () => {
           <Route path="/posts/:id" element={<PostDetails />} />
           <Route path="/profile/:id/*" element={<Profile />} />
           <Route path="/update-profile/:id" element={<UpdateProfile />} />
-          <Route path="/chat" element={<Chat />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/notifications" element={<Notification />} />
         </Route>
       </Routes>
 
