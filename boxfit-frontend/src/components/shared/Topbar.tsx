@@ -50,20 +50,6 @@ const Topbar = () => {
         </Link>
 
         <div className="flex gap-4 items-center">
-          <div className="relative">
-            <img
-              onClick={handleNotificationsClick}
-              src={`/assets/icons/${hasUnread ? "notify.svg" : "notify1.svg"}`}
-              alt="Notifications"
-              className="h-6 w-6 cursor-pointer"
-            />
-            {hasUnread && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-black text-xs rounded-full px-1">
-                •
-              </span>
-            )}
-          </div>
-
           <Link to={`/profile/${user.id}`} className="flex-center gap-1">
             <img
               src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
