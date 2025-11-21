@@ -925,3 +925,12 @@ button:last-child:hover {
 .notification-message {
   background-color: #fff5e4; /* Light orange for messages */
 }
+
+
+.post-details_img {
+  width: 100%;
+  height: auto;
+  max-height: 70vh; /* prevents full-screen stretch */
+  object-fit: contain; /* no cropping */
+  border-radius: 8px;
+}
