@@ -49,16 +49,7 @@ const Bottombar = () => {
           </Link>     
          <Link to="/settings" className="link flex-center gap-3">
             <img src="/assets/icons/wallpaper.svg" alt="Explore" className="icon1" />
-          </Link>    
-          <Link
-            key={`bottombar-Messages`}
-            to="/Chat"
-            className={`link ${MessageActive ? "active" : ""} `}>
-            
-          
-            <BiMessageDetail className="icon"/>
-            <p>Messages</p>
-          </Link>     
+          </Link>        
           </>
         
     </section>
