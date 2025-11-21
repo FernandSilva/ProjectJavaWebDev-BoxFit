@@ -239,7 +239,6 @@ const PostDetails = () => {
                     className="post-details_img"
                     src={url}
                     alt="File preview"
-                    style={{ objectFit: "cover", width: "100%", height: "100%" }}
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
                       if (!target.dataset.fallback) {
