@@ -226,7 +226,7 @@ const PostDetails = () => {
               <SwiperSlide key={`${url}-${index}`}>
                 {fileTypes[index] === "video" ? (
                   <video
-                    className=".post-details_img"
+                    className="post-details_img"
                     loop
                     ref={(el) => (videoRefs.current[index] = el!)}
                     data-index={index}
@@ -236,7 +236,7 @@ const PostDetails = () => {
                   </video>
                 ) : fileTypes[index] === "image" ? (
                   <img
-                    className=".post-details_img"
+                    className="post-details_img"
                     src={url}
                     alt="File preview"
                     onError={(e) => {
