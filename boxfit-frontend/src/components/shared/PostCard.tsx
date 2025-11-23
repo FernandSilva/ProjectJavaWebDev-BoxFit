@@ -334,7 +334,7 @@ const PostCard = ({ post, disableCommentClick = false }: PostCardProps) => {
                   alt="File preview"
                   style={{ 
                             objectFit: "cover",
-                            width: "100%",
+                            width: "70%",
                             height: "auto",     // ✅ important
                             maxHeight: "80vh"   // ✅ prevents stretching on desktop
                           }}
