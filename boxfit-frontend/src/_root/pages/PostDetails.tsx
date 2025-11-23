@@ -15,8 +15,9 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { FaArrowLeft } from "react-icons/fa";
 import { MdAdd, MdEdit } from "react-icons/md";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { A11y, Pagination } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
+// ❌ Swiper imports REMOVED
+// import { A11y, Pagination } from "swiper/modules";
+// import { Swiper, SwiperSlide } from "swiper/react";
 import React from "react";
 import { useUserContext } from "@/context/AuthContext";
 
@@ -219,14 +220,14 @@ const PostDetails = () => {
       </div>
 
       <div className="post_details-card py-[10px] px-[20px]">
-        {/* MEDIA */}
+        {/* MEDIA - no Swiper, just render files directly */}
         {cleanUrls.length > 0 && (
-          <Swiper modules={[A11y, Pagination]} spaceBetween={16} slidesPerView={1} pagination>
+          <div className="flex flex-col gap-4 w-full">
             {cleanUrls.map((url, index) => (
-              <SwiperSlide key={`${url}-${index}`}>
+              <div key={`${url}-${index}`} className="w-full">
                 {fileTypes[index] === "video" ? (
                   <video
-                    className="post_details-img"
+                    className="post-details_img"
                     loop
                     ref={(el) => (videoRefs.current[index] = el!)}
                     data-index={index}
@@ -236,7 +237,7 @@ const PostDetails = () => {
                   </video>
                 ) : fileTypes[index] === "image" ? (
                   <img
-                    className="post_details-img"
+                    className="post-details_img"
                     src={url}
                     alt="File preview"
                     onError={(e) => {
@@ -250,9 +251,9 @@ const PostDetails = () => {
                 ) : (
                   <p className="text-sm text-gray-500">Unknown file type</p>
                 )}
-              </SwiperSlide>
+              </div>
             ))}
-          </Swiper>
+          </div>
         )}
 
         {/* INFO */}
@@ -324,7 +325,10 @@ const PostDetails = () => {
                     : false;
 
                   return (
-                    <div key={commentId || Math.random()} className="comment-item flex gap-3 mb-4 items-start">
+                    <div
+                      key={commentId || Math.random()}
+                      className="comment-item flex gap-3 mb-4 items-start"
+                    >
                       <img
                         src={comment.userImageUrl || "/assets/icons/profile-placeholder.svg"}
                         alt={comment.userName}
