@@ -328,7 +328,7 @@ const Settings = () => {
                 <h3 className="text-xl font-semibold mb-3">🏋️‍♂️ Personal Trainer</h3>
                 <div className="flex items-center gap-4">
                   <img
-                    src="https://images.unsplash.com/photo-1594737625785-cbdb7f93b4f6?q=80&w=240&auto=format&fit=crop"
+                    src="/assets/images/BF4.png"
                     alt="Trainer"
                     className="w-20 h-20 rounded-full object-cover"
                   />
