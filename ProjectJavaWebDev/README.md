@@ -1,20 +1,14 @@
-<!-- BoxFit — Full-Stack Gym Dashboard
+<!-- 🔧 Prerequisites
 
-A fully responsive gym member portal built with React, Node.js, Express, and MongoDB.
-Users can register, log in, update profiles, create posts, comment, like, and view gym information pages.
+Make sure you have the following installed:
 
-🔧 Prerequisites
+Node.js (v18+)
 
-Before installing, ensure you have:
-
-Node.js v18+
-
-npm (bundled with Node)
+npm (comes with Node)
 
 Git
 
-MongoDB Atlas account (recommended)
-or a local MongoDB server
+MongoDB Atlas account or a local MongoDB server
 
 📥 Step 1 — Clone the Repository
 git clone https://github.com/FernandSilva/ProjectJavaWebDev-BoxFit.git
@@ -22,24 +16,22 @@ cd ProjectJavaWebDev-BoxFit
 
 🖥️ Step 2 — Backend Setup
 
-Navigate into the backend:
+Navigate into the backend folder:
 
 cd backend
 
 
-Install dependencies:
+Install backend dependencies:
 
 npm install
 
-Create a .env file inside /backend
+
+Create a .env file inside the backend folder:
+
 PORT=5000
-MONGODB_URI=mongodb+srv://<your-mongo-connection-string>
+MONGODB_URI=mongodb+srv://<your-mongodb-connection-string>
 JWT_SECRET=your_jwt_secret_here
 
-
-✔ Important:
-The backend runs on JavaScript files (server.js), not TypeScript.
-Render does not execute TypeScript directly, so .js versions are included.
 
 Start the backend server:
 
@@ -52,53 +44,68 @@ Backend will run at:
 
 🌐 Step 3 — Frontend Setup
 
-Navigate to the frontend:
+Open a second terminal and navigate to the frontend:
 
-cd ../frontend
+cd frontend
 
 
-Install dependencies:
+Install frontend dependencies:
 
 npm install
 
 
-Create a .env file:
+Create a .env file inside the frontend folder:
 
 VITE_API_URL=http://localhost:5000
 
 
-Start the frontend:
+Start the frontend dev server:
 
 npm run dev
 
 
-Frontend runs at:
+Frontend will run at:
 
 👉 http://localhost:5173
 
 🚀 Step 4 — Run the Full Application
 
-Make sure both servers are running:
+Ensure both servers are running:
 
 Component	Command	URL
 Backend	npm run dev	http://localhost:5000
 
 Frontend	npm run dev	http://localhost:5173
 
-Open the frontend in your browser:
+Open the frontend:
 
 👉 http://localhost:5173
 
-You should now see BoxFit running locally.
+You will now see BoxFit running locally.
 
-🗂️ Project Structure
+📌 Important Notes
+Migration: AppWrite → MongoDB
+
+The project was initially built with AppWrite, but this became incompatible once a custom backend was required.
+To meet the assignment’s requirements, the backend was rebuilt using:
+
+Node.js
+
+Express.js
+
+Mongoose
+
+MongoDB Atlas
+
+This provides full control over authentication, routes, models, and API behavior.
+
+📂 Project Structure
 ProjectJavaWebDev-BoxFit/
  ├── backend/
  │   ├── controllers/
  │   ├── models/
  │   ├── routes/
- │   ├── uploads/               ← image storage folder
- │   ├── server.js
+ │   ├── server.js / server.ts
  │   └── .env
  ├── frontend/
  │   ├── src/
@@ -108,46 +115,14 @@ ProjectJavaWebDev-BoxFit/
  │   └── .env
  └── README.md
 
-📌 Important Notes
-AppWrite → MongoDB Migration
+☑️ Setup Checklist
 
-The project originally used AppWrite on the frontend with no backend.
-Because the assignment required a custom backend, the entire architecture was rebuilt:
+Backend starts successfully
 
-Added Node.js + Express backend
+Frontend starts successfully
 
-Designed MongoDB schemas (User, Post, Comment)
+.env files setup in both folders
 
-Replaced all AppWrite SDK calls
+MongoDB connection working
 
-Updated React Query hooks to use new REST endpoints
-
-Added CORS to support Render deployment
-
-This transformation enabled full-stack functionality and complete control of data.
-
-📸 Image Upload Behavior
-
-Images uploaded in posts are stored locally in /backend/uploads.
-
-If this folder is missing on first install, create it manually:
-
-mkdir backend/uploads
-
-☑️ Local Setup Checklist
-
-Backend starts without errors
-
-Frontend starts without errors
-
-Both .env files created correctly
-
-MongoDB connection successful
-
-Images upload successfully
-
-App loads at http://localhost:5173
-
-All routes and UI pages working
-
-🎉 You’re ready to run BoxFit locally! -->
+App loads at http://localhost:5173 -->
