@@ -1,0 +1,60 @@
+{
+  "name": "boxfit-backend",
+  "version": "1.0.0",
+  "description": "Backend API for the BoxFit web application (Node.js + Express + MongoDB + TypeScript)",
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "clean": "rimraf dist || rm -rf dist"
+  },
+  "keywords": [
+    "boxfit",
+    "backend",
+    "nodejs",
+    "express",
+    "typescript",
+    "mongodb",
+    "api"
+  ],
+  "author": "Fernando Silva",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-list-endpoints": "^7.1.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "pino": "^9.9.5",
+    "pino-http": "^10.5.0",
+    "typescript": "^5.6.3", 
+    "@types/node": "^24.3.1",
+  "@types/express": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/helmet": "^0.0.48",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mongoose": "^5.11.96",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.3.1",
+    "nodemon": "^3.1.10",
+    "pino-pretty": "^13.1.1",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5"
+  }
+}
